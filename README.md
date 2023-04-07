@@ -1,2 +1,2 @@
 # olympic-songbirds
- Avian biodiversity and vocalization behavior in the Olympic Experimental State Forest, WA
+ Avian biodiversity and vocalization behavior in Washington's Olympic Experimental State Forest
