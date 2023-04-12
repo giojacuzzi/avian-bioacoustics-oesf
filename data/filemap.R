@@ -77,7 +77,7 @@ unique(filemap$UnitType)
 unique(filemap$DeployNo)
 tapply(filemap$SurveyDate, filemap$SerialNo, unique)
 
-# Show calendars of recorded dates
+## Show calendars of recorded dates --------------------------------------------
 library(calendR)
 for (year in unique(filemap$DataYear)) {
   message('Creating calendar for ', year)
