@@ -19,19 +19,41 @@ filemap = data.frame()
 for (database_path in database_paths) {
   message('Scanning ', database_path)
   files = list.files(path=paste0(database_path), pattern="*.wav", full.names=T, recursive=T)
+  
+  # NOTE: extracting durations via tuneR too time intensive
+  # durations = c()
+  # i = 1
+  # for (file in files) {
+  #   message('(', i, ' of ', length(files), ') Reading ',  basename(file))
+  #   wav = readWave(file)
+  #   duration = round(length(wav@left) / wav@samp.rate) # in seconds
+  #   durations = append(durations, duration)
+  #   i = i + 1
+  # }
+  
+  substrings = str_split(str_sub(basename(files), start = 1, end = -5), '_')
+  serial = sapply(substrings, '[[', 1)
+  unit = substring(serial, 1, 3)
   deployment = str_locate_all(pattern='Deployment', files)
   deployment = substring(files, sapply(deployment, '[[', 2)+1, sapply(deployment, '[[', 2)+1)
-  substrings = str_split(str_sub(basename(files), start = 1, end = -5), '_')
+  
+  date_raw = sapply(substrings, '[[', 2)
+  year = substring(date_raw, 1, 4)
+  date = as.POSIXct(date_raw, tz = tz, format='%Y%m%d')
+  time = as.POSIXct(
+    paste(date_raw, sapply(substrings, '[[', 3)),
+    tz = tz, format='%Y%m%d %H%M%S')
+  hour = format(round(time, units='hours'), format='%H')
+
   temp = data.frame(
-    serial = sapply(substrings, '[[', 1),
-    deploy = deployment,
-    year   = substring(sapply(substrings, '[[', 2), 1, 4),
-    date   = as.POSIXct(sapply(substrings, '[[', 2),
-                        tz = tz, format='%Y%m%d'),
-    time   = as.POSIXct(
-      paste(sapply(substrings, '[[', 2), sapply(substrings, '[[', 3)),
-      tz = tz, format='%Y%m%d %H%M%S'),
-    file   = files
+    SerialNo   = serial,
+    UnitType   = unit,
+    DeployNo   = deployment,
+    DataYear   = year,
+    SurveyDate = date,
+    DataTime   = time,
+    NearHour   = hour,
+    File = basename(files)
   )
   filemap = rbind(filemap, temp)
 }
@@ -43,23 +65,25 @@ message('Created ', output_path)
 
 ## Inspect filemap -------------------------------------------------------------
 filemap = read.csv(output_path)
-filemap$serial = factor(filemap$serial)
-filemap$deploy = factor(filemap$deploy)
-filemap$year   = factor(filemap$year)
-filemap$date   = as.POSIXlt(filemap$date, tz = tz)
+filemap$SerialNo   = factor(filemap$SerialNo)
+filemap$UnitType   = factor(filemap$UnitType)
+filemap$DeployNo   = factor(filemap$DeployNo)
+filemap$DataYear   = factor(filemap$DataYear)
+filemap$SurveyDate = as.POSIXlt(filemap$SurveyDate, tz = tz)
 
 # Explore
-unique(filemap$serial)
-unique(filemap$deploy)
-tapply(filemap$date, filemap$serial, unique)
+unique(filemap$SerialNo)
+unique(filemap$UnitType)
+unique(filemap$DeployNo)
+tapply(filemap$SurveyDate, filemap$SerialNo, unique)
 
 # Show calendars of recorded dates
 library(calendR)
-for (year in unique(filemap$year)) {
+for (year in unique(filemap$DataYear)) {
   message('Creating calendar for ', year)
-  filemap_year = filemap[filemap$year==year,]
+  filemap_year = filemap[filemap$DataYear==year,]
   print(calendR(year = year,
-          start_date = as.Date(filemap_year$date)[1],
-          end_date   = as.Date(filemap_year$date[nrow(filemap_year)]),
+          start_date = as.Date(filemap_year$SurveyDate)[1],
+          end_date   = as.Date(filemap_year$SurveyDate[nrow(filemap_year)]),
           start = 'M'))
 }
