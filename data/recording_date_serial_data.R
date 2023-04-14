@@ -1,21 +1,13 @@
 ## Generate a csv mapping raw audio data files to metadata and inspect it
+source('global.R')
 
-# Paths to directories comprising the DNR database
-database_paths = c(
-  '~/../../Volumes/GIOJ Backup/DNR',
-  '~/../../Volumes/SAFS Backup/DNR'
-)
-database_path_working = '~/../../Volumes/SAFS Work/DNR'
-
-## Generate filemap ------------------------------------------------------------
+## Generate data ------------------------------------------------------------
 # In:  The DNR database drives
-# Out: output/filemap.csv
+# Out: output/data.csv
 library(stringr)
+library(lubridate)
 
-output_path = 'data/output/filemap.csv'
-tz = 'America/Los_Angeles'
-
-filemap = data.frame()
+data = data.frame()
 for (database_path in database_paths) {
   message('Scanning ', database_path)
   files = list.files(path=paste0(database_path), pattern="*.wav", full.names=T, recursive=T)
@@ -39,12 +31,12 @@ for (database_path in database_paths) {
   
   date_raw = sapply(substrings, '[[', 2)
   year = substring(date_raw, 1, 4)
-  date = as.POSIXct(date_raw, tz = tz, format='%Y%m%d')
+  date = ymd(date_raw) #as.POSIXct(date_raw, tz = tz, format='%Y%m%d')
   time = as.POSIXct(
     paste(date_raw, sapply(substrings, '[[', 3)),
     tz = tz, format='%Y%m%d %H%M%S')
   hour = format(round(time, units='hours'), format='%H')
-
+  
   temp = data.frame(
     SerialNo   = serial,
     UnitType   = unit,
@@ -55,35 +47,27 @@ for (database_path in database_paths) {
     NearHour   = hour,
     File = basename(files)
   )
-  filemap = rbind(filemap, temp)
+  data = rbind(data, temp)
 }
-if (nrow(filemap) != 75658) {
-  stop('filemap length is unexpected!')
+if (nrow(data) != 75658) {
+  stop('data length is unexpected!')
 }
-write.csv(filemap, file=output_path, row.names = FALSE)
-message('Created ', output_path)
-
-## Inspect filemap -------------------------------------------------------------
-filemap = read.csv(output_path)
-filemap$SerialNo   = factor(filemap$SerialNo)
-filemap$UnitType   = factor(filemap$UnitType)
-filemap$DeployNo   = factor(filemap$DeployNo)
-filemap$DataYear   = factor(filemap$DataYear)
-filemap$SurveyDate = as.POSIXlt(filemap$SurveyDate, tz = tz)
+write.csv(data, file=recording_date_serial_output_path, row.names = FALSE)
+message('Created ', recording_date_serial_output_path)
 
 # Explore
-unique(filemap$SerialNo)
-unique(filemap$UnitType)
-unique(filemap$DeployNo)
-tapply(filemap$SurveyDate, filemap$SerialNo, unique)
+# unique(data$SerialNo)
+# unique(data$UnitType)
+# unique(data$DeployNo)
+# tapply(data$SurveyDate, data$SerialNo, unique)
 
 ## Show calendars of recorded dates --------------------------------------------
-library(calendR)
-for (year in unique(filemap$DataYear)) {
-  message('Creating calendar for ', year)
-  filemap_year = filemap[filemap$DataYear==year,]
-  print(calendR(year = year,
-          start_date = as.Date(filemap_year$SurveyDate)[1],
-          end_date   = as.Date(filemap_year$SurveyDate[nrow(filemap_year)]),
-          start = 'M'))
-}
+# library(calendR)
+# for (year in unique(data$DataYear)) {
+#   message('Creating calendar for ', year)
+#   data_year = data[data$DataYear==year,]
+#   print(calendR(year = year,
+#           start_date = as.Date(data_year$SurveyDate)[1],
+#           end_date   = as.Date(data_year$SurveyDate[nrow(data_year)]),
+#           start = 'M'))
+# }

@@ -1,11 +1,4 @@
 ## Read date, site, strata, serial table from file
-library(xlsx)
-
-file = 'data/ARUdates-site-strata_v2.xlsx'
-
-message('Reading ', file)
-data = read.xlsx(file, sheetName = 'ARUdates-site-strata')
-
 ## Metadata:
 # SurveyID        Identifier for the ARU deployment (i.e., period of time when an ARU was set in a site)
 # SiteID          Identifier for the location
@@ -21,6 +14,23 @@ data = read.xlsx(file, sheetName = 'ARUdates-site-strata')
 # Strata          Habitat type of the station
 # UTM_E           Station Easting
 # UTM_N           Station Northing
+
+source('global.R')
+library(xlsx)
+
+get_site_strata_date_serial_data = function() {
+  
+  file = 'data/ARUdates-site-strata_v2.xlsx'
+  
+  message('Reading ', file)
+  data = read.xlsx(file, sheetName = 'ARUdates-site-strata')
+  
+  cols_to_factor = c('SurveyID', 'SiteID', 'DataYear', 'DeployNo', 'StationName', 'StationName_AGG', 'SurveyType', 'SerialNo', 'UnitType', 'Strata')
+  data[cols_to_factor] = lapply(data[cols_to_factor], factor)
+  data$SurveyDate = as.Date(data$SurveyDate) #as.POSIXct(data$SurveyDate, tz=tz, format='%d/%m/%Y')
+  
+  return(data)
+}
 
 ## Additional info:
 # Sample rate was 32 kHz (or it was supposed to be!) on everything
