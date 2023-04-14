@@ -97,15 +97,18 @@ library(tuneR)
 library(seewave)
 
 # Load test data
-path = '~/Desktop/oesf-examples'
+path = '~/Desktop/oesf-examples/short/'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
-results = c()
+results = data.frame()
 for (file in files) {
   wav = readWave(file)
-  aci = acoustic_complexity(wav)
-  # TODO: ACI from seewave
-  results = append(results, aci$left_area)
+  
+  dur = length(wav@left)/wav@samp.rate
+  
+  aci_soundecology = acoustic_complexity(wav)
+  aci_seewave = ACI(wav, nbwindows=(dur/5))
+  results = rbind(results, data.frame(soundecology=aci_soundecology$AciTotAll_left, seewave=aci_seewave))
 }
 ```
 

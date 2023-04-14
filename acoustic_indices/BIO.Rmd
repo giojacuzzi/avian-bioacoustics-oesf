@@ -85,7 +85,7 @@ library(tuneR)
 library(seewave)
 
 # Load test data
-path = '~/Desktop/oesf-examples/'
+path = '~/Desktop/oesf-examples/short/'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
 results = c()

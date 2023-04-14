@@ -47,15 +47,15 @@ library(tuneR)
 library(seewave)
 
 # Load test data
-path = '~/Desktop/oesf-examples'
+path = '~/Desktop/oesf-examples/short/'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
 results = data.frame()
 for (file in files) {
   wav = readWave(file)
-  ndsi = ndsi(wav)$ndsi_left
-  # TODO: NDSI from seewave
-  results = append(results, ndsi)
+  ndsi_soundecology = ndsi(wav)$ndsi_left
+  ndsi_seewave = NDSI(soundscapespec(wav, plot=F))
+  results = rbind(results, data.frame(soundecology=ndsi_soundecology, seewave=ndsi_seewave))
 }
 ```
 
