@@ -1,0 +1,84 @@
+---
+title: "ADI_AEI"
+author: "Gio Jacuzzi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Acoustic Diversity/Evenness Index (ADI/AEI)
+
+#### Pjanowski et al 2011, Villanueva-River et al 2011
+
+TODO
+
+#### Wildlife Acoustics
+
+-   These two related indices look at occupancy of frequency bins and then apply either Shannon index for diversity or Gini index for evenness
+
+-   Tend to give inverse results of each other
+
+-   Both start by dividing the frequency range into different bands, then determine 'occupancy' by looking for sounds that are loud enough to pass some threshold. The resulting proportion of active or "occupied" sound in those bands indicate levels of activity.
+
+-   These proportions can be used like in the Shannon/Gini indices
+
+-   The ADI uses the shannon to output from 0-natural lof of the number of kHz bins. Larger values indicate more even activity among frequency bins (either noisy across all frequency bands or completely silent), while values closer to zero indicate increasingly narrow or purse tones (i.e. all energy in one frequency band). (Bradfer-Lawrence et al 2019).
+
+#### Chen et al 2023
+
+The ADI is obtained from a matrix of frequency bins within a specified frequency range and their respective amplitude values. Then, the proportion of amplitude values above a certain threshold is calculated and the Shannon entropy index is applied to these values, i.e.,
+
+$$
+ADI=-\sum_{i=1}^{S} p_{i} * \text{ln}(p_{i})
+$$
+
+where pi is the fraction of sound in each $i$-th frequency band in $S$ frequency bands. As for AEI, when $p_{i}$ is ready, the Gini index is applied to the values, yielding
+
+$$
+AEI=Gini([p_{1}, p_{2},...,p_{S}])
+$$
+
+The threshold used for the above two indices is 50 dB below the peak value by default (Villanueva-Rivera et al., 2011). It is worth remarking that the peak value (i.e., the strongest time-frequency bin) is assumed to be dominated by biotic sound in the calculation. However, the peak value in the spectrogram may correspond to abiotic sound when SNR decreases to a certain extent, leading to erroneous results of the proportion of sound occurring in each frequency band when calculating ADI and AEI.
+
+## Acoustic Diversity Index
+
+#### Bradfer-Lawrence et al 2019
+
+Soundscape patterns - Increases with greater evenness across frequency bands. An even signal (either noisy across all frequency bands or completely silent) will give a high value, whereas a pure tone (i.e. all energy in one frequency band) will be closer to 0.
+
+Patterns in this study - Highest values were from recordings with high levels of geophony or anthrophony (wind, helicopters or trucks) blanketing the spectrogram with noise, or from very quiet recordings with little variation among frequency bands. Lowest values reflect dominance of a narrow frequency band, usually by nocturnal insect noise.
+
+Principle: Shannon entropy of a selection of frequency bins (Alcocer et al 2022)
+
+## Acoustic Evenness Index
+
+#### Bradfer-Lawrence et al 2019
+
+Soundscape patterns - Higher values indicating greater unevenness among frequency bands, when there is a greater sound intensity in a restricted range of frequencies. Acoustically rich habitats may produce low values because there is little variation in intensity among frequency bands in saturated soundscapes.
+
+Patterns in this study - Reverse of ADI patterns. High values identify recordings with dominance by a narrow frequency band of insect noise. Low values are associated with windy recordings with many occupied frequency bands, or near silent recordings with no acoustic activity.
+
+Principle: Gini index of a selection of frequency bins (Alcocer et al 2022)
+
+```{r}
+library(soundecology)
+library(tuneR)
+library(seewave)
+
+# Load test data
+path = '~/Desktop/oesf-examples'
+files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
+
+results = data.frame()
+for (file in files) {
+  wav = readWave(file)
+  adi = acoustic_diversity(wav)$adi_left
+  aei = acoustic_evenness(wav)$aei_left
+  results = rbind(results, data.frame(ADI=adi, AEI=aei))
+}
+```
+
+### References

@@ -1,0 +1,112 @@
+---
+title: "ACI"
+author: "Gio Jacuzzi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Acoustic Complexity Index (ACI)
+
+#### Pieretti et al 2011
+
+It is an algorithm created to produce a direct quantification of the complex biotic songs by computing the variability of the intensities registered in audio-recordings, despite the presence of constant human-generated-noise. The Spearman's rho calculation highlighted a significant correlation between the ACI values and the number of bird vocalizations, while the frequency bin occurrence and acoustic intensity were weaker correlated to bird singing activity because of the inclusion of all of the other geo/anthro-phonies composing the soundscape. The ACI tends to be efficient in filtering out anthrophonies (such as airplane engine noise), and demonstrates the capacity to synthetically and efficiently describe the complexity of bird soundscapes.
+
+The Acoustic Complexity Index, elaborated by Farina and Morri (2008), was created in order to produce a direct and quick quantification of the birds vocalizations by processing the intensities registered in audio-files.
+
+The hypothesis on which the ACI formula is based lays on the observation that many biotic sounds, such as bird songs, are characterized by an intrinsic variability of intensities, while some types of human generated noise (such as car passing or airplane transit) present very constant intensity values. Accordingly, the long term objective of the ACI is to develop an acoustic information extraction procedure of the natural soundscape, representing a useful tool to determine changes in behaviour and composition of a vocalizing community and, consequently, to better monitor animal dynamics in a quick way.
+
+The ACI can be calculated according to a formula which involves only a few steps (see Fig. 1). On the basis of a matrix of the intensities extrapolated from the spectrogram (divided into temporal steps and frequency bins), the ACI calculates the absolute difference ($d_{k}$) between two adjacent values of intensity ($I_{k}$ and $I_{(k+1)}$) in a single frequency bin ($\Delta f_{l}$):
+
+$$
+d_{k}=|I_{l}-I_{(k+1)}|
+$$
+
+and then adds together all of the $d_{k}$ encompassed in the first temporal step of the recording ($j$, e.g. 5s, 30s, 60s, etc.):
+
+$$
+D=\sum_{k=1}^{n}d_{k} \;\; \text{for} \;\; j=\sum_{k=1}^{n} \Delta t_{k} \; ; \; n=\text{number of } \; t_{k} \; \text{in} \; j
+$$
+
+where $D$ is the sum of all the $d_{k}$ contained in \$j\$. In order to obtain the relative intensity and to reduce the effect of the distance of the birds from the recording microphone, this result is then divided by the total sum of the intensity values registered in $j$:
+
+$$
+ACI=\frac{D}{\sum_{k=1}^{n} I_{k}}
+$$
+
+where the ACI is calculated in a single temporal step ($j$) and in a single frequency bin ($f_{l}$). Thereafter, the ACI, which was worked out on all of the temporal steps encompassed in the recording, is calculated:
+
+$$
+ACI_{(\Delta f_{l})}=\sum_{j=1}^{m}ACI \;\; \text{for:} \; m= \text{the number of } j \text{ in the entire recording}
+$$
+
+where $ACI_{(\Delta f_{l})}$ corresponds to the ACI of an entire frequency bin. Finally, the total ACI for all the frequency bins is calculated:
+
+$$
+ACI_{tot}=\sum_{l=1}^{q}ACI_{(\Delta f_{l})} \;\; \text{for} : \;\; \Delta f=\sum_{l=1}^{q}\Delta f_{l} \; ; \; q= \text{number of } \Delta_{f_{l}}
+$$
+
+where $ACI_{tot}$ is the total value of the index for the entire recording.
+
+#### Wildlife Acoustics
+
+Works in a similar way to ADI/AEI, but is a bit more complicated (it lives up to its name). This is one of the most widely used indices for measuring biodiversity.
+
+It arose from an observation by Pieretti that many biotic sounds, like birdsong, are characterized by an intrinsic variability of intensities, while many types of anthropogenic noise (like cars or airplanes passing) exhibit consistent intensity values. It was originally designed to measure the typical complexity of bird songs in a soundscape, despite the presence of persistent human-generated noise. It quantifies irregularity in sound, and assumes that this is correlated with bird song activity.
+
+It's designed to quantify the inherent irregularity in biophony while being relatively impervious to persistent sounds of constant intensity. Note that those persistent sounds could be biophonic, and insect drones are particularly prone to this.
+
+Pieretti developed it to "filter out" the airplane sounds at their study sites. Found a significant correlation between ACI values and the number of bird vocalizations. That relationship was weaker with other acoustic indices due to interference from the airplane noise.
+
+It is based on the difference in amplitude between one time sample and the next within a frequency band, relative to the total amplitude (Bradfer-Lawrence et al 2019)
+
+A recording is divided into a grid, an "ACI matrix", that is made up of time sample rows and frequency band columns. ACI compares the sound intensity in each little grid square with the next one.
+
+When using ACI, you need to consider what time period and frequency bands are biologically meaningful for your survey.
+
+ACI also requires you to specify a time step J, which is a length of time made up of a number of time samples. Number of time samples in each time step J = total number time samples / J. J thus has to do with the level of detail and amount of "smoothing" the ACI does \-- the more J steps there are, the larger the ACI value will be.
+
+#### Bradfer-Lawrence et al 2019
+
+Soundscape patterns - Based on difference in amplitude between one time sample and the next within a frequency band, relative to the total amplitude within that band. Designed to quantify the inherent irregularity in biophony, while being relatively impervious to persistent sound of a constant intensity.
+
+Patterns in this study - High values indicate storms, intermittent rain drops falling from vegetation, stridulating insects, or high levels of bird activity. Lowest values came from recordings with consistent cicada noise that fills the whole spectrogram.
+
+Principle: Summation of weighted amplitude differences within frequency bins (Alcocer et al 2022)
+
+#### Chen et al 2023
+
+In the ACI calculation, the recording is divided into several temporal steps. In a single temporal step, the summation of the differences between temporally adjacent amplitude values is first computed for each frequency bin and then divided by the total sum of those amplitude values. The ACI result of each temporal step is obtained by the accumulation across frequency bins, yielding
+
+$$
+ACI_{\Delta t}=\sum_{f=1}^{F}\frac{ \sum_{k=1}^{N-1} |I(k,f)-I(k+1,f)| }{ \sum_{k=1}^{N} I(k,f) }, \;\; 1 \le \Delta t \le M  
+$$
+
+where $I(k, f)$ is the intensity registered in a single time-frequency bin with f and k indexing frequency bins and temporal frames, $\Delta t$ denotes temporal steps, $F$ is the number of frequency bins, $N$ is the number of time frames in each temporal step, and $M$ represents the number of temporal steps in the entire recording. If more than one temporal step is specified, the values obtained for each step are accumulated, resulting in the final ACI value as
+
+$$
+ACI_{tot}=\sum_{\Delta t=1}^{M}ACI_{\Delta t}
+$$
+
+```{r}
+library(soundecology)
+library(tuneR)
+library(seewave)
+
+# Load test data
+path = '~/Desktop/oesf-examples'
+files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
+
+results = c()
+for (file in files) {
+  wav = readWave(file)
+  aci = acoustic_complexity(wav)
+  # TODO: ACI from seewave
+  results = append(results, aci$left_area)
+}
+```
+
+### References

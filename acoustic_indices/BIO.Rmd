@@ -1,0 +1,101 @@
+---
+title: "BIO"
+author: "Gio Jacuzzi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Bioacoustic Index (BIO)
+
+#### Boelman et al 2007
+
+"We established a simple analytical technique that extracts relative abundance of avian community size from bioacoustic recordings\... It may be suitable for detecting gross differences or changes in avian abundance when detection probabilities are constant."
+
+Limitations: "Our analysis technique offers no quantifiable information on species composition and it does not account for differences in detection probabilities among species, habitats, or sampling periods."
+
+"The bioacoustic index was calculated from the bioacoustic spectrum for each site (frequency [Hz] vs. sound level [dB]). The area under each bioacoustic spectrum included all frequency bands associated with the dB value that was greater than the minimum dB value for each spectrum. Area values are a function of both the sound level and the number of frequency bands used by the avifauna at each site."
+
+"Each 8 min audio file\... was reduced to a frequency range of 2000 Hz to 8000 Hz, which preserves the frequency range of avian vocalizations for all but one rarely observed bird species\..."
+
+#### Wildlife Acoustics
+
+Measures the area under the log amplitude spectrum curve in db\*kHZ, with the minimum dB level set to zero.
+
+-   Measures total amount of acoustic energy
+
+-   Output is 0 to infinity
+
+-   Designed as a proxy for bird abundance
+
+-   Used as a proxy for richness and abundance (e.g. Shanon et al 2021)
+
+#### Alcocer et al 2022
+
+-   Acronym BIO
+-   Bioacoustic Index
+-   Principle: Amplitude spectrum area
+
+#### Eldridge et al 2018
+
+"Rather than applying extant ecological metrics to acoustic data, other ecoacoustic indices have been designed more intuitively; the Bioacoustic Index (BI) was designed to capture overall sound pressure levels across the range of frequencies produced by avifauna (Boelman et al., 2007). BI was originally reported to correlate strongly with changes in avian abundance in Hawaiian forests (Boelman et al., 2007), but subsequent assessments have been mixed, showing significant association with avian species richness (Fuller et al., 2015) and both positive and negative weaker correlations (Mammides et al., 2017) in areas with multiple vocalizing taxa. Despite an initially strong demonstration of efficacy, and conceptual and computational simplicity, this index has been excluded from many recent analyses (Harris, Shears, & Radford, 2016)."
+
+"Bio-acoustic Index (BI) (Boelman et al., 2007) is calculated as the area under the mean 363 spectrum (in dB) minus the minimum dB value of this mean spectrum across the range 2-8 kHz."
+
+"Future indices could be band limited and tuned to the range of calls of interest."
+
+#### Shaw et al 2021
+
+-   Bioacoustic Index (BIO)
+
+-   Calculation: Computes the area under each curve, including all frequency bands from 2 to 11 kHz with a dB value greater than the minimum dB value for each curve
+
+-   Interpretation: A combination of sound intensity and frequency bands occupied. Designed to reflect biophony. Low values indicate little to no acoustic activity.
+
+#### NOAA
+
+"BI: Bioacoustic Index (Boelman et al., 2007): calculated as the area under the curve of the mean amplitude spectrum between two frequency limits, is a function of both the sound level and the number of frequency bands."
+
+#### Chen et al 2023
+
+"BIO is calculated as the area under the curve defined as the difference between the sound level within each frequency band and the minimum sound level, i.e.,
+
+$$
+BIO=\sum_{i=1}^{N}(S_{i}-S_{min})*\Delta f \text{,  for} \; \Delta f=\frac{f_{max}-f_{min}}{N} 
+$$
+
+where $S_{i}$ is the sound level of the $i$-th frequency band in dB, $S_{min}$ is the minimum value of the sound level among all frequency bands, $\Delta f$ is the width of frequency band, and $N$ is the number of frequency bands ranging from the minimum frequency $f_{min}$ to maximum frequency \$f\_{max}\$. Theoretically, $S_{min}$ is expected to represent the sound level of the noise-dominated spectrum."
+
+#### Bradfer-Lawrence et al 2019
+
+"Bioacoustic Index (Bio)"
+
+Soundscape patterns - A function of both amplitude and number of occupied frequency bands between 2 and 11 kHz. Value is relative to the quietest 1 kHz frequency band; higher values indicate greater disparity between loudest and quietest bands.
+
+Patterns in this study - Highest values produced by blanked cicada noise, with high amplitude and minimal variation among frequency bands. Low values arise when there is no sound between 2 and 11 kHz, although there is sometimes insect biophony outside these bounds.
+
+No single acoustic index can describe the entire soundscape; capturing inter-habitat differences requires multiple indices, as there are often competing explanations for a particular index value. For example, low BIO values could indicate either an impoverished soundscape with little noise or an acoustically rich environment; if the soundscape also has low H and high AEve values it would support the latter interpretation.
+
+```{r}
+library(soundecology)
+library(tuneR)
+library(seewave)
+
+# Load test data
+path = '~/Desktop/oesf-examples/'
+files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
+
+results = c()
+for (file in files) {
+  wav = readWave(file)
+  bio = bioacoustic_index(wav)
+  results = append(results, bio$left_area)
+}
+```
+
+### References
+
+Boelman, Natalie T., et al. "Multi-Trophic Invasion Resistance in Hawaii: Bioacoustics, Field Surveys, and Airborne Remote Sensing." Ecological Applications, vol. 17, no. 8, 2007, pp. 2137--2144., <https://doi.org/10.1890/07-0004.1>.

@@ -1,0 +1,62 @@
+---
+title: "NDSI"
+author: "Gio Jacuzzi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Normalized Difference Soundscape Index (NDSI)
+
+#### Kasten et al 2012
+
+The goal of our normalized difference soundscape index (NDSI) is to estimate the level of anthropogenic disturbance on the soundscape by computing the ratio of human-generated (anthrophony) to biological (biophony) acoustic components found in field collected sound samples. As shown in Fig. 5, the analysis of a large number of recordings collected at several locations, revealed that mechanical sounds are most prevalent between 1 and 2 kHz and biological sounds are most prevalent between 2and8kHz(Gage and Napoletano, 2004; Gage et al., 2001).
+
+To compute the overall level of biophony present in an acoustic signal, we first compute the power spectral density (PSD) (Welch,1967) of the signal. Then, a rectangular estimate of the PSD integral is computed for the anthropogenic and biophonic frequency ranges, and NDSI computed as
+
+$$
+NDSI=\frac{\beta - \alpha}{\beta + \alpha}
+$$
+
+where $\beta$ and $\alpha$ are the total estimated PSD for the largest 1 kHz biophony bin and the anthrophony bin respectively. The NDSI for the soundscape at a location does not remain constant, and changes according to time of day or day of year can be used to plot how NDSI changes over time. Note that NDSI is a ratio in the range [−1 to + 1], where + 1 indicates a signal containing no anthrophony. However, for some biophonic vocalizations a low NDSI can also indicate the presence of certain types of animals. For instance, the common loon (Gavia immer) has a low frequency call that often produces a NDSI score less than −0.8. Such anomalies are expected when attempting to characterize the highly variable nature of soundscape acoustics, and indicates that advancements are needed to help characterize and search acoustic observations. However, searching by NDSI can be a useful filter to help limit the number of recordings for further examination.
+
+#### Wildlife Acoustics
+
+-   Quantifies disturbance based on the ratio of biotic to anthropogenic sound in recordings
+-   Also uses area under the curve, but divides the power spectrum into two parts (anthrophony, typically 1-2kHz vs biophony, often 2-8kHz).
+-   Kasten et al had a big library of acoustic data and used it to develop the NDSI
+-   It's important to understand that there are limitations
+-   NDSI = (biophony - anthrophony) / biophony + anthrophony)
+-   Tending to -1 = more anthrophony
+-   Tending to +1 = more biophony
+
+#### Bradfer-Lawrence et al 2019
+
+Soundscape patterns - Relies on a theoretical frequency split between anthrophony (1-2 kHz) and biophony (2-11 kHz). The ratio of the two components give values of -1 to +1, with +1 indicating no anthrophony in the soundscape.
+
+Patterns in this study - High values reflect high levels of insect biophony, with minimal noise in the 1-2 kHz range. Low values arise when insect biophony dominates the 1-2 kHz band.
+
+Principle: Ratio of the spectral density of two frequency bands (i.e. anthrophony and biophony) (Alcocer et al 2022)
+
+```{r}
+library(soundecology)
+library(tuneR)
+library(seewave)
+
+# Load test data
+path = '~/Desktop/oesf-examples'
+files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
+
+results = data.frame()
+for (file in files) {
+  wav = readWave(file)
+  ndsi = ndsi(wav)$ndsi_left
+  # TODO: NDSI from seewave
+  results = append(results, ndsi)
+}
+```
+
+### References

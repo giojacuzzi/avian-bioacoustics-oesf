@@ -1,0 +1,47 @@
+---
+title: "H"
+author: "Gio Jacuzzi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Acoustic Entropy (H)
+
+#### Sueur et al 2008
+
+TODO
+
+#### Bradfer-Lawrence et al 2019
+
+Soundscape patterns (H) - Increases with greater evenness of amplitude among frequency bands and/or time steps. Returns a value between 1 (an even signal, either noisy across frequency bands or completely silent) and 0 (a pure tone with all energy in one frequency band).
+
+Patterns in this study (H) - Highest values come from near-silent recordings, with no wind, and only faint bird calls. Lowest values produced when insect noise dominated a single frequency band.
+
+Principle (Alcocer et al 2022):
+
+-   Ht (Temporal Entropy Index) - Shannon entropy of the amplitude envelope
+-   Hf (Spectral Entropy Index) - Shannon entropy of the frequency spectrum
+-   H (Acoustic Entropy Index) - Product of Ht and Hf
+
+```{r}
+library(soundecology)
+library(tuneR)
+library(seewave)
+
+# Load test data
+path = '~/Desktop/oesf-examples'
+files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
+
+results = data.frame()
+for (file in files) {
+  wav = readWave(file)
+  h = H(wav)
+  results = append(results, h)
+}
+```
+
+### References
