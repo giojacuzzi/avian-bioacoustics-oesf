@@ -1,5 +1,5 @@
 ---
-title: "H"
+title: "H_D"
 author: "Gio Jacuzzi"
 date: "`r Sys.Date()`"
 output: html_document
@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Acoustic Entropy (H)
+# Acoustic Entropy/**Dissimilarity Index** (H/D)
 
 #### Sueur et al 2008
 
@@ -29,7 +29,11 @@ In signal theory, the entropy H of a random variable X with probability mass fun
 
 $$
 H(X)=-\int_{-\infty}^{+\infty} p_{X}(x)*\text{log}_{2}p_{X}(x)dx
-$$Shannon index is the second most used index of diversity in ecology, after species richness (number of species) [40]. In general, it is measured on a set of categories differing in frequencies. It increases with the evenness of the frequencies of the categories and with the number of categories. In ecology, categories are often species that differ by their relative abundances in a community. Here we apply it on a time series sequence of size n, the categories are the time units and their frequencies are the probability mass function of the amplitude envelope. The prevalence of Shannon index over other indices especially the Simpson index has a long history of debates [12]. Its main characteristic is that it is more sensitive to rare categories [41]. Therefore by using this index, the time units with low probability mass function of the amplitude envelope will still influence the value of the acoustic diversity. The maximum value of Shannon index depends on the number of categories (log2(n)). The sounds of animals in field will affect the amplitude envelope at each time unit. However the number of time units is fixed by the methodology. Consequently, to obtain an index that is solely affected by the sounds of animals in field, we divide the Shannon index by its maximum. The index obtained measures the evenness of the amplitude envelope over the time units.
+$$
+
+## Acoustic Entropy Index (H)
+
+Shannon index is the second most used index of diversity in ecology, after species richness (number of species) [40]. In general, it is measured on a set of categories differing in frequencies. It increases with the evenness of the frequencies of the categories and with the number of categories. In ecology, categories are often species that differ by their relative abundances in a community. Here we apply it on a time series sequence of size n, the categories are the time units and their frequencies are the probability mass function of the amplitude envelope. The prevalence of Shannon index over other indices especially the Simpson index has a long history of debates [12]. Its main characteristic is that it is more sensitive to rare categories [41]. Therefore by using this index, the time units with low probability mass function of the amplitude envelope will still influence the value of the acoustic diversity. The maximum value of Shannon index depends on the number of categories (log2(n)). The sounds of animals in field will affect the amplitude envelope at each time unit. However the number of time units is fixed by the methodology. Consequently, to obtain an index that is solely affected by the sounds of animals in field, we divide the Shannon index by its maximum. The index obtained measures the evenness of the amplitude envelope over the time units.
 
 The temporal entropy *H~t~* is then computed following
 
@@ -52,6 +56,30 @@ $$
 H will tend towards 0 for a single pure tone, increases with the number of frequency bands and amplitude modulations, and tends towards 1 for a random noise. We tested the hypothesis that H index increases with the number of singing species.
 
 The H index, which measures acoustic entropy, shows a logarithmic correlation with the number of species within the acoustic community.
+
+## Acoustic Dissimilarity Index (D)
+
+We extended a measure estimating the compositional dissimilarity between two communities to both envelope and spectral acoustic data. Envelope dissimilarity between two signals $x_{1}(t)$ and $x_{2}(t)$ of the same duration digitized at the same sampling frequency can be estimated by computing the difference between their envelope probability mass functions divided by 2 to get values between 0 and 1:
+
+$$
+D_{t}=0.5*\sum_{t=1}^{n}|A_{1}(t)-A_{2}(t)|, \text{ with } D_{t} \in [0,1]
+$$
+
+Similarly, spectral dissimilarity can be assed by computing:
+
+$$
+D_{f}=0.5*\sum_{t=1}^{N}|S_{1}(f)-S_{2}(f)|, \text{ with } D_{f} \in [0,1]
+$$
+
+The dissimilarity acoustic index is computed as the product of both temporal and spectral dissimilarities
+
+$$
+D=D_{t}*D_{f}, \text{ with } D \in [0,1]
+$$
+
+We tested the hypothesis that *D* index increases with the number of unshared species between chorus pairs.
+
+The β index, which estimates both temporal and spectral dissimilarities, is linearly linked to the number of unshared species between acoustic communities.
 
 #### Bradfer-Lawrence et al 2019
 
