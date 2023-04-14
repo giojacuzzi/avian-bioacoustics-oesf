@@ -13,7 +13,45 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #### Sueur et al 2008
 
-TODO
+If $x(t)$ is a time series of length $n$, the amplitude envelope of oscillation is obtained with the analytic signal $\xi(t)$ of $x(t)$ The analytic signal is defined as:
+
+$$
+\xi(t)=x(t)+ix_{H}(t), \text{ where } i^{2}=-1 \text{ and } x_{H}(t) \text{ is the Hilbert transform of } x(t)
+$$
+
+The probability mass function of the amplitude envelope $A(t)$ is defined as
+
+$$
+A(t)=\frac{|\xi(t)|}{\sum_{t=1}^{n}|\xi(t)|}, \text{ such that } \sum_{t=1}^{n}A(t)=1
+$$
+
+In signal theory, the entropy H of a random variable X with probability mass function $p_{X}(x)$ is defined as:
+
+$$
+H(X)=-\int_{-\infty}^{+\infty} p_{X}(x)*\text{log}_{2}p_{X}(x)dx
+$$Shannon index is the second most used index of diversity in ecology, after species richness (number of species) [40]. In general, it is measured on a set of categories differing in frequencies. It increases with the evenness of the frequencies of the categories and with the number of categories. In ecology, categories are often species that differ by their relative abundances in a community. Here we apply it on a time series sequence of size n, the categories are the time units and their frequencies are the probability mass function of the amplitude envelope. The prevalence of Shannon index over other indices especially the Simpson index has a long history of debates [12]. Its main characteristic is that it is more sensitive to rare categories [41]. Therefore by using this index, the time units with low probability mass function of the amplitude envelope will still influence the value of the acoustic diversity. The maximum value of Shannon index depends on the number of categories (log2(n)). The sounds of animals in field will affect the amplitude envelope at each time unit. However the number of time units is fixed by the methodology. Consequently, to obtain an index that is solely affected by the sounds of animals in field, we divide the Shannon index by its maximum. The index obtained measures the evenness of the amplitude envelope over the time units.
+
+The temporal entropy *H~t~* is then computed following
+
+$$
+H_{t}=-\sum_{t=1}^{n}A(t)*\text{log}_{2}A(t)*\text{log}_{2}(n)^{-1}, \; \text{with} \; H_{t}\in [0,1]
+$$
+
+Similarly, to calculate the spectral entropy, a mean spectrum s(f) is first computed using a Short Time Fourier Transform (STFT) based on a non-overlapping sliding function window of sample width τ. This mean spectrum s(f) is similarly transformed into a probability mass function S(f) of length N used to compute the spectral entropy Hf:
+
+$$
+H_{f}=-\sum_{f=1}^{N}S(f)*\text{log}_{2}S(f)*\text{log}_{2}(N)^{-1}, \; \text{with} \; H_{f}\in [0,1]
+$$
+
+Eventually, the entropy index *H* is computed as the product of both temporal and spectral entropies:
+
+$$
+H=H_{t}*H_{f}, \; \text{with} \; H\in[0,1]
+$$
+
+H will tend towards 0 for a single pure tone, increases with the number of frequency bands and amplitude modulations, and tends towards 1 for a random noise. We tested the hypothesis that H index increases with the number of singing species.
+
+The H index, which measures acoustic entropy, shows a logarithmic correlation with the number of species within the acoustic community.
 
 #### Bradfer-Lawrence et al 2019
 
@@ -38,6 +76,8 @@ files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
 results = data.frame()
 for (file in files) {
+  message('Processing file ', basename(file))
+  
   wav = readWave(file)
   h = H(wav)
   results = append(results, h)
