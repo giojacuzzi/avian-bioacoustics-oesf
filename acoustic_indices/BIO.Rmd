@@ -88,12 +88,73 @@ library(seewave)
 path = '~/Desktop/oesf-examples/short/'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
+# Band limits (Hz)
+min_freq = 2000
+max_freq = 8000
+window   = 512  # FFT window size
+
 results = c()
 for (file in files) {
   wav = readWave(file)
-  bio = bioacoustic_index(wav)
+  bio = bioacoustic_index(
+    soundfile = wav,
+    min_freq  = min_freq, # default 2000
+    max_freq  = max_freq, # default 8000
+    fft_w     = window
+  )
   results = append(results, bio$left_area)
 }
+```
+
+```{r}
+snd = wav@left
+dur = length(snd)/wav@samp.rate
+fs  = wav@samp.rate
+snd = snd - mean(snd) # Remove DC offset
+
+nfft = 1024   # number of points to use for the fft
+overlap = 128 # overlap (in points)
+
+library(signal) # signal processing functions
+library(oce) # image plotting functions and nice color maps
+library(viridis)
+
+# Create spectrogram
+spec = specgram(x = snd,
+                n = nfft,
+                Fs = fs,
+                window = window,
+                overlap = overlap
+)
+
+P = abs(spec$S) # Discard phase information
+P = P/max(P)    # Normalize
+P = 10*log10(P) # Convert to dB
+t = spec$t      # Config time axis
+
+# Plot spectrogram
+layout(matrix(c(1,2), ncol=1), heights=c(3,1))
+imagep(x = t,
+       y = spec$f,
+       z = t(P),
+       ylim = c(0, 12000),
+       zlim = c(-24, 0),
+       col = magma,
+       ylab = 'Frequency (Hz)',
+       xlab = 'Time (s)',
+       drawPalette = T,
+       decimate = F
+)
+abline(h = min_freq, col='white')
+abline(h = max_freq, col='white')
+title(paste0('Bioacoustic Index (', min_freq,'-', max_freq,' Hz)'))
+
+# Plot oscillogram
+plot(snd, type = 'l', xlab = '', ylab = '', xaxt='n', yaxt='n', bty='n')
+
+# Play sound
+setWavPlayer('/usr/bin/afplay')
+play(wav)
 ```
 
 ### References
