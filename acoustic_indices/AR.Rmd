@@ -1,0 +1,44 @@
+---
+title: "AR"
+author: "Gio Jacuzzi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Acoustic Richness Index (AR)
+
+#### Depraetere et al 2021
+
+Principle: Weighted product of the ranks of M and H$_{t}$ indices (Alcocer et al 2022)
+
+The acoustic entropy $H$ index was successfully tested in a tropical forest with high signal-to-noise ratio. However, in the context of a temperate habitat, the acoustic activity may be lower and background noise from wind and rain higher, potentially biasing $H_{f}$, generating false high values when wind and rain dominate over animal calls.
+
+Acoustic Richness $AR$ elaborates on $H_{t}$ and $M$ following
+
+$$
+AR=\frac{\text{rank}(H_{t})*\text{rank}(M)}{n^{2}}, \text{ with } 0 \leq AR \leq 1
+$$
+
+Note that computing AR on a set of a single object does not make any sense.
+
+```{r}
+library(tuneR)
+library(seewave)
+
+# Load test data
+path = '~/Desktop/oesf-examples/short/'
+files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
+
+results = data.frame()
+for (file in files) {
+  wav = readWave(file)
+  ndsi_seewave = NDSI(soundscapespec(wav, plot=F))
+  results = rbind(results, data.frame(soundecology=ndsi_soundecology, seewave=ndsi_seewave))
+}
+```
+
+### References

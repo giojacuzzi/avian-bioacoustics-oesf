@@ -1,0 +1,73 @@
+```{r}
+library(tuneR)
+library(seewave)
+library(ggplot2)
+
+# Load test data
+file = '~/Desktop/oesf-examples/short/04_short.wav'
+sound = readWave(file)
+
+spectrogram = function(wav, tlim, flim, alim, color, rem_dc_offset=T, interpolate=T, ...) {
+  # Remove DC offset
+  if (rem_dc_offset) wav@left = wav@left - mean(wav@left)
+  # STFT with seewave `spectro`
+  message('Computing spectrogram...')
+  s = spectro(wav, plot=F, ...)
+  data = data.frame(
+    time = rep(s$time, each =nrow(s$amp)),
+    freq = rep(s$freq, times=ncol(s$amp)),
+    amp  = as.vector(s$amp)
+  )
+  # Apply limits
+  if (missing(tlim)) tlim = c(min(s$time), max(s$time))
+  data = data[data$time>=tlim[1] & data$time<=tlim[2],]
+  
+  if (missing(flim)) flim = c(min(s$freq), max(s$freq))
+  data = data[data$freq>=flim[1] & data$freq<=flim[2],]
+  
+  if (missing(alim)) alim = c()
+  
+  if (missing(color)) color = 'viridis'
+  
+  # Plot
+  message('Plotting spectrogram...')
+  plot = ggplot(data, aes(x=time, y=freq, z=amp)) +
+    geom_raster(aes(fill=amp), interpolate=interpolate) +
+    scale_fill_viridis_c('Amplitude (dB)', limits=alim, option=color, na.value='black') +
+    xlab('Time (s)') + ylab('Frequency (kHz)')
+  return(plot)
+}
+
+oscillogram = function(wav, rem_dc_offset=T) {
+  # Remove DC offset
+  if (rem_dc_offset) wav@left = wav@left - mean(wav@left)
+  # Prepare data
+  data = data.frame(
+    time=seq(1, length(wav@left)) / wav@samp.rate,
+    amplitude=wav@left
+  )
+  # Plot
+  message('Plotting oscillogram...')
+  plot = ggplot(data, aes(x=time, y=amplitude)) +
+    geom_line() +
+    scale_x_continuous() +
+    xlab('Time (s)') + ylab('Amplitude')
+  return(plot)
+}
+
+ogram = oscillogram(sound) + theme_minimal()
+sgram = spectrogram(sound, flim=c(0,8), alim=c(-40,0), color='magma') + theme_minimal()
+
+library(rayshader)
+# See: https://joeystanley.com/blog/3d-vowel-plots-with-rayshader
+plot_gg(sgram, 
+        width = 6, height = 3, scale = 300, 
+        windowsize = c(1000, 800),
+        fov = 70, zoom = 0.6, 
+        theta = 330, phi = 40,
+        multicore = TRUE)
+render_depth(focus = 0.68, focallength = 1, filename = "spec_3D")
+
+```
+
+

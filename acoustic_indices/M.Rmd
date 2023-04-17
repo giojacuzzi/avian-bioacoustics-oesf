@@ -1,0 +1,46 @@
+---
+title: "M"
+author: "Gio Jacuzzi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Amplitude Index (M)
+
+#### Depraetere et al 2012
+
+Principle: Median of the amplitude envelope (Alcocer et al 2022)
+
+Reflects the amplitude of a recording. Louder recordings will yield higher values, reflecting more energetic soundscapes. Highest values associated with high levels of geophony, particularly storms. Low levels produced by very quiet recordings, with little biophony or geophony.
+
+The amplitude index $M$ is the median of the amplitude envelope, following
+
+$$
+M=\text{median}(A(t))*2^{1-\text{depth}} \text{ with } 0 \le M \le 1
+$$
+
+where $A(t)$ is the amplitude envelope and $depth$ is the signal digitization depth (e.g. 16 bits). See the Acoustic Entropy index $H$ to calculate $A(t)$.
+
+To obtain values of $M$ varying between 0 and 1, a second standardization can be calculated by dividing $M$ with its maximum value.
+
+```{r}
+library(tuneR)
+library(seewave)
+
+# Load test data
+path = '~/Desktop/oesf-examples/short/'
+files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
+
+results = c()
+for (file in files) {
+  wav = readWave(file)
+  m = M(wav)
+  results = append(results, m)
+}
+```
+
+### References
