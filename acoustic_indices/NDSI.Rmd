@@ -35,11 +35,13 @@ where $\beta$ and $\alpha$ are the total estimated PSD for the largest 1 kHz bio
 
 #### Bradfer-Lawrence et al 2019
 
-Soundscape patterns - Relies on a theoretical frequency split between anthrophony (1-2 kHz) and biophony (2-11 kHz). The ratio of the two components give values of -1 to +1, with +1 indicating no anthrophony in the soundscape.
+Soundscape patterns - The ratio of acoustic energy between two defined frequency bands. Designed to estimate the level of anthropogenic disturbance in the soundscape. This index gives the ratio between anthrophony and biophony. This relies on the theoretical frequency split between the two facets of the soundscape. In some habitats, anthrophony is restricted to the 1 -- 2 kHz range, while most biophony appears in the 2 -- 8 kHz range. However, NDSI is sensitive to low frequency biophony. NDSI values range from -1 to +1, with +1 indicating no anthrophony in the soundscape. Following (Fuller et al. 2015), the upper biophony range was extended from 8 kHz to 11 kHz, to incorporate higher frequency sounds typical of tropical habitats (Sueur et al. 2014).\*
 
 Patterns in this study - High values reflect high levels of insect biophony, with minimal noise in the 1-2 kHz range. Low values arise when insect biophony dominates the 1-2 kHz band.
 
 Principle: Ratio of the spectral density of two frequency bands (i.e. anthrophony and biophony) (Alcocer et al 2022)
+
+\*NDSI can be calculated using the seewave function "NDSI". Outputs are not identical from the seewave and soundecology packages, probably because of the way in which the amplitude values are calculated. Moreover, "NDSI" (seewave) may have incorrectly implemented the original formulation as it uses 2000 -- 8999 Hz instead of 2 -- 8 kHz. In addition, when analysing stereo recordings, seewave only returns a single averaged value across channels rather than a separate value for each channel as in soundecology. In both "ndsi" and "NDSI" the amplitude values for biophony are summed across all 1 kHz frequency bands, whereas in Kasten et al. (2012) the index is described as using the largest 1kHz biophony band. Summing the biophony bands reduces apparent differences among recordings, so that only those with particularly dominant anthrophony have low NDSI values.
 
 ```{r}
 library(soundecology)

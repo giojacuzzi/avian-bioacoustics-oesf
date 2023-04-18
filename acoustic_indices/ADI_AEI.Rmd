@@ -47,7 +47,7 @@ The threshold used for the above two indices is 50 dB below the peak value by de
 
 #### Bradfer-Lawrence et al 2019
 
-Soundscape patterns - Increases with greater evenness across frequency bands. An even signal (either noisy across all frequency bands or completely silent) will give a high value, whereas a pure tone (i.e. all energy in one frequency band) will be closer to 0.
+Soundscape patterns - Increases with greater evenness across frequency bands. An even signal (either noisy across all frequency bands or completely silent) will give a high value, whereas a pure tone (i.e. all energy in one frequency band) will be closer to 0. The maximum ADI value is the log of the number of frequency bins used, so here ranges from 0 to +2.77.
 
 Patterns in this study - Highest values were from recordings with high levels of geophony or anthrophony (wind, helicopters or trucks) blanketing the spectrogram with noise, or from very quiet recordings with little variation among frequency bands. Lowest values reflect dominance of a narrow frequency band, usually by nocturnal insect noise.
 
@@ -57,7 +57,7 @@ Principle: Shannon entropy of a selection of frequency bins (Alcocer et al 2022)
 
 #### Bradfer-Lawrence et al 2019
 
-Soundscape patterns - Higher values indicating greater unevenness among frequency bands, when there is a greater sound intensity in a restricted range of frequencies. Acoustically rich habitats may produce low values because there is little variation in intensity among frequency bands in saturated soundscapes.
+Soundscape patterns - Higher values indicate greater unevenness among frequency bands, when there is a greater sound intensity in a restricted range of frequencies. Acoustically rich habitats may produce low values because there is little variation in intensity among frequency bands in saturated soundscapes. Returns values in a range of 0 to 1.
 
 Patterns in this study - Reverse of ADI patterns. High values identify recordings with dominance by a narrow frequency band of insect noise. Low values are associated with windy recordings with many occupied frequency bands, or near silent recordings with no acoustic activity.
 

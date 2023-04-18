@@ -83,7 +83,7 @@ The β index, which estimates both temporal and spectral dissimilarities, is lin
 
 #### Bradfer-Lawrence et al 2019
 
-Soundscape patterns (H) - Increases with greater evenness of amplitude among frequency bands and/or time steps. Returns a value between 1 (an even signal, either noisy across frequency bands or completely silent) and 0 (a pure tone with all energy in one frequency band).
+Soundscape patterns (H) - Related to the classic Shannon's Index, were a number of categories each have a relative proportion associated with them. Here the categories are either frequency bands (Hf) or time samples (Ht), and the relative amplitude is the "proportion" in each category. Hf and Ht are multiplied to give the index, returns a value between 0 and 1. H increases with greater evenness of amplitude among frequency bands, (or with an increasing number of bands). An even signal will be closer to 1 (could be noisy across frequency bands or completely silent) and a pure tone (i.e. all energy in one frequency band) will be closer to 0.
 
 Patterns in this study (H) - Highest values come from near-silent recordings, with no wind, and only faint bird calls. Lowest values produced when insect noise dominated a single frequency band.
 

@@ -71,11 +71,13 @@ ACI also requires you to specify a time step J, which is a length of time made u
 
 #### Bradfer-Lawrence et al 2019
 
-Soundscape patterns - Based on difference in amplitude between one time sample and the next within a frequency band, relative to the total amplitude within that band. Designed to quantify the inherent irregularity in biophony, while being relatively impervious to persistent sound of a constant intensity.
+Soundscape patterns - Based on difference in amplitude between one time sample and the next within a frequency band, relative to the total amplitude within that band. The concept underlying this index is that biophony is often of variable intensity, whilst that of anthrophony is commonly constant. ACI was designed to quantify this inherent irregularity in biophony, particularly from bird song, while being relatively impervious to persistent sound of a constant intensity. The original intention was to filter out airplane engine noise from temperate recordings (Pieretti et al. 2011). However, it is also likely to omit the constant insect noise characteristic of tropical habitats. In acoustically rich habitats, this might actually lead to low values in ACI, because intensity does not vary greatly over time even if the source of sound does. ACI value is cumulative and so will increase with the length of recording; to ensure comparability best practice is to report the value per minute\*.
 
 Patterns in this study - High values indicate storms, intermittent rain drops falling from vegetation, stridulating insects, or high levels of bird activity. Lowest values came from recordings with consistent cicada noise that fills the whole spectrogram.
 
 Principle: Summation of weighted amplitude differences within frequency bins (Alcocer et al 2022)
+
+\*ACI can also be calculated using the seewave package (function "ACI"). However, the two packages produce different values and outputs can only be made to agree by altering the default parameters (Villaneuva-Rivera 2015). ACI value is cumulative and so will increase with the length of recording. Villanueva-Rivera & Pijanowski (2018) recommend reporting the ACI value per minute to provide readily comparable values between recording sets, and it is more straightforward to calculate a value per minute with output from the soundecology version of this index. Thus our preference is for the soundecology approach.
 
 #### Chen et al 2023
 

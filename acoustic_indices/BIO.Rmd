@@ -73,7 +73,7 @@ where $S_{i}$ is the sound level of the $i$-th frequency band in dB, $S_{min}$ i
 
 "Bioacoustic Index (Bio)"
 
-Soundscape patterns - A function of both amplitude and number of occupied frequency bands between 2 and 11 kHz. Value is relative to the quietest 1 kHz frequency band; higher values indicate greater disparity between loudest and quietest bands.
+Soundscape patterns - A function of both amplitude (or sound level, dB) and the number of occupied frequency bands between 2 and 11 kHz (the range in which the majority of birds sing in the original study). Value is relative to the quietest frequency band, therefore recordings with even activity throughout the 2 -- 11 kHz range (e.g. during rain storms) may produce low Bio values, while higher values indicate greater disparity between loudest and quietest frequency bands.
 
 Patterns in this study - Highest values produced by blanked cicada noise, with high amplitude and minimal variation among frequency bands. Low values arise when there is no sound between 2 and 11 kHz, although there is sometimes insect biophony outside these bounds.
 
