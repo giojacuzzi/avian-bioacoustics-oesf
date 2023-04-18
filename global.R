@@ -1,4 +1,5 @@
 library(xlsx)
+library(dplyr)
 
 # Paths to directories comprising the DNR database
 database_paths = c(
