@@ -1,6 +1,9 @@
 # Apple files
 .DS_Store
 
+# Images
+*.png
+
 # History files
 .Rhistory
 .Rapp.history

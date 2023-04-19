@@ -3,16 +3,15 @@ library(tuneR)
 library(seewave)
 
 # Load test data
-path = '~/../../Volumes/SAFS Work/DNR/2020/June30/SMA00310_20200630'
-files = list.files(path=path, pattern='SMA00310_20200702.*.wav', full.names=T, recursive=T)
+# path = '~/../../Volumes/SAFS Work/DNR/2020/June30/SMA00310_20200630'
+# files = list.files(path=path, pattern='SMA00310_20200702.*.wav', full.names=T, recursive=T)
+file = '~/Desktop/oesf-examples/04.wav'
 
-intervals = c(1,5,15,30,60*1,60*15,60*30,60*60) # index measurement interval (sec)
+intervals = c(1,5,15,30,60*1,60*2,60*5,60*15,60*30,60*60) # index measurement interval (sec)
 
-delta = intervals[5]
-
-results = c()
-for (file in files) {
-  message('Loading ', basename(file))
+results = data.frame()
+for (delta in intervals) {
+  message('Delta ', delta)
   wav = readWave(file)
   
   dur = length(wav@left) / wav@samp.rate
@@ -24,9 +23,30 @@ for (file in files) {
     
     # Compute bioacoustic index
     bio = bioacoustic_index(test)
-    message(i, ' ', bio$left_area)
+    message(i, ' to ', j, ' sec:', bio$left_area)
     
-    results = append(results, bio$left_area)
+    results = rbind(results, data.frame(
+      delta = delta,
+      start = i,
+      end   = j,
+      BIO   = bio$left_area
+    ))
     i = j
   }
 }
+results$delta = factor(results$delta)
+
+# Add a duplicate data point for the last observation
+# of each delta to complete geom_step lines below 
+last_rows = aggregate(. ~ delta, results, tail, n = 1)
+last_rows$start = last_rows$end
+results = rbind(results, last_rows)
+
+# Plot results per delta period
+ggplot(results, aes(x=start, y=BIO, color=delta)) +
+  geom_step(size=1) +
+  scale_color_viridis_d() +
+  labs(title = 'Effect of temporal sampling on bioacoustic index',
+       subtitle = 'Calculated from a recording of the onset of the dawn chorus',
+       x = 'Time (sec)', y = 'Bioacoustic Index (BIO)', color = 'Sample\nLength (sec)') +
+  theme_minimal()
