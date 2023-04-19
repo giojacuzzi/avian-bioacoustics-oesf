@@ -28,16 +28,16 @@ Note that computing AR on a set of a single object does not make any sense.
 ```{r}
 library(tuneR)
 library(seewave)
+source('helpers.R')
 
 # Load test data
-path = '~/Desktop/oesf-examples/short/'
+path = '~/Desktop/oesf-examples/short'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
 results = data.frame()
 for (file in files) {
-  wav = readWave(file)
-  ndsi_seewave = NDSI(soundscapespec(wav, plot=F))
-  results = rbind(results, data.frame(soundecology=ndsi_soundecology, seewave=ndsi_seewave))
+  sound = readWave(file)
+  # TODO
 }
 ```
 

@@ -25,7 +25,7 @@ TODO
 
 -   These proportions can be used like in the Shannon/Gini indices
 
--   The ADI uses the shannon to output from 0-natural lof of the number of kHz bins. Larger values indicate more even activity among frequency bins (either noisy across all frequency bands or completely silent), while values closer to zero indicate increasingly narrow or purse tones (i.e. all energy in one frequency band). (Bradfer-Lawrence et al 2019).
+-   The ADI uses the shannon to output from 0-natural log of the number of kHz bins. Larger values indicate more even activity among frequency bins (either noisy across all frequency bands or completely silent), while values closer to zero indicate increasingly narrow or purse tones (i.e. all energy in one frequency band). (Bradfer-Lawrence et al 2019).
 
 #### Chen et al 2023
 
@@ -67,17 +67,53 @@ Principle: Gini index of a selection of frequency bins (Alcocer et al 2022)
 library(soundecology)
 library(tuneR)
 library(seewave)
+source('helpers.R')
 
 # Load test data
-path = '~/Desktop/oesf-examples'
+path = '~/Desktop/oesf-examples/short'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
+# Parameters
+max_freq     = 8000 # Hz
+freq_step    = 2000
+db_threshold = -30  # Note: this threshold can be used to prevent the influence of microphone self-noise
+
 results = data.frame()
+
 for (file in files) {
-  wav = readWave(file)
-  adi = acoustic_diversity(wav)$adi_left
-  aei = acoustic_evenness(wav)$aei_left
-  results = rbind(results, data.frame(ADI=adi, AEI=aei))
+  message(file)
+  sound = readWave(file)
+  if (dc_offset(sound@left)) sound@left = dc_correct(sound@left)
+  
+  # Calculate indices
+  adi = acoustic_diversity( # TODO: normalize band results to [0,1]?
+    soundfile = sound,
+    max_freq  = max_freq,
+    freq_step = freq_step,
+    db_threshold = db_threshold,
+    shannon = TRUE
+  )
+  aei = acoustic_evenness(
+    soundfile = sound,
+    max_freq  = max_freq,
+    freq_step = freq_step,
+    db_threshold = db_threshold
+  )
+  results = rbind(results, data.frame(ADI=adi$adi_left, AEI=aei$aei_left))
+  
+  # Plot
+  p = spectrogram(sound, alim=c(db_threshold,0)) +
+    labs(title = 'Acoustic Diversity Index (ADI)',
+         subtitle = paste0('Frequency band size ', freq_step, ' Hz, max frequency ', max_freq, ' Hz, amplitude threshold ', db_threshold, ' dB')) +
+    annotate('text', x = 10, y = 15, label = adi$adi_left, color='white') +
+    theme_minimal()
+  
+  for (f in 0:(max_freq/freq_step - 1)) {
+    y = f * freq_step
+    p = p + annotate('rect', xmin = 0, xmax = 20, ymin = y/1000, ymax = (y+freq_step)/1000, alpha = .1, color = 'white', fill = 'white')
+    p = p + annotate('text', x = 20/2, y = y/1000 + freq_step/2/1000, label = round(adi$left_band_values[f+1], 3), color='white', size=4)
+  }
+  print(p)
 }
 ```
 

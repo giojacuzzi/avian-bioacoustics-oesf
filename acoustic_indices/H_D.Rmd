@@ -97,17 +97,16 @@ Principle (Alcocer et al 2022):
 library(soundecology)
 library(tuneR)
 library(seewave)
+source('helpers.R')
 
 # Load test data
-path = '~/Desktop/oesf-examples'
+path = '~/Desktop/oesf-examples/short'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
 results = data.frame()
 for (file in files) {
-  message('Processing file ', basename(file))
-  
-  wav = readWave(file)
-  h = H(wav)
+  sound = readWave(file)
+  h = H(sound)
   results = append(results, h)
 }
 ```

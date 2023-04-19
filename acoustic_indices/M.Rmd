@@ -30,15 +30,16 @@ To obtain values of $M$ varying between 0 and 1, a second standardization can be
 ```{r}
 library(tuneR)
 library(seewave)
+source('helpers.R')
 
 # Load test data
-path = '~/Desktop/oesf-examples/short/'
+path = '~/Desktop/oesf-examples/short'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
 results = c()
 for (file in files) {
-  wav = readWave(file)
-  m = M(wav)
+  sound = readWave(file)
+  m = M(sound)
   results = append(results, m)
 }
 ```

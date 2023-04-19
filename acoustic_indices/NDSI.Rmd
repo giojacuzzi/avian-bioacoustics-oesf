@@ -47,17 +47,57 @@ Principle: Ratio of the spectral density of two frequency bands (i.e. anthrophon
 library(soundecology)
 library(tuneR)
 library(seewave)
+source('helpers.R')
 
 # Load test data
-path = '~/Desktop/oesf-examples/short/'
+path = '~/Desktop/oesf-examples/short'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
+# Parameters
+f1_min = 0
+f1_max = 2000
+f2_min = 2000
+f2_max = 11000
+window = 512  # FFT window size
+
 results = data.frame()
+
 for (file in files) {
-  wav = readWave(file)
-  ndsi_soundecology = ndsi(wav)$ndsi_left
-  ndsi_seewave = NDSI(soundscapespec(wav, plot=F))
-  results = rbind(results, data.frame(soundecology=ndsi_soundecology, seewave=ndsi_seewave))
+  message(file)
+  sound = readWave(file)
+  if (dc_offset(sound@left)) sound@left = dc_correct(sound@left)
+  
+  # Calculate index
+  ndsi_soundecology = ndsi(
+    soundfile = sound,
+    fft_w     = window,
+    anthro_min = f1_min,
+    anthro_max = f1_max,
+    bio_min    = f2_min,
+    bio_max    = f2_max
+  )
+  ndsi_seewave = NDSI(soundscapespec( # TODO: investigate discrepancies
+      wave = sound,
+      wl   = window,
+      plot = FALSE
+    ),
+    anthropophony = c(f1_min/1000, f1_max/1000),
+    biophony      = c(f2_min/1000, f2_max/1000)
+  )
+  results = rbind(results, data.frame(
+    soundecology=ndsi_soundecology$ndsi_left, seewave=ndsi_seewave))
+  
+  
+  # Plot
+  p = spectrogram(sound, alim=c(-55,0)) +
+    labs(title = 'Normalized Difference Soundscape Index (NDSI)',
+         subtitle = paste0('Frequency band limits ', f1_min, '-', f1_max, ' : ', f2_min, '-', f2_max, ' Hz')) +
+    annotate('rect', xmin = 0, xmax = 20, ymin = f1_min/1000, ymax = f1_max/1000,
+           alpha = .2, color = 'red', fill = 'red') +
+    annotate('rect', xmin = 0, xmax = 20, ymin = f2_min/1000, ymax = f2_max/1000,
+           alpha = .1, color = 'white', fill = 'white') +
+    theme_minimal()
+  print(p)
 }
 ```
 

@@ -77,86 +77,48 @@ Soundscape patterns - A function of both amplitude (or sound level, dB) and the 
 
 Patterns in this study - Highest values produced by blanked cicada noise, with high amplitude and minimal variation among frequency bands. Low values arise when there is no sound between 2 and 11 kHz, although there is sometimes insect biophony outside these bounds.
 
-No single acoustic index can describe the entire soundscape; capturing inter-habitat differences requires multiple indices, as there are often competing explanations for a particular index value. For example, low BIO values could indicate either an impoverished soundscape with little noise or an acoustically rich environment; if the soundscape also has low H and high AEve values it would support the latter interpretation.
+No single acoustic index can describe the entire soundscape; capturing inter-habitat differences requires multiple indices, as there are often competing explanations for a particular index value. For example, low BIO values could indicate either an impoverished soundscape with little noise or an acoustically rich environment; if the soundscape also has low H and high AEI values it would support the latter interpretation.
 
 ```{r}
 library(soundecology)
 library(tuneR)
 library(seewave)
+source('helpers.R')
 
 # Load test data
-path = '~/Desktop/oesf-examples/short/'
+path = '~/Desktop/oesf-examples/short'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
-# Band limits (Hz)
-min_freq = 2000
+# Parameters
+min_freq = 2000 # Hz
 max_freq = 8000
 window   = 512  # FFT window size
 
 results = c()
+
 for (file in files) {
-  wav = readWave(file)
+  message(file)
+  sound = readWave(file)
+  if (dc_offset(sound@left)) sound@left = dc_correct(sound@left)
+
+  # Calculate index
   bio = bioacoustic_index(
-    soundfile = wav,
+    soundfile = sound,
     min_freq  = min_freq, # default 2000
     max_freq  = max_freq, # default 8000
     fft_w     = window
   )
   results = append(results, bio$left_area)
+
+  # Plot
+  p = spectrogram(sound, alim=c(-55,0)) +
+    labs(title = 'Bioacoustic Index (BIO)',
+         subtitle = paste0('Frequency band limits ', min_freq, '-', max_freq, ' Hz')) +
+    annotate('rect', xmin = 0, xmax = 20, ymin = min_freq/1000, ymax = max_freq/1000,
+           alpha = .1, color = 'white', fill = 'white') +
+    theme_minimal()
+  print(p)
 }
-```
-
-```{r}
-snd = wav@left
-dur = length(snd)/wav@samp.rate
-fs  = wav@samp.rate
-snd = snd - mean(snd) # Remove DC offset
-
-nfft = 1024   # number of points to use for the fft
-overlap = 128 # overlap (in points)
-
-library(signal) # signal processing functions
-library(oce) # image plotting functions and nice color maps
-library(viridis)
-
-# Create spectrogram
-spec = specgram(x = snd,
-                n = nfft,
-                Fs = fs,
-                window = window,
-                overlap = overlap
-)
-
-P = abs(spec$S) # Discard phase information
-P = P/max(P)    # Normalize
-P = 10*log10(P) # Convert to dB
-t = spec$t      # Config time axis
-
-ggspectro(wav, ovlp=50) + geom_raster(aes(fill = amplitude), interpolate = F)
-
-# Plot spectrogram
-layout(matrix(c(1,2), ncol=1), heights=c(3,1))
-imagep(x = t,
-       y = spec$f,
-       z = t(P),
-       ylim = c(0, 12000),
-       zlim = c(-24, 0),
-       col = magma,
-       ylab = 'Frequency (Hz)',
-       xlab = 'Time (s)',
-       drawPalette = T,
-       decimate = F
-)
-abline(h = min_freq, col='white')
-abline(h = max_freq, col='white')
-title(paste0('Bioacoustic Index (', min_freq,'-', max_freq,' Hz)'))
-
-# Plot oscillogram
-plot(snd, type = 'l', xlab = '', ylab = '', xaxt='n', yaxt='n', bty='n')
-
-# Play sound
-setWavPlayer('/usr/bin/afplay')
-play(wav)
 ```
 
 ### References

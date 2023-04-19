@@ -97,20 +97,42 @@ $$
 library(soundecology)
 library(tuneR)
 library(seewave)
+source('helpers.R')
 
 # Load test data
-path = '~/Desktop/oesf-examples/short/'
+path = '~/Desktop/oesf-examples/short'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
+# Parameters
+min_freq = 0 # Hz
+max_freq = 8000
+window = 512  # FFT window size
+j = 5 # cluster size (sec)
+
 results = data.frame()
+
 for (file in files) {
-  wav = readWave(file)
+  sound = readWave(file)
+  if (dc_offset(sound@left)) sound@left = dc_correct(sound@left)
+  dur = length(sound@left)/sound@samp.rate
   
-  dur = length(wav@left)/wav@samp.rate
-  
-  aci_soundecology = acoustic_complexity(wav)
-  aci_seewave = ACI(wav, nbwindows=(dur/5))
+  # Calculate index
+  aci_soundecology = acoustic_complexity(
+    soundfile = sound,
+    min_freq  = min_freq,
+    max_freq  = max_freq,
+    fft_w     = window,
+    j         = j
+  )
+  aci_seewave = ACI(
+    wave = sound,
+    wl = window,
+    flim = c(min_freq/1000, max_freq/1000),
+    nbwindows = (dur/j) # number of windows
+  )
   results = rbind(results, data.frame(soundecology=aci_soundecology$AciTotAll_left, seewave=aci_seewave))
+  
+  # TODO: plot
 }
 ```
 
