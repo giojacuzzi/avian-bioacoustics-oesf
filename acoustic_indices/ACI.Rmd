@@ -106,8 +106,8 @@ files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 # Parameters
 min_freq = 0 # Hz
 max_freq = 8000
-window = 512  # FFT window size
-j = 5 # cluster size (sec)
+window = 128  # FFT window size
+j = 1 # cluster size (sec)
 
 results = data.frame()
 
@@ -132,7 +132,27 @@ for (file in files) {
   )
   results = rbind(results, data.frame(soundecology=aci_soundecology$AciTotAll_left, seewave=aci_seewave))
   
-  # TODO: plot
+  
+  n_fbins = dim(aci_soundecology$aci_left_matrix)[1] # num freq bins
+	hz_per_bin = (max_freq - min_freq) / n_fbins
+	n_time_bins = dim(aci_soundecology$aci_left_matrix)[2] # num time bins, equal to duration / j
+  
+  # Plot
+  p = spectrogram(sound, alim=c(-55,0)) +
+    labs(title = 'Acoustic Complexity Index (ACI)',
+         subtitle = paste0('Frequency band limits ', min_freq, '-', max_freq, ' Hz')) +
+    theme_minimal()
+  
+  for (t in 1:n_time_bins) {
+    p = p + annotate('segment', x = j*t, xend = j*t, y = min_freq/1000, yend = max_freq/1000,
+                     alpha = .5, color = 'white', linewidth = 0.2)
+  }
+  for (f in 1:n_fbins) {
+    p = p + annotate('segment', x = 0, xend = 20, y = f*hz_per_bin/1000, yend = f*hz_per_bin/1000,
+                     alpha = .5, color = 'white', linewidth = 0.2)
+  }
+  
+  print(p)
 }
 ```
 
