@@ -3,71 +3,102 @@ library(parallel)
 library(tuneR)
 library(soundecology)
 
-# Params
-path = '~/../../Volumes/SAFS Work/DNR/test/subset'
-wav_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F) # dir(path = directory, pattern = 'wav$', ignore.case = TRUE)
-resultfile = '~/../../Volumes/SAFS Work/DNR/test/subset/output/results.csv'
-soundindex = 'bioacoustic_index' #c('ndsi', 'acoustic_complexity', 'acoustic_diversity', 'acoustic_evenness', 'bioacoustic_index', 'H')
-
 # NOTE: only mono .wav support
 batch_process = function(
     wav_files, resultfile,
     soundindex = c('ndsi', 'acoustic_complexity', 'acoustic_diversity', 'acoustic_evenness', 'bioacoustic_index', 'H'),
     no_cores = 1, from = NA, to = NA, units = NA, ...) {
-
-  if (soundindex == 'bioacoustic_index'){ # Bioacoustic index
+  message(' Starting batch process (', paste(soundindex),')')
     
-    # fileheader = c('FILENAME,SAMPLINGRATE,BIT,DURATION,CHANNELS,INDEX,FFT_W,MIN_FREQ,MAX_FREQ,LEFT_CHANNEL,RIGHT_CHANNEL')
-    fileheader <- c('File,SamplingRate,BitDepth,Duration,DcBias,Clipping,BIO')
+  fileheader <- c('File,SamplingRate,BitDepth,Duration,DcBias,Clipping,BIO,ADI')
+  
+  getindex = function(soundfile, inCluster = FALSE, ...) {
+    source('helpers.R')
     
-    getindex = function(soundfile, inCluster = FALSE, ...) {
-      source('helpers.R')
-      
-      if (inCluster == TRUE){ # if launched in cluster, require package for each node
-        require(soundecology)
-        require(tuneR)
-        # require(parallel)
-      }
-      
-      # Get args and set params
-      args = list(...)
-      if (!is.null(args[['min_freq']])) {
-        min_freq = args[['min_freq']]
-      } else { min_freq = formals(bioacoustic_index)$min_freq }
-      if(!is.null(args[['max_freq']])) {
-        max_freq = args[['max_freq']]
-      } else { max_freq = formals(bioacoustic_index)$max_freq }
-      if (!is.null(args[['fft_w']])) {
-        fft_w = args[['fft_w']]
-      } else { fft_w = formals(bioacoustic_index)$fft_w }
-      
-      soundfile_path = soundfile
-      
-      if (is.na(from) == FALSE){
-        this_soundfile = readWave(soundfile_path, from = from, to = to, units = units)
-      } else {
-        this_soundfile = readWave(soundfile_path)
-      }
-      
-      cat('BIO')
-      return_list = bioacoustic_index(this_soundfile, ...)
-      
-      if (this_soundfile@pcm) {
-        dc_bias = round(mean(this_soundfile@left))
-      } else {                                                                                    
-        dc_bias = mean(this_soundfile@left)
-      }
-      clipping = clipping(this_soundfile)
-      
-      return(paste0('\n', soundfile, ',',
-                    this_soundfile@samp.rate, ',', # SamplingRate
-                    this_soundfile@bit, ',',       # BitDepth
-                    round(length(this_soundfile@left)/this_soundfile@samp.rate, 2), ',', # Duration (sec)
-                    dc_bias, ',',         # DcBias (mean value)
-                    clipping, ',',        # Clipping (boolean)
-                    return_list$left_area # BIO (bioacoustic index value)
-      ))
+    if (inCluster == TRUE){ # if launched in cluster, require package for each node
+      require(soundecology)
+      require(tuneR)
     }
+    
+    # Get args and set params
+    args = list(...)
+    if (!is.null(args[['min_freq']])) { # BIO
+      min_freq = args[['min_freq']]
+    } else {
+      min_freq = formals(bioacoustic_index)$min_freq
+      
+    }
+    if(!is.null(args[['max_freq']])) {
+      max_freq = args[['max_freq']]
+    } else {
+      max_freq = formals(bioacoustic_index)$max_freq # BIO
+      # max_freq = formals(acoustic_diversity)$max_freq # ADI
+    }
+    if (!is.null(args[['fft_w']])) {
+      fft_w = args[['fft_w']]
+    } else {
+      fft_w = formals(bioacoustic_index)$fft_w # BIO
+    }
+    if (!is.null(args[['db_threshold']])) {
+      db_threshold = args[['db_threshold']]
+    } else {
+      db_threshold = formals(acoustic_diversity)$db_threshold # ADI
+      db_threshold = as.numeric(paste(db_threshold, collapse = ''))
+    }
+    if(!is.null(args[['freq_step']])) {
+      freq_step = args[['freq_step']]
+    }else{
+      freq_step = formals(acoustic_diversity)$freq_step # ADI
+    }
+    
+    soundfile_path = soundfile
+    
+    if (is.na(from) == FALSE){
+      this_soundfile = readWave(soundfile_path, from = from, to = to, units = units)
+    } else {
+      this_soundfile = readWave(soundfile_path)
+    }
+    
+    # Calculate requested indices
+    if ('BIO' %in% soundindex) { # Bioacoustic index
+      message('BIO')
+      BIO = bioacoustic_index(
+        this_soundfile,
+        min_freq,
+        max_freq,
+        fft_w
+      )
+      BIO = BIO$left_area
+    } else { BIO = NA }
+    if ('ADI' %in% soundindex) { # Acoustic diversity index
+      message('ADI')
+      ADI = acoustic_diversity(
+        this_soundfile,
+        max_freq,
+        db_threshold,
+        freq_step
+      )
+      ADI = ADI$adi_left
+    } else { ADI = NA }
+    
+    # Calculate file diagnostics
+    if (this_soundfile@pcm) {
+      dc_bias = round(mean(this_soundfile@left))
+    } else {                                                                                    
+      dc_bias = mean(this_soundfile@left)
+    }
+    clipping = clipping(this_soundfile)
+    duration = round(length(this_soundfile@left)/this_soundfile@samp.rate, 2)
+    
+    return(paste0('\n', soundfile,',',
+                  this_soundfile@samp.rate,',', # SamplingRate
+                  this_soundfile@bit,',',       # BitDepth
+                  duration,',',                 # Duration (sec)
+                  dc_bias,',',                  # DcBias (mean amplitude value)
+                  clipping,',',                 # Clipping (boolean)
+                  BIO,',',                      # BIO (bioacoustic index value)
+                  ADI                           # ADI (acoustic diversity index value)
+    ))
   }
   
   ###############
@@ -103,10 +134,17 @@ batch_process = function(
   message(paste0(' Created ', resultfile, '\n Total time: ', round(time1['elapsed'], 2), ' sec'))
 }
 
-# TEST
+# TEST #########
+# Params
+path = '~/../../Volumes/SAFS Work/DNR/test/subset'
+wav_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
+resultfile = '~/../../Volumes/SAFS Work/DNR/test/subset/output/results.csv'
+soundindex = 'ADI'
 # Serial
 batch_process(wav_files = wav_files, resultfile = resultfile, soundindex = soundindex, no_cores = 1)
 # Parallel
 batch_process(wav_files = wav_files, resultfile = resultfile, soundindex = soundindex, no_cores = 3)
-#########
+# OTHER
+batch_process(wav_files = wav_files, resultfile = resultfile, soundindex = soundindex, no_cores = 3, min_freq = 200, max_freq = 2000)
+################
 
