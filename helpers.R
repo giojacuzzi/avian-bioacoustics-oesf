@@ -15,7 +15,7 @@ dc_correct = function(s) {
 }
 
 clipping = function(wave) {
-  sample.data = sound@left
+  sample.data = wave@left
   if (wave@pcm) {
     if (wave@bit == 8)              
       return( (max(sample.data) >= 255) || (min(sample.data) <= 0) )
@@ -28,6 +28,13 @@ clipping = function(wave) {
   } else {                                                                                    
     return( (max(sample.data) >= 1.0) || (min(sample.data) <= -1.0) )
   }
+}
+
+# Linear time domain amplitude sample to dBFS
+# 'limit' is the maximum absolute value represented by the bit depth
+# i.e. 1.0 for floating point, or 32768 for 16-bit PCM integer
+linear_to_dBFS = function(l, limit=1.0) {
+  return(20*log10(abs(l)/limit))
 }
 
 spectrogram = function(wav, tlim, flim, alim, color, rem_dc_offset=T, interpolate=T, ...) {
@@ -73,8 +80,8 @@ oscillogram = function(wav, rem_dc_offset=T) {
 # TODO: 3D waterfall plots with rayshader?
 
 ## DEMO
-file = '~/Desktop/oesf-examples/short/04_short.wav'
-sound = readWave(file)
-if (dc_offset(sound@left)) sound@left = dc_correct(sound@left)
-spectrogram(sound, flim=c(0,8), alim=c(-40,0)) + theme_minimal()
-oscillogram(sound) + theme_minimal()
+# file = '~/Desktop/oesf-examples/short/04_short.wav'
+# sound = readWave(file)
+# if (dc_offset(sound@left)) sound@left = dc_correct(sound@left)
+# spectrogram(sound, flim=c(0,8), alim=c(-40,0)) + theme_minimal()
+# oscillogram(sound) + theme_minimal()

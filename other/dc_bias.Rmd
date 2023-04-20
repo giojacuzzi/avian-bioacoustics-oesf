@@ -1,0 +1,63 @@
+---
+title: "dc_bias"
+author: "Gio Jacuzzi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# DC Bias Offset
+
+DC offset occurs when an audio signal is offset from zero. When viewing the waveform, it appears not to be centered on the 0.0 horizontal line:
+
+The DC bias (also known as the DC offset/component/coefficient) is the mean amplitude of the waveform
+
+### What's the problem?
+
+### How does DC offset happen?
+
+It occurs in the capturing of sound, before it reaches the recorder, and is normally caused by defective or low-quality equipment. It results in an offset of the center of the recording waveform that can cause two main problems. Either the loudest parts of the signal will be clipped prematurely since the base of the waveform has been moved up, or inaudible low-frequency distortion will occur. Low-frequency distortion may not be audible in the initial recording, but if the waveform is resampled to a compressed or lossy digital format, such as an MP3, those corruptions may become audible.
+
+### How can we fix it?
+
+- https://www.creativefieldrecording.com/2022/04/06/how-to-fix-dc-offset/
+- https://manual.audacityteam.org/man/dc_offset.html
+- https://www.embedded.com/dsp-tricks-dc-removal/
+- https://en.wikipedia.org/wiki/DC_bias
+
+```{r}
+library(tuneR)
+library(ggplot2)
+source('helpers.R')
+
+# # Load test data
+path = '~/Desktop/oesf-examples/short/04_short.wav'
+ 
+before = readWave(path)
+oscillogram(before, rem_dc_offset = F) +
+  scale_y_continuous(limits = c(-3000, 1000)) +
+  geom_hline(yintercept = 0)
+
+after  = before
+after@left = after@left - round(mean(after@left))
+oscillogram(after, rem_dc_offset = F) +
+  geom_hline(yintercept = 0, color = 'white')
+
+spectrogram(before, alim = c(-100,0))
+spectrogram(after,  alim = c(-100,0))
+
+# path = '~/../../Volumes/SAFS Work/DNR/test/MATURE/'
+# files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
+# 
+# results = data.frame()
+# for (file in files) {
+#   message(basename(file))
+#   wave = readWave(file)
+#   samples_with_dc = wave@left
+#   samples_no_dc = wave@left - round(mean(wave@left)) # note this is for integer
+#   results = rbind(results, data.frame(file=basename(file), with=mean(samples_with_dc), wihtout=mean(samples_no_dc)))
+# }
+```
