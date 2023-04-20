@@ -77,6 +77,7 @@ files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 max_freq     = 8000 # Hz
 freq_step    = 2000
 db_threshold = -30  # Note: this threshold can be used to prevent the influence of microphone self-noise
+window       = 1024
 
 results = data.frame()
 
@@ -102,7 +103,7 @@ for (file in files) {
   results = rbind(results, data.frame(ADI=adi$adi_left, AEI=aei$aei_left))
   
   # Plot
-  p = spectrogram(sound, alim=c(db_threshold,0)) +
+  p = spectrogram(sound, alim=c(db_threshold,0), wl = window) +
     labs(title = 'Acoustic Diversity Index (ADI)',
          subtitle = paste0('Frequency band size ', freq_step, ' Hz, max frequency ', max_freq, ' Hz, amplitude threshold ', db_threshold, ' dB')) +
     annotate('text', x = 10, y = 15, label = adi$adi_left, color='white') +

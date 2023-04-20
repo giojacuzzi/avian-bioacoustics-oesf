@@ -103,11 +103,22 @@ source('helpers.R')
 path = '~/Desktop/oesf-examples/short'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 
+window = 1024
+
 results = data.frame()
 for (file in files) {
   sound = readWave(file)
-  h = H(sound)
-  results = append(results, h)
+  h = H(
+    wave = sound,
+    wl = window
+  )
+  results = rbind(results, data.frame(
+    H = h
+  ))
+  
+  # Plot
+  p = spectrogram(sound, alim=c(-100,0), wl = window) + theme_minimal()
+  print(p)
 }
 ```
 

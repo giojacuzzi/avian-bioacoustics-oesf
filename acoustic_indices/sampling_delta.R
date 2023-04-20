@@ -12,14 +12,15 @@ intervals = c(1,5,15,30,60*1,60*2,60*5,60*15,60*30,60*60) # index measurement in
 results = data.frame()
 for (delta in intervals) {
   message('Delta ', delta)
-  wav = readWave(file)
+  sound = readWave(file)
+  if (dc_offset(sound@left)) sound@left = dc_correct(sound@left)
   
-  dur = length(wav@left) / wav@samp.rate
+  dur = length(sound@left) / sound@samp.rate
   
   i = 0.0
   while (i < dur) {
     j = min(i + delta, dur)
-    test = cutw(wav, f=wav@samp.rate, from=i, to=j, output='Wave')
+    test = cutw(sound, f=sound@samp.rate, from=i, to=j, output='Wave')
     
     # Compute bioacoustic index
     bio = bioacoustic_index(test)

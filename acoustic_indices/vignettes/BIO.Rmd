@@ -92,7 +92,7 @@ files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 # Parameters
 min_freq = 2000 # Hz
 max_freq = 8000
-window   = 512  # FFT window size
+window   = 1024  # FFT window size
 
 results = c()
 
@@ -111,7 +111,7 @@ for (file in files) {
   results = append(results, bio$left_area)
 
   # Plot
-  p = spectrogram(sound, alim=c(-55,0)) +
+  p = spectrogram(sound, alim=c(-55,0), wl = window) +
     labs(title = 'Bioacoustic Index (BIO)',
          subtitle = paste0('Frequency band limits ', min_freq, '-', max_freq, ' Hz')) +
     annotate('rect', xmin = 0, xmax = 20, ymin = min_freq/1000, ymax = max_freq/1000,

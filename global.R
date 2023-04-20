@@ -1,5 +1,7 @@
 library(xlsx)
 library(dplyr)
+library(stringr)
+library(lubridate)
 
 # Paths to directories comprising the DNR database
 database_paths = c(
@@ -71,3 +73,28 @@ get_site_strata_date_serial_data = function() {
 # across the different units).
 # Everything was channel left, although there was one deployment where some
 # got recorded in stereo by accident (no mic, though, so it's empty audio).
+
+
+get_serial_from_file_name = function(file) {
+  substrings = str_split(str_sub(basename(file), start = 1, end = -5), '_')
+  return(sapply(substrings, '[[', 1))
+}
+
+get_date_from_file_name = function(file) {
+  substrings = str_split(str_sub(basename(file), start = 1, end = -5), '_')
+  date_raw = sapply(substrings, '[[', 2)
+  date = ymd(date_raw)
+  return(date)
+}
+
+get_hour_from_file_name = function(file) {
+  substrings = str_split(str_sub(basename(file), start = 1, end = -5), '_')
+  date_raw = sapply(substrings, '[[', 2)
+  year = substring(date_raw, 1, 4)
+  date = ymd(date_raw) #as.POSIXct(date_raw, tz = tz, format='%Y%m%d')
+  time = as.POSIXct(
+    paste(date_raw, sapply(substrings, '[[', 3)),
+    tz = tz, format='%Y%m%d %H%M%S')
+  hour = format(round(time, units='hours'), format='%H')
+  return(hour)
+}
