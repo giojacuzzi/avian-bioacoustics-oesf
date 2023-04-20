@@ -5,7 +5,8 @@ library(soundecology)
 library(seewave)
 
 # input_files - a list of paths to .wav files
-# output_file - path and name of the resulting .csv file
+# output_path - path to the output directory
+# output_file - name of the resulting output file (without .csv extension)
 # alpha_indices - indices to calculate, e.g. c('BIO','ADI')
 # time_interval - sampling interval length per calculation (sec)
 # ncores - number of cores to use
@@ -26,7 +27,8 @@ library(seewave)
 # NOTE: ACI will return NA for long duration files (perhaps >= 10 min + @ 32kHz),
 # this is an issue with the 'soundecology' package
 batch_process = function(
-    input_files, output_file, alpha_indices, time_interval = NA, ncores = 1, dc_correct = T, digits = 4, ...) {
+    input_files, output_path, output_file = 'batch_process', alpha_indices = c(), time_interval = NA, ncores = 1, dc_correct = T, digits = 4, ...) {
+  if (length(alpha_indices) == 0) stop('Specify at least one alpha acoustic index')
 
   message(' Starting batch process (', paste(alpha_indices,collapse=' '),')')
     
@@ -228,7 +230,8 @@ batch_process = function(
   
   ## Start processing
   time_start = proc.time() # start timer
-  cat(file_header, file = output_file, append = F) # open results file
+  output = paste0(output_path, output_file, '.csv', collapse = '')
+  cat(file_header, file = output, append = F) # open results file
   
   if (ncores > 1) { # Process in parallel using clusters
     
@@ -236,7 +239,7 @@ batch_process = function(
     
     cluster = makeCluster(ncores, type = 'PSOCK')
     results = parLapply(cluster, input_files, calculate_alpha_indices, clustered = T, ...)
-    write.table(results, file = output_file, append = T, quote = F, col.names = F, row.names = F)
+    write.table(results, file = output, append = T, quote = F, col.names = F, row.names = F)
     Sys.sleep(1) # pause to allow all to end
     
     stopCluster(cluster)
@@ -246,25 +249,25 @@ batch_process = function(
     message(paste0(' Processing ', no_input_files, ' file(s) in series using 1 core'))
     for (file in input_files) {
       results = calculate_alpha_indices(file, ...)
-      cat(results, file = output_file, append = T)
+      cat(results, file = output, append = T)
     }
   }
   
   time_end = proc.time() - time_start # stop timer
-  message(paste0(' Created ', output_file, '\n Total time: ', round(time_end['elapsed'], 2), ' sec'))
+  message(paste0(' Created ', output, '\n Total time: ', round(time_end['elapsed'], 2), ' sec'))
 }
 
 # TEST #########
 # Params
 path = '~/../../Volumes/SAFS Work/DNR/test/subset'
 input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
-#input_files = paste0(path, '/SMA00351_20210502_050002.wav')
-output_file = '~/../../Volumes/SAFS Work/DNR/test/subset/output/results.csv'
+input_files = paste0(path, '/SMA00351_20210502_050002.wav')
+output_path = '~/../../Volumes/SAFS Work/DNR/test/subset/output/'
 alpha_indices = c('BIO', 'ACI')
 # Serial
-batch_process(input_files, output_file, alpha_indices, time_interval = 60*2, ncores = 1)
+batch_process(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 1)
 # Parallel
-batch_process(input_files, output_file, alpha_indices, time_interval = 60*2, ncores = 3)
+batch_process(input_files, output_path, output_file = 'wahoo', alpha_indices = alpha_indices, time_interval = 60*2, ncores = 3)
 # Other
-batch_process(input_files, output_file, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
+batch_process(input_files, output_path, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
 ##############
