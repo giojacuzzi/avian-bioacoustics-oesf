@@ -8,9 +8,9 @@ batch_process = function(
     wav_files, resultfile,
     soundindex = c('ndsi', 'acoustic_complexity', 'acoustic_diversity', 'acoustic_evenness', 'bioacoustic_index', 'H'),
     no_cores = 1, from = NA, to = NA, units = NA, ...) {
-  message(' Starting batch process (', paste(soundindex),')')
+  message(' Starting batch process (', paste(soundindex,collapse=' '),')')
     
-  fileheader <- c('File,SamplingRate,BitDepth,Duration,DcBias,Clipping,BIO,ADI')
+  fileheader <- c('File,SamplingRate,BitDepth,Duration,DcBias,Clipping,ADI,BIO')
   
   getindex = function(soundfile, inCluster = FALSE, ...) {
     source('helpers.R')
@@ -60,16 +60,6 @@ batch_process = function(
     }
     
     # Calculate requested indices
-    if ('BIO' %in% soundindex) { # Bioacoustic index
-      message('BIO')
-      BIO = bioacoustic_index(
-        this_soundfile,
-        min_freq,
-        max_freq,
-        fft_w
-      )
-      BIO = BIO$left_area
-    } else { BIO = NA }
     if ('ADI' %in% soundindex) { # Acoustic diversity index
       message('ADI')
       ADI = acoustic_diversity(
@@ -80,6 +70,16 @@ batch_process = function(
       )
       ADI = ADI$adi_left
     } else { ADI = NA }
+    if ('BIO' %in% soundindex) { # Bioacoustic index
+      message('BIO')
+      BIO = bioacoustic_index(
+        this_soundfile,
+        min_freq,
+        max_freq,
+        fft_w
+      )
+      BIO = BIO$left_area
+    } else { BIO = NA }
     
     # Calculate file diagnostics
     if (this_soundfile@pcm) {
@@ -91,13 +91,13 @@ batch_process = function(
     duration = round(length(this_soundfile@left)/this_soundfile@samp.rate, 2)
     
     return(paste0('\n', soundfile,',',
-                  this_soundfile@samp.rate,',', # SamplingRate
+                  this_soundfile@samp.rate,',', # SamplingRate (Hz)
                   this_soundfile@bit,',',       # BitDepth
                   duration,',',                 # Duration (sec)
                   dc_bias,',',                  # DcBias (mean amplitude value)
                   clipping,',',                 # Clipping (boolean)
-                  BIO,',',                      # BIO (bioacoustic index value)
-                  ADI                           # ADI (acoustic diversity index value)
+                  ADI,',',                      # ADI (acoustic diversity index value)
+                  BIO                           # BIO (bioacoustic index value)
     ))
   }
   
@@ -145,6 +145,6 @@ batch_process(wav_files = wav_files, resultfile = resultfile, soundindex = sound
 # Parallel
 batch_process(wav_files = wav_files, resultfile = resultfile, soundindex = soundindex, no_cores = 3)
 # OTHER
-batch_process(wav_files = wav_files, resultfile = resultfile, soundindex = soundindex, no_cores = 3, min_freq = 200, max_freq = 2000)
+batch_process(wav_files = wav_files, resultfile = resultfile, soundindex = c('BIO','ADI'), no_cores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
 ################
 
