@@ -4,11 +4,19 @@ library(tuneR)
 library(soundecology)
 library(seewave)
 
+# input_files - a list of paths to .wav files
+# output_file - path and name of the resulting .csv file
+# alpha_indices - indices to calculate, e.g. c('BIO','ADI')
+# time_interval - sampling interval length per calculation (sec)
+# ncores - number of cores to use
+# dc_correct - correct dc bias offset prior to index calculation
+# digits - number of decimal places for results
+#
 # NOTE: only mono .wav support
 # NOTE: ACI will return NA for long duration files (perhaps 1 hr + @ 32kHz),
 # this is an issue with the 'soundecology' package
 batch_process = function(
-    input_files, output_file, alpha_indices, ncores = 1, digits = 4, ...) {
+    input_files, output_file, alpha_indices, time_interval = NA, ncores = 1, dc_correct = T, digits = 4, ...) {
 
   message(' Starting batch process (', paste(alpha_indices,collapse=' '),')')
     
@@ -93,6 +101,9 @@ batch_process = function(
     
     # Read data from file
     wav = readWave(file)
+    
+    # Correct DC offset bias
+    if (dc_correct) wav@left = dc_correct(wav@left)
     
     # Calculate requested indices
     if ('ACI' %in% alpha_indices) { # Acoustic complexity index
@@ -226,7 +237,7 @@ batch_process = function(
 # TEST #########
 # Params
 path = '~/../../Volumes/SAFS Work/DNR/test/subset'
-# input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
+input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
 input_files = paste0(path, '/SMA00351_20210502_050002.wav')
 output_file = '~/../../Volumes/SAFS Work/DNR/test/subset/output/results.csv'
 alpha_indices = 'ACI'
