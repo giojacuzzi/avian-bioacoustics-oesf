@@ -32,7 +32,8 @@ batch_process = function(
 
   message(' Starting batch process (', paste(alpha_indices,collapse=' '),')')
     
-  file_header = c('File,SamplingRate,BitDepth,Start,End,DcBias,Clipping,ACI,ADI,AEI,BIO,H,M,NDSI')
+  file_header = c('File,Start,End,ACI,ADI,AEI,BIO,H,M,NDSI')
+  # TODO: File,SamplingRate,BitDepth,Duration,DcBias,Clipping
   
   ## Internal function to calculate indices
   calculate_alpha_indices = function(file, clustered = F, ...) {
@@ -202,12 +203,12 @@ batch_process = function(
       results = paste0(
         results,
         '\n', file,',',              # File (including path)
-        wav_interval@samp.rate,',',  # SamplingRate (Hz)
-        wav_interval@bit,',',        # BitDepth
+        # wav_interval@samp.rate,',',  # SamplingRate (Hz)
+        # wav_interval@bit,',',        # BitDepth
         start,',',                   # Start time (sec)
         end,',',                     # End time (sec)
-        round(dc_bias,digits),',',   # DcBias (mean amplitude value)
-        clipping,',',                # Clipping (boolean)
+        # round(dc_bias,digits),',',   # DcBias (mean amplitude value)
+        # clipping,',',                # Clipping (boolean)
         round(ACI,digits),',',       # acoustic complexity index
         round(ADI,digits),',',       # acoustic diversity index
         round(AEI,digits),',',       # acoustic evenness index
@@ -261,13 +262,13 @@ batch_process = function(
 # Params
 path = '~/../../Volumes/SAFS Work/DNR/test/subset'
 input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
-input_files = paste0(path, '/SMA00351_20210502_050002.wav')
+# input_files = paste0(path, '/SMA00351_20210502_050002.wav')
 output_path = '~/../../Volumes/SAFS Work/DNR/test/subset/output/'
 alpha_indices = c('BIO', 'ACI')
-# Serial
+# Series
 batch_process(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 1)
 # Parallel
-batch_process(input_files, output_path, output_file = 'wahoo', alpha_indices = alpha_indices, time_interval = 60*2, ncores = 3)
+batch_process(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 3)
 # Other
 batch_process(input_files, output_path, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
 ##############
