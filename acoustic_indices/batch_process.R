@@ -12,15 +12,25 @@ library(seewave)
 # dc_correct - correct dc bias offset prior to index calculation
 # digits - number of decimal places for results
 #
+# This process will create a .csv file with the following fields:
+# File - the path and name of the input file
+# SamplingRate - the sampling rate of the file (Hz)
+# BitDepth - the bit depth of the file
+# Start - the start time of the time interval processed
+# End - the end time of the time interval processed (if no interval specified, then this is the entire length of the file)
+# DcBias - the mean DC bias amplitude of the file (before applying any DC correction)
+# Clipping - whether any clipping was detected
+# ACI, etc. - the calculated values for each associated acoustic index
+# 
 # NOTE: only mono .wav support
-# NOTE: ACI will return NA for long duration files (perhaps 1 hr + @ 32kHz),
+# NOTE: ACI will return NA for long duration files (perhaps >= 10 min + @ 32kHz),
 # this is an issue with the 'soundecology' package
 batch_process = function(
     input_files, output_file, alpha_indices, time_interval = NA, ncores = 1, dc_correct = T, digits = 4, ...) {
 
   message(' Starting batch process (', paste(alpha_indices,collapse=' '),')')
     
-  file_header = c('File,SamplingRate,BitDepth,Duration,DcBias,Clipping,ACI,ADI,AEI,BIO,H,M,NDSI')
+  file_header = c('File,SamplingRate,BitDepth,Start,End,DcBias,Clipping,ACI,ADI,AEI,BIO,H,M,NDSI')
   
   ## Internal function to calculate indices
   calculate_alpha_indices = function(file, clustered = F, ...) {
@@ -101,103 +111,113 @@ batch_process = function(
     
     # Read data from file
     wav = readWave(file)
+    duration = length(wav@left)/wav@samp.rate
+    if (is.na(time_interval)) {
+      time_interval = duration
+    }
+    message('Duration: ', duration, ' sec')
+    
+    # Calculate file diagnostics
+    dc_bias  = mean(wav@left)
+    clipping = clipping(wav)
     
     # Correct DC offset bias
     if (dc_correct) wav@left = dc_correct(wav@left)
     
-    # Calculate requested indices
-    if ('ACI' %in% alpha_indices) { # Acoustic complexity index
-      message('ACI')
-      ACI = acoustic_complexity(
-        wav,
-        min_freq,
-        max_freq,
-        j,
-        fft_w
+    # Calculate requested indices at each time interval
+    start = 0.0
+    results = ''
+    while (start < duration) {
+      
+      end = min(start + time_interval, duration)
+      if (time_interval != duration) { # process interval
+        wav_interval = cutw(wav, f=wav@samp.rate, from=start, to=end, output='Wave')
+      } else { # process entire file
+        wav_interval = wav
+      }
+      
+      if ('ACI' %in% alpha_indices) { # Acoustic complexity index
+        ACI = acoustic_complexity(
+          wav_interval,
+          min_freq,
+          max_freq,
+          j,
+          fft_w
+        )
+        ACI = ACI$AciTotAll_left
+      } else { ACI = NA }
+      if ('ADI' %in% alpha_indices) { # Acoustic diversity index
+        ADI = acoustic_diversity(
+          wav_interval,
+          max_freq,
+          db_threshold,
+          freq_step
+        )
+        ADI = ADI$adi_left
+      } else { ADI = NA }
+      if ('AEI' %in% alpha_indices) { # Acoustic evenness index
+        AEI = acoustic_evenness(
+          wav_interval,
+          max_freq,
+          db_threshold,
+          freq_step
+        )
+        AEI = AEI$aei_left
+      } else { AEI = NA }
+      if ('BIO' %in% alpha_indices) { # Bioacoustic index
+        BIO = bioacoustic_index(
+          wav_interval,
+          min_freq,
+          max_freq,
+          fft_w
+        )
+        BIO = BIO$left_area
+      } else { BIO = NA }
+      if ('H' %in% alpha_indices) { # Acoustic entropy index
+        H = H(
+          wav_interval,
+          wl
+        )
+      } else { H = NA }
+      if ('M' %in% alpha_indices) { # Amplitude index
+        M = M(
+          wav_interval
+        )
+      } else { M = NA }
+      if ('NDSI' %in% alpha_indices) { # Normalized difference soundscape index
+        NDSI = ndsi(
+          wav_interval,
+          fft_w,
+          anthro_min,
+          anthro_max,
+          bio_min,
+          bio_max
+        )
+        NDSI = NDSI$ndsi_left
+      } else { NDSI = NA }
+      
+      # Write results to file
+      results = paste0(
+        results,
+        '\n', file,',',              # File (including path)
+        wav_interval@samp.rate,',',  # SamplingRate (Hz)
+        wav_interval@bit,',',        # BitDepth
+        start,',',                   # Start time (sec)
+        end,',',                     # End time (sec)
+        round(dc_bias,digits),',',   # DcBias (mean amplitude value)
+        clipping,',',                # Clipping (boolean)
+        round(ACI,digits),',',       # acoustic complexity index
+        round(ADI,digits),',',       # acoustic diversity index
+        round(AEI,digits),',',       # acoustic evenness index
+        round(BIO,digits),',',       # bioacoustic index
+        round(H,digits),',',         # acoustic entropy index
+        round(M,digits),',',         # amplitude index
+        round(NDSI,digits)           # normalized difference soundscape index
       )
-      ACI = ACI$AciTotAll_left
-    } else { ACI = NA }
-    if ('ADI' %in% alpha_indices) { # Acoustic diversity index
-      message('ADI')
-      ADI = acoustic_diversity(
-        wav,
-        max_freq,
-        db_threshold,
-        freq_step
-      )
-      ADI = ADI$adi_left
-    } else { ADI = NA }
-    if ('AEI' %in% alpha_indices) { # Acoustic evenness index
-      message('AEI')
-      AEI = acoustic_evenness(
-        wav,
-        max_freq,
-        db_threshold,
-        freq_step
-      )
-      AEI = AEI$aei_left
-    } else { AEI = NA }
-    if ('BIO' %in% alpha_indices) { # Bioacoustic index
-      message('BIO')
-      BIO = bioacoustic_index(
-        wav,
-        min_freq,
-        max_freq,
-        fft_w
-      )
-      BIO = BIO$left_area
-    } else { BIO = NA }
-    if ('H' %in% alpha_indices) { # Acoustic entropy index
-      message('H')
-      H = H(
-        wav,
-        wl
-      )
-    } else { H = NA }
-    if ('M' %in% alpha_indices) { # Amplitude index
-      message('M')
-      M = M(
-        wav
-      )
-    } else { M = NA }
-    if ('NDSI' %in% alpha_indices) { # Normalized difference soundscape index
-      message('NDSI')
-      NDSI = ndsi(
-        wav,
-        fft_w,
-        anthro_min,
-        anthro_max,
-        bio_min,
-        bio_max
-      )
-      NDSI = NDSI$ndsi_left
-    } else { NDSI = NA }
-    
-    # Calculate file diagnostics
-    if (wav@pcm) {
-      dc_bias = round(mean(wav@left))
-    } else {                                                                                    
-      dc_bias = mean(wav@left)
+      
+      start = end # move to next time interval
     }
-    clipping = clipping(wav)
-    duration = round(length(wav@left)/wav@samp.rate, 2)
-    
-    # Write results to file
-    return(paste0(
-      '\n', file,',',         # File (including path)
-      wav@samp.rate,',',      # SamplingRate (Hz)
-      wav@bit,',',            # BitDepth
-      duration,',',           # Duration (sec)
-      dc_bias,',',            # DcBias (mean amplitude value)
-      clipping,',',           # Clipping (boolean)
-      round(ACI,digits),',',  # acoustic complexity index
-      round(ADI,digits),',',  # acoustic diversity index
-      round(AEI,digits),',',  # acoustic evenness index
-      round(BIO,digits),',',  # bioacoustic index
-      round(H,digits),',',    # acoustic entropy index
-      round(M,digits),',',    # amplitude index
-      round(NDSI,digits)      # normalized difference soundscape index
-    ))
+    return(results)
   }
   
   no_input_files = length(input_files)
@@ -238,13 +258,13 @@ batch_process = function(
 # Params
 path = '~/../../Volumes/SAFS Work/DNR/test/subset'
 input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
-input_files = paste0(path, '/SMA00351_20210502_050002.wav')
+#input_files = paste0(path, '/SMA00351_20210502_050002.wav')
 output_file = '~/../../Volumes/SAFS Work/DNR/test/subset/output/results.csv'
-alpha_indices = 'ACI'
+alpha_indices = c('BIO', 'ACI')
 # Serial
-batch_process(input_files, output_file, alpha_indices, ncores = 1)
+batch_process(input_files, output_file, alpha_indices, time_interval = 60*2, ncores = 1)
 # Parallel
-batch_process(input_files, output_file, alpha_indices, ncores = 3)
+batch_process(input_files, output_file, alpha_indices, time_interval = 60*2, ncores = 3)
 # Other
 batch_process(input_files, output_file, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
 ##############
