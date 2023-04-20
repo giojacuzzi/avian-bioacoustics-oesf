@@ -189,17 +189,18 @@ batch_process = function(
     ))
   }
   
+  no_input_files = length(input_files)
+  if (ncores > no_input_files) {
+    ncores = no_input_files
+    message(' Number of cores limited to number of files')
+  }
+  
   ## Start processing
   time_start = proc.time() # start timer
   cat(file_header, file = output_file, append = F) # open results file
   
   if (ncores > 1) { # Process in parallel using clusters
     
-    no_input_files = length(input_files)
-    if (ncores > no_input_files) {
-      ncores = no_input_files
-      message(' Number of cores limited to number of files')
-    }
     message(paste0(' Processing ', no_input_files, ' files in parallel using ', ncores, ' cores'))
     
     cluster = makeCluster(ncores, type = 'PSOCK')
@@ -211,7 +212,7 @@ batch_process = function(
     
   } else { # Process in series on the main thread
     
-    message(paste0(' Processing ', length(input_files), ' files in series using 1 core'))
+    message(paste0(' Processing ', no_input_files, ' file(s) in series using 1 core'))
     for (file in input_files) {
       results = calculate_alpha_indices(file, ...)
       cat(results, file = output_file, append = T)
@@ -225,7 +226,8 @@ batch_process = function(
 # TEST #########
 # Params
 path = '~/../../Volumes/SAFS Work/DNR/test/subset'
-input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
+# input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
+input_files = paste0(path, '/SMA00351_20210502_050002.wav')
 output_file = '~/../../Volumes/SAFS Work/DNR/test/subset/output/results.csv'
 alpha_indices = 'ACI'
 # Serial
@@ -233,5 +235,5 @@ batch_process(input_files, output_file, alpha_indices, ncores = 1)
 # Parallel
 batch_process(input_files, output_file, alpha_indices, ncores = 3)
 # Other
-batch_process(input_files, output_file, alpha_indices = c('BIO','H'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
+batch_process(input_files, output_file, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
 ##############
