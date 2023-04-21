@@ -45,7 +45,7 @@ for (database_path in database_paths) {
     SurveyDate = date,
     DataTime   = time,
     NearHour   = hour,
-    File = basename(files)
+    File       = files
   )
   data = rbind(data, temp)
 }

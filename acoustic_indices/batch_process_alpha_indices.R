@@ -32,6 +32,8 @@ library(seewave)
 # this is an issue with the 'soundecology' package
 batch_process_alpha_indices = function(
     input_files, output_path, output_file = 'batch', alpha_indices = c(), time_interval = NA, ncores = 1, dc_correct = T, digits = 4, diagnostics = T, ...) {
+  
+  # force(db_threshold)
 
   if (length(alpha_indices) == 0) stop('Specify at least one alpha acoustic index')
 
@@ -255,7 +257,7 @@ batch_process_alpha_indices = function(
     message(paste0(' Processing ', no_input_files, ' files in parallel using ', ncores, ' cores'))
     
     cluster = makeCluster(ncores, type = 'PSOCK')
-    results = parLapply(cluster, input_files, calculate_alpha_indices, clustered = T, ...)
+    results = parLapply(cluster, input_files, calculate_alpha_indices, clustered = T, time_interval, ...)
 
     # Write results to file(s)
     write.table(paste(unlist(sapply(results,"[[",1)), collapse = ''),

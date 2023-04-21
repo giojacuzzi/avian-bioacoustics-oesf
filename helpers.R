@@ -37,7 +37,7 @@ linear_to_dBFS = function(l, limit=32768) {
   return(20*log10(abs(l)/limit))
 }
 
-spectrogram = function(wav, tlim, flim, alim, color, rem_dc_offset=T, interpolate=T, ...) {
+spectrogram = function(wav, tlim, flim, alim, color, interpolate=T, ...) {
   # STFT with seewave `spectro`
   s = spectro(wav, plot=F, ...)
   data = data.frame(
@@ -63,7 +63,7 @@ spectrogram = function(wav, tlim, flim, alim, color, rem_dc_offset=T, interpolat
   return(plot)
 }
 
-oscillogram = function(wav, rem_dc_offset=T) {
+oscillogram = function(wav) {
   # Prepare data
   data = data.frame(
     time=seq(1, length(wav@left)) / wav@samp.rate,
