@@ -118,7 +118,6 @@ batch_process = function(
     if (is.na(time_interval)) {
       time_interval = duration
     }
-    message('Duration: ', duration, ' sec')
     
     # Calculate file diagnostics
     dc_bias  = mean(wav@left)
@@ -220,13 +219,13 @@ batch_process = function(
       
       start = end # move to next time interval
     }
-    return(results)
+    return(list('results' = results))
   }
   
   no_input_files = length(input_files)
   if (ncores > no_input_files) {
     ncores = no_input_files
-    message(' Number of cores limited to number of files')
+    warning(' Number of cores limited to number of files')
   }
   
   ## Start processing
@@ -240,7 +239,7 @@ batch_process = function(
     
     cluster = makeCluster(ncores, type = 'PSOCK')
     results = parLapply(cluster, input_files, calculate_alpha_indices, clustered = T, ...)
-    write.table(results, file = output, append = T, quote = F, col.names = F, row.names = F)
+    write.table(paste(unlist(results), collapse = ''), file = output, append = T, quote = F, col.names = F, row.names = F)
     Sys.sleep(1) # pause to allow all to end
     
     stopCluster(cluster)
@@ -250,7 +249,7 @@ batch_process = function(
     message(paste0(' Processing ', no_input_files, ' file(s) in series using 1 core'))
     for (file in input_files) {
       results = calculate_alpha_indices(file, ...)
-      cat(results, file = output, append = T)
+      cat(results$results, file = output, append = T)
     }
   }
   
@@ -266,9 +265,9 @@ input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
 output_path = '~/../../Volumes/SAFS Work/DNR/test/subset/output/'
 alpha_indices = c('BIO', 'ACI')
 # Series
-batch_process(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 1)
+# batch_process(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 1)
 # Parallel
 batch_process(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 3)
 # Other
-batch_process(input_files, output_path, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
+# batch_process(input_files, output_path, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
 ##############
