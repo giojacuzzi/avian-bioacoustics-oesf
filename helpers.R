@@ -33,7 +33,7 @@ clipping = function(wave) {
 # Linear time domain amplitude sample to dBFS
 # 'limit' is the maximum absolute value represented by the bit depth
 # i.e. 1.0 for floating point, or 32768 for 16-bit PCM integer
-linear_to_dBFS = function(l, limit=1.0) {
+linear_to_dBFS = function(l, limit=32768) {
   return(20*log10(abs(l)/limit))
 }
 
