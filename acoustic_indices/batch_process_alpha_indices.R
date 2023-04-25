@@ -158,7 +158,7 @@ batch_process_alpha_indices = function(
       }
       
       if ('ACI' %in% alpha_indices) { # Acoustic complexity index
-        ACI = acoustic_complexity(
+        ACI = acoustic_complexity( # soundecology
           wav_interval,
           min_freq,
           max_freq,
@@ -166,6 +166,12 @@ batch_process_alpha_indices = function(
           fft_w
         )
         ACI = ACI$AciTotAll_left
+        # ACI = ACI( # seewave
+        #   wave = wav_interval,
+        #   wl = fft_w,
+        #   flim = c(min_freq/1000, max_freq/1000),
+        #   nbwindows = (duration/j) # number of windows
+        # )
       } else { ACI = NA }
       if ('ADI' %in% alpha_indices) { # Acoustic diversity index
         ADI = acoustic_diversity(

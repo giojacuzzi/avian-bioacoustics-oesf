@@ -156,4 +156,27 @@ for (file in files) {
 }
 ```
 
+```{r}
+# Benchmarking soundecology against seewave
+library(microbenchmark)
+
+benchmark = microbenchmark(
+  acoustic_complexity( # soundecology
+    soundfile = sound,
+    min_freq  = min_freq,
+    max_freq  = max_freq,
+    fft_w     = window,
+    j         = j
+  ),
+  ACI( # seewave
+    wave = sound,
+    wl = window,
+    flim = c(min_freq/1000, max_freq/1000),
+    nbwindows = (dur/j)
+  )
+)
+benchmark
+autoplot(benchmark)
+```
+
 ### References

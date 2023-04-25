@@ -3,29 +3,40 @@ source('global.R')
 
 site_data = get_joined_data()
 
+outpath = '~/../../Volumes/SAFS Work/DNR/2020/Deployment4_May20_24/_output/'
+
 # Get all units active on a particular SurveyDate in a particular Strata
 SurveyDate = '2020-05-28'
 
-Strata     = 'STAND INIT' # COMP EXCL, MATURE, STAND INIT, THINNED
-active_serialnos = unique(site_data[site_data$SurveyDate==SurveyDate & site_data$Strata==Strata,'SerialNo'])
-# Get the audio files for the first unit, in a particular time range
-unit = active_serialnos[1]
-HourInterval = c(3,8)
-files = site_data[site_data$SurveyDate==SurveyDate &
-                         site_data$Strata==Strata &
-                         (site_data$NearHour>= HourInterval[1] &
-                            site_data$NearHour<= HourInterval[2]) &
-                         site_data$SerialNo==unit, 'File']
-# Optionally, view the raw files yourself:
-# utils::browseURL(dirname(files)[1])
+# Option: active_serialnos = unique(site_data[site_data$SurveyDate==SurveyDate,c('SerialNo','Strata')])
+# Option: Get the first serial number of each strata (~40 minutes for 24 files)
+# first_per_strata = sapply(tapply(active_serialnos$SerialNo, active_serialnos$Strata, function(x) { x }), '[[', 1)
 
-indices = c('ACI','BIO','ADI', 'AEI', 'H')
-interval = 60 * 2 # sec
+# Take the files from the full database drives
+# files = site_data[site_data$SurveyDate==SurveyDate &
+#                     (site_data$NearHour>= HourInterval[1] &
+#                        site_data$NearHour<= HourInterval[2]) &
+#                     site_data$SerialNo %in% active_serialnos$SerialNo, 'File']
 
-outpath = '~/Desktop/oesf-examples/output/'
-outfile = paste(Strata, unit)
+# Option: Alternatively, take files from SAFS Work drive
+files = list.files(path='~/../../Volumes/SAFS Work/DNR/2020/Deployment4_May20_24', pattern="*.wav", full.names=T, recursive=T)
+to_process = data.frame(
+  File=files,
+  SerialNo=site_data[match(basename(files), basename(site_data$File)), 'SerialNo'],
+  Strata=site_data[match(basename(files), basename(site_data$File)), 'Strata'],
+  SurveyDate=site_data[match(basename(files), basename(site_data$File)), 'SurveyDate'],
+  NearHour=site_data[match(basename(files), basename(site_data$File)), 'NearHour'],
+  DataTime=site_data[match(basename(files), basename(site_data$File)), 'DataTime']
+)
 
-# Parameters
+# Only process specific hours
+HourInterval = c(3,5) # inclusive
+to_process = to_process[(to_process$NearHour >= HourInterval[1] &
+                           to_process$NearHour <= HourInterval[2]),]
+
+# Alpha acoustic index arameters
+indices = c('ACI','BIO','ADI', 'AEI', 'H', 'M', 'NDSI')
+interval = 60 * 5 # in sec (i.e. seconds * minutes)
 thresh_db = -45
 min_f = 2000
 max_f = 9000
@@ -35,105 +46,88 @@ window = 512
 # View spectrogram of an hour
 # spectrogram(readWave(files[4]), alim = c(db_threshold, 0))
 
-batch_process_alpha_indices(
-  input_files   = files,
-  output_path   = outpath,
-  output_file   = outfile,
-  alpha_indices = indices,
-  time_interval = interval,
-  ncores        = 12,
-  dc_correct    = T,
-  digits        = 4,
-  diagnostics   = T,
-  # Alpha index parameters
-  min_freq = min_f,
-  max_freq = max_f,
-  anthro_min = 10,
-  anthro_max = min_f, 
-  bio_min = min_f,
-  bio_max = max_f,
-  db_threshold = thresh_db, 
-  freq_step = step_f,
-  j = 5,
-  fft_w = window,
-  wl = window
-)
+########## PROCESS ##########
+i = 1
+for (serial in unique(to_process$SerialNo)) {
+  
+  outfile = paste0(serial,'_',SurveyDate) #'diel_patterns' #SurveyDate #paste(Strata, unit)
+  infiles = to_process[to_process$SerialNo==serial,'File']
+  
+  message('Processing ', serial, ' (', i, ' of ', length(unique(to_process$SerialNo)),' sites)...')
+
+  batch_process_alpha_indices(
+    input_files   = infiles,
+    output_path   = outpath,
+    output_file   = outfile,
+    alpha_indices = indices,
+    time_interval = interval,
+    ncores        = 12,
+    dc_correct    = T,
+    digits        = 4,
+    diagnostics   = T,
+    # Alpha index parameters
+    min_freq = min_f,
+    max_freq = max_f,
+    anthro_min = 10,
+    anthro_max = min_f, 
+    bio_min = min_f,
+    bio_max = max_f,
+    db_threshold = thresh_db, 
+    freq_step = step_f,
+    j = 5,
+    fft_w = window,
+    wl = window
+  )
+  i = i+1
+}
+##############################
+
+# Fetch results
+results_files    = list.files(path=outpath, pattern="*.csv", full.names=T, recursive=F)
+diagnostic_files = results_files[grepl('diagnostics', results_files, fixed = T)]
+results_files    = results_files[!grepl('diagnostics', results_files, fixed = T)]
 
 source('helpers.R')
-diagnostics = read.csv(paste0(outpath,outfile,'_diagnostics.csv'))
-summary(linear_to_dBFS(diagnostics$DcBias))
-
-data = read.csv(paste0(outpath,outfile,'.csv'))
-data$ACI = data$ACI / (interval/60) # normalize by interval length in minutes
-data$Time = as.POSIXct(paste(get_date_from_file_name(data$File), get_hour_from_file_name(data$File)),
-                       tz=tz, format='%Y-%m-%d %H') + data$Start
-
 library(ggplot2)
 theme_set(theme_minimal())
-ggplot(data, aes(x=Time, y=ACI)) + geom_line() + geom_smooth() + labs(title = 'ACI', subtitle = paste(SurveyDate, Strata, unit))
-ggplot(data, aes(x=Time, y=BIO)) + geom_line() + geom_smooth() + labs(title = 'BIO', subtitle = paste(SurveyDate, Strata, unit))
-ggplot(data, aes(x=Time, y=ADI)) + geom_line() + geom_smooth() + labs(title = 'ADI', subtitle = paste(SurveyDate, Strata, unit))
-ggplot(data, aes(x=Time, y=AEI)) + geom_line() + geom_smooth() + labs(title = 'AEI', subtitle = paste(SurveyDate, Strata, unit))
-ggplot(data, aes(x=Time, y=H)) + geom_line() + geom_smooth() + labs(title = 'H', subtitle = paste(SurveyDate, Strata, unit))
-ggplot(data, aes(x=Time, y=NDSI)) + geom_line() + geom_smooth() + labs(title = 'NDSI', subtitle = paste(SurveyDate, Strata, unit))
 
+# Explore diagnostics
+diagnostics = data.frame()
+for (d in diagnostic_files) {
+  diagnostics = rbind(diagnostics, read.csv(d, header=T))
+}
+summary(diagnostics$Clipping)
+summary(linear_to_dBFS(diagnostics$DcBias))
+ggplot(diagnostics, aes(x=linear_to_dBFS(DcBias))) + geom_histogram()
 
+# Explore data
+data = data.frame()
+for (r in results_files) {
+  data = rbind(data, read.csv(r, header=T))
+}
+data = full_join(data, to_process, by = c('File'))
+data$DataTime = as.POSIXct(data$DataTime, tz=tz) + data$Start # calculate actual start times of each interval
+data$Strata = factor(data$Strata)
+data$SerialNo = factor(data$SerialNo)
+summary(data$Strata)
 
+ggplot(data, aes(x=DataTime, y=ACI, color=Strata, linetype=SerialNo)) + geom_line()
+ggplot(data, aes(x=DataTime, y=BIO, fill=Strata)) + geom_boxplot()
 
-###-----------------
-# path = '~/../../Volumes/SAFS Work/DNR/test/MATURE'
-# path = '~/Desktop/oesf-examples'
-# path = '~/../../Volumes/SAFS Work/DNR/test/MATURE'
-# outfile = 'test'
-# 
-# indices = c('ACI','ADI','AEI','BIO','H')
-# interval = 60 * 2
-# 
-# # NOTE: runtime ~ 1 hr
-# batch_process_alpha_indices(
-#   input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F),
-#   output_path = paste0(path,'/output/'),
-#   output_file = outfile,
-#   alpha_indices = indices,
-#   time_interval = interval,
-#   ncores = 12,
-#   dc_correct = T,
-#   digits = 4,
-#   diagnostics = T,
-#   # Alpha index parameters
-#   min_freq = 2000,
-#   max_freq = 8000,
-#   anthro_min = 100,
-#   anthro_max = 2000, 
-#   bio_min = 2000,
-#   bio_max = 8000,
-#   db_threshold = -40, 
-#   freq_step = 1000,
-#   j = 5,
-#   fft_w = 512,
-#   wl = 512
-# )
-# 
-# source('helpers.R')
-# diagnostics = read.csv(paste0(path,'/output/',outfile,'_diagnostics.csv'))
-# summary(linear_to_dBFS(diagnostics$DcBias))
-# 
-# source('global.R')
-# data = read.csv(paste0(path,'/output/',outfile,'.csv'))
-# data$ACI = data$ACI/interval # normalize by interval
-# data$Time = as.POSIXct(paste(get_date_from_file_name(data$File), get_hour_from_file_name(data$File)),
-#                        tz=tz, format='%Y-%m-%d %H') + data$Start
-# 
-# library(tidyr)
-# data_long = gather(data, 'index', 'value', indices)
-# data_long$index = factor(data_long$index)
-# 
-# library(ggplot2)
-# theme_set(theme_minimal())
-# ggplot(data, aes(x=Time, y=ACI)) + geom_point() + geom_smooth() + labs(title='ACI')
-# ggplot(data, aes(x=Time, y=ADI)) + geom_point() + geom_smooth() + labs(title='ADI')
-# ggplot(data, aes(x=Time, y=AEI)) + geom_point() + geom_smooth() + labs(title='AEI')
-# ggplot(data, aes(x=Time, y=BIO)) + geom_point() + geom_smooth() + labs(title='BIO')
-# ggplot(data, aes(x=Time, y=M)) + geom_point() + geom_smooth() + labs(title='M')
-# ggplot(data, aes(x=Time, y=H)) + geom_point() + geom_smooth() + labs(title='H')
-# ggplot(data, aes(x=Time, y=NDSI)) + geom_point() + geom_smooth() + labs(title='NDSI')
+# TODO: ts? aggregate?
+
+# Apply rolling mean to data to smooth
+# library(zoo)
+# k = interval / (10) # width of rolling window (interval/x sec)
+# mean_data <- data %>%
+#   group_by(Strata) %>% 
+#   mutate(ACI_mean = rollmean(ACI, k, na.pad = T)) %>%
+#   mutate(ADI_mean = rollmean(ADI, k, na.pad = T)) %>%
+#   mutate(AEI_mean = rollmean(AEI, k, na.pad = T)) %>%
+#   mutate(BIO_mean = rollmean(BIO, k, na.pad = T)) %>%
+#   mutate(H_mean = rollmean(H, k, na.pad = T))
+# ggplot(mean_data, aes(x=Time, y=ACI_mean, color=Strata)) + geom_line() + labs(title = 'ACI')
+# ggplot(mean_data, aes(x=Time, y=ADI_mean, color=Strata)) + geom_line() + labs(title = 'ADI')
+# ggplot(mean_data, aes(x=Time, y=AEI_mean, color=Strata)) + geom_line() + labs(title = 'AEI')
+# ggplot(mean_data, aes(x=Time, y=BIO_mean, color=Strata)) + geom_line() + labs(title = 'BIO')
+# ggplot(mean_data, aes(x=Time, y=H_mean, color=Strata)) + geom_line() + labs(title = 'H')

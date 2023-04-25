@@ -81,8 +81,8 @@ for (file in files) {
       wl   = window,
       plot = FALSE
     ),
-    anthropophony = c(f1_min/1000, f1_max/1000),
-    biophony      = c(f2_min/1000, f2_max/1000)
+    anthropophony = (f1_min/1000):(f1_max/1000),
+    biophony      = (f2_min/1000):(f2_max/1000)
   )
   results = rbind(results, data.frame(
     soundecology=ndsi_soundecology$ndsi_left, seewave=ndsi_seewave))
@@ -99,6 +99,32 @@ for (file in files) {
     theme_minimal()
   print(p)
 }
+```
+
+```{r}
+# Benchmarking soundecology against seewave
+library(microbenchmark)
+
+benchmark = microbenchmark(
+  ndsi( # soundecology
+    soundfile = sound,
+    fft_w     = window,
+    anthro_min = f1_min,
+    anthro_max = f1_max,
+    bio_min    = f2_min,
+    bio_max    = f2_max
+  ),
+  NDSI(soundscapespec( # seewave
+      wave = sound,
+      wl   = window,
+      plot = FALSE
+    ),
+    anthropophony = c(f1_min/1000, f1_max/1000),
+    biophony      = c(f2_min/1000, f2_max/1000)
+  )
+)
+benchmark
+autoplot(benchmark)
 ```
 
 ### References
