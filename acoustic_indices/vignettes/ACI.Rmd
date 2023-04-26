@@ -87,7 +87,7 @@ $$
 ACI_{\Delta t}=\sum_{f=1}^{F}\frac{ \sum_{k=1}^{N-1} |I(k,f)-I(k+1,f)| }{ \sum_{k=1}^{N} I(k,f) }, \;\; 1 \le \Delta t \le M  
 $$
 
-where $I(k, f)$ is the intensity registered in a single time-frequency bin with f and k indexing frequency bins and temporal frames, $\Delta t$ denotes temporal steps, $F$ is the number of frequency bins, $N$ is the number of time frames in each temporal step, and $M$ represents the number of temporal steps in the entire recording. If more than one temporal step is specified, the values obtained for each step are accumulated, resulting in the final ACI value as
+(TODO: N-1 above?) where $I(k, f)$ is the intensity registered in a single time-frequency bin with f and k indexing frequency bins and temporal frames, $\Delta t$ denotes temporal steps, $F$ is the number of frequency bins, $N$ is the number of time frames in each temporal step, and $M$ represents the number of temporal steps in the entire recording. If more than one temporal step is specified, the values obtained for each step are accumulated, resulting in the final ACI value as
 
 $$
 ACI_{tot}=\sum_{\Delta t=1}^{M}ACI_{\Delta t}

@@ -67,7 +67,7 @@ $$
 BIO=\sum_{i=1}^{N}(S_{i}-S_{min})*\Delta f \text{,  for} \; \Delta f=\frac{f_{max}-f_{min}}{N} 
 $$
 
-where $S_{i}$ is the sound level of the $i$-th frequency band in dB, $S_{min}$ is the minimum value of the sound level among all frequency bands, $\Delta f$ is the width of frequency band, and $N$ is the number of frequency bands ranging from the minimum frequency $f_{min}$ to maximum frequency \$f\_{max}\$. Theoretically, $S_{min}$ is expected to represent the sound level of the noise-dominated spectrum."
+where $S_{i}$ is the sound level of the $i$-th frequency band in dB, $S_{min}$ is the minimum value of the sound level among all frequency bands, $\Delta f$ is the width of frequency band, and $N$ is the number of frequency bands ranging from the minimum frequency $f_{min}$ to maximum frequency $f_{max}$. Theoretically, $S_{min}$ is expected to represent the sound level of the noise-dominated spectrum."
 
 #### Bradfer-Lawrence et al 2019
 
@@ -111,10 +111,10 @@ for (file in files) {
   results = append(results, bio$left_area)
 
   # Plot
-  p = spectrogram(sound, alim=c(-55,0), wl = window) +
+  p = spectrogram(sound, alim=c(-55,0), flim=c(0,11.5), tlim=c(0,10), wl = window) +
     labs(title = 'Bioacoustic Index (BIO)',
          subtitle = paste0('Frequency band limits ', min_freq, '-', max_freq, ' Hz')) +
-    annotate('rect', xmin = 0, xmax = 20, ymin = min_freq/1000, ymax = max_freq/1000,
+    annotate('rect', xmin = 0, xmax = 10, ymin = min_freq/1000, ymax = max_freq/1000,
            alpha = .1, color = 'white', fill = 'white') +
     theme_minimal()
   print(p)

@@ -65,7 +65,7 @@ $$
 D_{t}=0.5*\sum_{t=1}^{n}|A_{1}(t)-A_{2}(t)|, \text{ with } D_{t} \in [0,1]
 $$
 
-Similarly, spectral dissimilarity can be assed by computing:
+Similarly, spectral dissimilarity can be assessd by computing:
 
 $$
 D_{f}=0.5*\sum_{t=1}^{N}|S_{1}(f)-S_{2}(f)|, \text{ with } D_{f} \in [0,1]
@@ -80,6 +80,8 @@ $$
 We tested the hypothesis that *D* index increases with the number of unshared species between chorus pairs.
 
 The β index, which estimates both temporal and spectral dissimilarities, is linearly linked to the number of unshared species between acoustic communities.
+
+NOTE: eindex Dt requires aperfecttemporal homology between theamplitude envelopestobecompared. Thisstricthomology maynotbemetevenwithsynchronisedrecordings. Thesub-inde x Dt wasthereforenotused inotheranalyses andonlythesub-inde x Df waskep
 
 #### Bradfer-Lawrence et al 2019
 

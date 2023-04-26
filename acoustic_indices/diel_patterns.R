@@ -30,7 +30,7 @@ to_process = data.frame(
 )
 
 # Only process specific hours
-HourInterval = c(3,5) # inclusive
+HourInterval = c(0,23) # inclusive
 to_process = to_process[(to_process$NearHour >= HourInterval[1] &
                            to_process$NearHour <= HourInterval[2]),]
 
@@ -45,6 +45,11 @@ window = 512
 
 # View spectrogram of an hour
 # spectrogram(readWave(files[4]), alim = c(db_threshold, 0))
+
+#####
+# Pick up where we left off...
+to_process = to_process[!(get_serial_from_file_name(basename(to_process$File)) %in% get_serial_from_file_name(basename(results_files))), ]
+#####
 
 ########## PROCESS ##########
 i = 1
@@ -105,11 +110,63 @@ data = data.frame()
 for (r in results_files) {
   data = rbind(data, read.csv(r, header=T))
 }
-data = full_join(data, to_process, by = c('File'))
+test = site_data
+
+test$BaseFile = basename(test$File)
+data$BaseFile = basename(data$File)
+data = left_join(data, test, by = c('BaseFile'))
 data$DataTime = as.POSIXct(data$DataTime, tz=tz) + data$Start # calculate actual start times of each interval
 data$Strata = factor(data$Strata)
 data$SerialNo = factor(data$SerialNo)
 summary(data$Strata)
+
+ggplot(data, aes(x=DataTime, y=ACI, color=Strata, linetype=SerialNo)) + geom_line()
+# Average data per a time interval cut
+data$CutHour = cut(data$DataTime, '30 min') # '1 hour'
+# Plot all SerialNo for a specific Strata
+ggplot(data[data$Strata=='STAND INIT',], aes(x=as.POSIXct(CutHour), y=ACI, color=SerialNo)) + geom_line()
+# Plot all averaged Strata
+grouped_means = data.frame(
+  ACI = summarise(group_by(data, Strata, CutHour), mean(ACI)),
+  BIO = summarise(group_by(data, Strata, CutHour), mean(BIO)),
+  ADI = summarise(group_by(data, Strata, CutHour), mean(ADI)),
+  AEI = summarise(group_by(data, Strata, CutHour), mean(AEI)),
+  H = summarise(group_by(data, Strata, CutHour), mean(H)),
+  NDSI = summarise(group_by(data, Strata, CutHour), mean(NDSI))
+)
+strata_colors = c("#A25B5B", "#285430", "#A4BE7B", "#54436B")
+ggplot(grouped_means, aes(x=as.POSIXct(ACI.CutHour), y=ACI.mean.ACI., color=ACI.Strata)) +
+  # geom_line( linetype=3) +
+  geom_smooth(aes(fill = ACI.Strata), method = 'loess', se = T, span = 0.25, linewidth = 1, alpha = 0.1) + scale_color_manual(values = strata_colors) + scale_fill_manual(values = strata_colors)
+
+ggplot(grouped_means, aes(x=as.POSIXct(ADI.CutHour), y=ADI.mean.ADI., color=ADI.Strata)) + geom_line( linetype=3) + geom_smooth(method = 'loess', se = F, span = 0.25, linewidth = 1)
+
+ggplot(grouped_means, aes(x=as.POSIXct(NDSI.CutHour), y=NDSI.mean.NDSI., color=NDSI.Strata)) + geom_line( linetype=3) + geom_smooth(method = 'loess', se = F, span = 0.25, linewidth = 1)
+
+
+# data %>% 
+#   group_by(SerialNo) %>%
+#   mutate(maxtime = max(DataTime)) %>%
+#   group_by(Strata) %>%
+#   mutate(maxtime = min(maxtime)) %>%
+#   group_by(SerialNo, Strata, DataTime) %>%
+#   summarize(ACI = mean(ACI), .groups=c(SerialNo,Strata)) %>%
+#   ggplot(aes(DataTime, ACI, colour = Strata)) + geom_line()
+
+# TODO: fit to time?
+library(tidyr)
+library(lubridate)
+test = na.omit(data)
+test = test %>% group_by(SerialNo) %>% complete(DataTime = seq(floor_date(min(DataTime), unit = 'hours'), ceiling_date(max(DataTime), unit = 'hours'), by = 'sec')) %>% fill(names(test))
+# test_ts = ts(test)
+
+ggplot(test, aes(x=DataTime, y=ACI, color=Strata, linetype=SerialNo)) + geom_line()
+test %>% group_by(Strata, DataTime) %>% summarize(ACI = mean(ACI)) %>% ggplot(aes(DataTime, ACI, colour = Strata)) + geom_line()
+
+testy = test %>% group_by(Strata, DataTime) %>% summarize(ACI = mean(ACI))
+testy = testy[!duplicated(testy$ACI),]
+ggplot(testy, aes(x=DataTime, y=ACI, color=Strata)) + geom_line()
+
 
 ggplot(data, aes(x=DataTime, y=ACI, color=Strata, linetype=SerialNo)) + geom_line()
 ggplot(data, aes(x=DataTime, y=BIO, fill=Strata)) + geom_boxplot()
