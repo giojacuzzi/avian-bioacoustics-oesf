@@ -134,14 +134,19 @@ grouped_means = data.frame(
   H = summarise(group_by(data, Strata, CutHour), mean(H)),
   NDSI = summarise(group_by(data, Strata, CutHour), mean(NDSI))
 )
+# TODO: plot line for dawn 5:25 AM and dusk 9:06 PM
 strata_colors = c("#A25B5B", "#285430", "#A4BE7B", "#54436B")
 ggplot(grouped_means, aes(x=as.POSIXct(ACI.CutHour), y=ACI.mean.ACI., color=ACI.Strata)) +
   # geom_line( linetype=3) +
-  geom_smooth(aes(fill = ACI.Strata), method = 'loess', se = T, span = 0.25, linewidth = 1, alpha = 0.1) + scale_color_manual(values = strata_colors) + scale_fill_manual(values = strata_colors)
+  geom_smooth(aes(fill = ACI.Strata), method = 'loess', se = T, span = 0.25, linewidth = 1, alpha = 0.1) + scale_color_manual(values = strata_colors) + scale_fill_manual(values = strata_colors) +
+  geom_vline(xintercept = as.POSIXct('2020-05-28 05:25:00 PDT'), linetype='dotted', alpha=0.5) +
+  geom_vline(xintercept = as.POSIXct('2020-05-28 21:06:00 PDT'), linetype='dotted', alpha=0.5)
 
 ggplot(grouped_means, aes(x=as.POSIXct(ADI.CutHour), y=ADI.mean.ADI., color=ADI.Strata)) + geom_line( linetype=3) + geom_smooth(method = 'loess', se = F, span = 0.25, linewidth = 1)
 
 ggplot(grouped_means, aes(x=as.POSIXct(NDSI.CutHour), y=NDSI.mean.NDSI., color=NDSI.Strata)) + geom_line( linetype=3) + geom_smooth(method = 'loess', se = F, span = 0.25, linewidth = 1)
+
+ggplot(grouped_means, aes(x=ADI.Strata, y=ADI.mean.ADI.)) + geom_boxplot()
 
 
 # data %>% 
