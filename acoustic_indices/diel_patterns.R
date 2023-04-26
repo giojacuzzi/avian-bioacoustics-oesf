@@ -120,33 +120,70 @@ data$Strata = factor(data$Strata)
 data$SerialNo = factor(data$SerialNo)
 summary(data$Strata)
 
-ggplot(data, aes(x=DataTime, y=ACI, color=Strata, linetype=SerialNo)) + geom_line()
 # Average data per a time interval cut
-data$CutHour = cut(data$DataTime, '30 min') # '1 hour'
+data$CutHour = cut(data$DataTime, '5 min') # e.g. '1 hour'
+
 # Plot all SerialNo for a specific Strata
-ggplot(data[data$Strata=='STAND INIT',], aes(x=as.POSIXct(CutHour), y=ACI, color=SerialNo)) + geom_line()
-# Plot all averaged Strata
-grouped_means = data.frame(
-  ACI = summarise(group_by(data, Strata, CutHour), mean(ACI)),
-  BIO = summarise(group_by(data, Strata, CutHour), mean(BIO)),
-  ADI = summarise(group_by(data, Strata, CutHour), mean(ADI)),
-  AEI = summarise(group_by(data, Strata, CutHour), mean(AEI)),
-  H = summarise(group_by(data, Strata, CutHour), mean(H)),
-  NDSI = summarise(group_by(data, Strata, CutHour), mean(NDSI))
-)
-# TODO: plot line for dawn 5:25 AM and dusk 9:06 PM
+t_start = as.POSIXct('2020-05-28 00:00:00 PDT')
+t_end   = as.POSIXct('2020-05-29 00:00:00 PDT')
+t_sunrise = as.POSIXct('2020-05-28 05:25:00 PDT')
+t_sunset  = as.POSIXct('2020-05-28 21:06:00 PDT')
 strata_colors = c("#A25B5B", "#285430", "#A4BE7B", "#54436B")
-ggplot(grouped_means, aes(x=as.POSIXct(ACI.CutHour), y=ACI.mean.ACI., color=ACI.Strata)) +
-  # geom_line( linetype=3) +
-  geom_smooth(aes(fill = ACI.Strata), method = 'loess', se = T, span = 0.25, linewidth = 1, alpha = 0.1) + scale_color_manual(values = strata_colors) + scale_fill_manual(values = strata_colors) +
-  geom_vline(xintercept = as.POSIXct('2020-05-28 05:25:00 PDT'), linetype='dotted', alpha=0.5) +
-  geom_vline(xintercept = as.POSIXct('2020-05-28 21:06:00 PDT'), linetype='dotted', alpha=0.5)
+means_serialno = data.frame(
+  summarise(group_by(data, Strata, SerialNo, CutHour),
+            ACI=mean(ACI), BIO=mean(BIO), ADI=mean(ADI),
+            AEI=mean(AEI), H=mean(H), M=mean(M), NDSI=mean(NDSI))
+)
+means_serialno$CutHour = as.POSIXct(means_serialno$CutHour)
+means_serialno = means_serialno[means_serialno$CutHour >= t_start & # limit to 24 hour window
+                                  means_serialno$CutHour < t_end,]
 
-ggplot(grouped_means, aes(x=as.POSIXct(ADI.CutHour), y=ADI.mean.ADI., color=ADI.Strata)) + geom_line( linetype=3) + geom_smooth(method = 'loess', se = F, span = 0.25, linewidth = 1)
+ggplot(means_serialno[means_serialno$Strata=='STAND INIT',], aes(x=CutHour, y=NDSI, color=SerialNo)) +
+  geom_line(linetype=3) +
+  geom_smooth(aes(fill=SerialNo), method='loess', se=T, span=0.2, linewidth=1, alpha=0.15) +
+  scale_x_datetime(date_breaks = '2 hours', date_labels = '%H', limits=c(t_start,t_end))
 
-ggplot(grouped_means, aes(x=as.POSIXct(NDSI.CutHour), y=NDSI.mean.NDSI., color=NDSI.Strata)) + geom_line( linetype=3) + geom_smooth(method = 'loess', se = F, span = 0.25, linewidth = 1)
+# Plot all averaged Strata
+means = data.frame(
+  summarise(group_by(data, Strata, CutHour),
+            ACI=mean(ACI), BIO=mean(BIO), ADI=mean(ADI),
+            AEI=mean(AEI), H=mean(H), M=mean(M), NDSI=mean(NDSI))
+)
+means$CutHour = as.POSIXct(means$CutHour)
+means = means[means$CutHour >= t_start & # limit to 24 hour window
+                means$CutHour < t_end,]
 
-ggplot(grouped_means, aes(x=ADI.Strata, y=ADI.mean.ADI.)) + geom_boxplot()
+ggplot(means, aes(x=CutHour, y=ACI, color=Strata)) +
+  # geom_line(linetype=3) +
+  geom_smooth(aes(fill=Strata), method='loess', se=T, span=0.2, linewidth=1, alpha=0.15) + 
+  scale_color_manual(values=strata_colors) + scale_fill_manual(values=strata_colors) +
+  scale_x_datetime(date_breaks = '2 hours', date_labels = '%H', limits=c(t_start,t_end)) +
+  geom_vline(xintercept=t_sunrise, linetype='dotted', alpha=0.7) +
+  geom_vline(xintercept=t_sunset,  linetype='dotted', alpha=0.7) +
+  theme(legend.position='bottom')
+
+ggplot(means, aes(x=CutHour, y=ADI, color=Strata)) +
+  # geom_line(linetype=3) +
+  geom_smooth(aes(fill=Strata), method='loess', se=T, span=0.2, linewidth=1, alpha=0.15) + 
+  scale_color_manual(values=strata_colors) + scale_fill_manual(values=strata_colors) +
+  scale_x_datetime(date_breaks = '2 hours', date_labels = '%H', limits=c(t_start,t_end)) +
+  geom_vline(xintercept=t_sunrise, linetype='dotted', alpha=0.7) +
+  geom_vline(xintercept=t_sunset,  linetype='dotted', alpha=0.7) +
+  theme(legend.position='bottom')
+
+ggplot(means, aes(x=CutHour, y=NDSI, color=Strata)) +
+  # geom_line(linetype=3) +
+  geom_smooth(aes(fill=Strata), method='loess', se=T, span=0.2, linewidth=1, alpha=0.15) + 
+  scale_color_manual(values=strata_colors) + scale_fill_manual(values=strata_colors) +
+  scale_x_datetime(date_breaks = '2 hours', date_labels = '%H', limits=c(t_start,t_end)) +
+  geom_vline(xintercept=t_sunrise, linetype='dotted', alpha=0.7) +
+  geom_vline(xintercept=t_sunset,  linetype='dotted', alpha=0.7) +
+  theme(legend.position='bottom')
+
+ ggplot(means, aes(x=Strata, y=ACI, fill=Strata)) +
+  geom_boxplot() + scale_fill_manual(values=strata_colors)
+ggplot(means, aes(x=Strata, y=ADI, fill=Strata)) +
+  geom_boxplot() + scale_fill_manual(values=strata_colors)
 
 
 # data %>% 
