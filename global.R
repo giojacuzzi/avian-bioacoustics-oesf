@@ -62,6 +62,9 @@ get_site_strata_date_serial_data = function() {
   cols_to_factor = c('SurveyID', 'SiteID', 'DataYear', 'DeployNo', 'StationName', 'StationName_AGG', 'SurveyType', 'SerialNo', 'UnitType', 'Strata')
   data[cols_to_factor] = lapply(data[cols_to_factor], factor)
   data$SurveyDate = as.Date(data$SurveyDate) #as.POSIXct(data$SurveyDate, tz=tz, format='%d/%m/%Y')
+  data$WatershedID = factor(substr(data$StationName_AGG, 1, 2))
+  data$StationName_AGG = factor(data$StationName_AGG)
+  data$StationName = factor(data$StationName)
   
   return(data)
 }

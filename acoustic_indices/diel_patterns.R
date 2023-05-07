@@ -3,10 +3,8 @@ source('global.R')
 
 site_data = get_joined_data()
 
-outpath = '~/../../Volumes/SAFS Work/DNR/2020/Deployment4_May20_24/_output/'
-
 # Get all units active on a particular SurveyDate in a particular Strata
-SurveyDate = '2020-05-28'
+SurveyDate = '2020-04-19'
 
 # Option: active_serialnos = unique(site_data[site_data$SurveyDate==SurveyDate,c('SerialNo','Strata')])
 # Option: Get the first serial number of each strata (~40 minutes for 24 files)
@@ -18,8 +16,9 @@ SurveyDate = '2020-05-28'
 #                        site_data$NearHour<= HourInterval[2]) &
 #                     site_data$SerialNo %in% active_serialnos$SerialNo, 'File']
 
-# Option: Alternatively, take files from SAFS Work drive
-files = list.files(path='~/../../Volumes/SAFS Work/DNR/2020/Deployment4_May20_24', pattern="*.wav", full.names=T, recursive=T)
+# Option: Alternatively, take files from SAFS Work drive (Deployment1_April8_12, Deployment4_May20_24)
+outpath = '~/../../Volumes/SAFS Work/DNR/2020/Deployment1_April8_12/_output/'
+files = list.files(path='~/../../Volumes/SAFS Work/DNR/2020/Deployment1_April8_12', pattern="*.wav", full.names=T, recursive=T)
 to_process = data.frame(
   File=files,
   SerialNo=site_data[match(basename(files), basename(site_data$File)), 'SerialNo'],
@@ -35,10 +34,10 @@ to_process = to_process[(to_process$NearHour >= HourInterval[1] &
                            to_process$NearHour <= HourInterval[2]),]
 
 # Alpha acoustic index arameters
-indices = c('ACI','BIO','ADI', 'AEI', 'H', 'M', 'NDSI')
-interval = 60 * 5 # in sec (i.e. seconds * minutes)
-thresh_db = -45
-min_f = 2000
+indices = c('ACI','BIO','ADI', 'H', 'NDSI')
+interval = 60 * 2 # in sec (i.e. seconds * minutes)
+thresh_db = -50
+min_f = 1800
 max_f = 9000
 step_f = 1000
 window = 512
@@ -48,7 +47,9 @@ window = 512
 
 #####
 # Pick up where we left off...
-to_process = to_process[!(get_serial_from_file_name(basename(to_process$File)) %in% get_serial_from_file_name(basename(results_files))), ]
+if (exists('results_files')) {
+  to_process = to_process[!(get_serial_from_file_name(basename(to_process$File)) %in% get_serial_from_file_name(basename(results_files))), ]
+}
 #####
 
 ########## PROCESS ##########
@@ -66,7 +67,7 @@ for (serial in unique(to_process$SerialNo)) {
     output_file   = outfile,
     alpha_indices = indices,
     time_interval = interval,
-    ncores        = 12,
+    ncores        = 8,
     dc_correct    = T,
     digits        = 4,
     diagnostics   = T,
@@ -116,7 +117,7 @@ test$BaseFile = basename(test$File)
 data$BaseFile = basename(data$File)
 data = left_join(data, test, by = c('BaseFile'))
 data$DataTime = as.POSIXct(data$DataTime, tz=tz) + data$Start # calculate actual start times of each interval
-data$Strata = factor(data$Strata)
+data$Strata = factor(data$Strata, levels=c('STAND INIT', 'COMP EXCL', 'MATURE', 'THINNED')) # levels = c("small", "medium", "large")
 data$SerialNo = factor(data$SerialNo)
 summary(data$Strata)
 
@@ -124,11 +125,11 @@ summary(data$Strata)
 data$CutHour = cut(data$DataTime, '5 min') # e.g. '1 hour'
 
 # Plot all SerialNo for a specific Strata
-t_start = as.POSIXct('2020-05-28 00:00:00 PDT')
-t_end   = as.POSIXct('2020-05-29 00:00:00 PDT')
-t_sunrise = as.POSIXct('2020-05-28 05:25:00 PDT')
-t_sunset  = as.POSIXct('2020-05-28 21:06:00 PDT')
-strata_colors = c("#A25B5B", "#285430", "#A4BE7B", "#54436B")
+t_start = as.POSIXct('2020-04-19 00:00:00 PDT')
+t_end   = as.POSIXct('2020-04-20 00:00:00 PDT')
+t_sunrise = as.POSIXct('2020-04-19 06:19:00 PDT')
+t_sunset  = as.POSIXct('2020-04-19 20:15:00 PDT')
+strata_colors = c('#A4BE7B', '#A25B5B', '#285430', '#54436B')
 means_serialno = data.frame(
   summarise(group_by(data, Strata, SerialNo, CutHour),
             ACI=mean(ACI), BIO=mean(BIO), ADI=mean(ADI),
@@ -149,41 +150,64 @@ means = data.frame(
             ACI=mean(ACI), BIO=mean(BIO), ADI=mean(ADI),
             AEI=mean(AEI), H=mean(H), M=mean(M), NDSI=mean(NDSI))
 )
+levels(means$Strata) = c('Stand initiation', 'Competitive exclusion', 'Mature', 'Commercially thinned') # rename factor levels
 means$CutHour = as.POSIXct(means$CutHour)
 means = means[means$CutHour >= t_start & # limit to 24 hour window
                 means$CutHour < t_end,]
+ggsave_w = 15
+ggsave_h = 7
 
-ggplot(means, aes(x=CutHour, y=ACI, color=Strata)) +
-  # geom_line(linetype=3) +
-  geom_smooth(aes(fill=Strata), method='loess', se=T, span=0.2, linewidth=1, alpha=0.15) + 
-  scale_color_manual(values=strata_colors) + scale_fill_manual(values=strata_colors) +
-  scale_x_datetime(date_breaks = '2 hours', date_labels = '%H', limits=c(t_start,t_end)) +
+p_aci = ggplot(means, aes(x=CutHour, y=ACI, color=Strata)) +
+  # geom_point(size=0.2) +
   geom_vline(xintercept=t_sunrise, linetype='dotted', alpha=0.7) +
   geom_vline(xintercept=t_sunset,  linetype='dotted', alpha=0.7) +
-  theme(legend.position='bottom')
-
-ggplot(means, aes(x=CutHour, y=ADI, color=Strata)) +
-  # geom_line(linetype=3) +
   geom_smooth(aes(fill=Strata), method='loess', se=T, span=0.2, linewidth=1, alpha=0.15) + 
   scale_color_manual(values=strata_colors) + scale_fill_manual(values=strata_colors) +
-  scale_x_datetime(date_breaks = '2 hours', date_labels = '%H', limits=c(t_start,t_end)) +
+  scale_x_datetime(date_breaks = '2 hours', date_labels = '%H', limits=c(t_start,t_end), expand=c(0,0)) +
+  labs(title='Acoustic Complexity Index', x='Hour' ,y='') + theme(legend.position='none') + guides(color = guide_legend(''), fill = 'none')
+print(p_aci)
+ggsave(p_aci + theme(text = element_text(size = 30), plot.margin = margin(1,1,1,1, 'cm')),
+       file='~/Desktop/p_aci.png', width=ggsave_w, height=ggsave_h)
+
+p_adi = ggplot(means, aes(x=CutHour, y=ADI, color=Strata)) +
+  # geom_point(size=0.2) +
   geom_vline(xintercept=t_sunrise, linetype='dotted', alpha=0.7) +
   geom_vline(xintercept=t_sunset,  linetype='dotted', alpha=0.7) +
-  theme(legend.position='bottom')
-
-ggplot(means, aes(x=CutHour, y=NDSI, color=Strata)) +
-  # geom_line(linetype=3) +
-  geom_smooth(aes(fill=Strata), method='loess', se=T, span=0.2, linewidth=1, alpha=0.15) + 
+  geom_smooth(aes(fill=Strata), method='loess', se=T, span=0.3, linewidth=1, alpha=0.15) + 
   scale_color_manual(values=strata_colors) + scale_fill_manual(values=strata_colors) +
-  scale_x_datetime(date_breaks = '2 hours', date_labels = '%H', limits=c(t_start,t_end)) +
+  scale_x_datetime(date_breaks = '2 hours', date_labels = '%H', limits=c(t_start,t_end), expand=c(0,0)) +
+  labs(title='Acoustic Diversity Index', x='Hour', y='') + theme(legend.position='none') + guides(fill = 'none')
+print(p_adi)
+ggsave(p_adi + theme(text = element_text(size = 30), plot.margin = margin(1,1,1,1, 'cm')), file='~/Desktop/p_adi.png', width=ggsave_w, height=ggsave_h)
+
+p_ndsi = ggplot(means, aes(x=CutHour, y=NDSI, color=Strata)) +
+  # geom_point(size=0.2) +
+  geom_hline(yintercept=0, linetype='solid') +
   geom_vline(xintercept=t_sunrise, linetype='dotted', alpha=0.7) +
   geom_vline(xintercept=t_sunset,  linetype='dotted', alpha=0.7) +
-  theme(legend.position='bottom')
+  geom_smooth(aes(fill=Strata), method='loess', se=T, span=0.3, linewidth=1, alpha=0.15) + 
+  scale_color_manual(values=strata_colors) + scale_fill_manual(values=strata_colors) +
+  scale_x_datetime(date_breaks = '2 hours', date_labels = '%H', limits=c(t_start,t_end), expand=c(0,0)) +
+  labs(title='Normalized Difference Soundscape Index', x='Hour', y='') + theme(legend.position='none') + guides(fill = 'none')
+print(p_ndsi)
+ggsave(p_ndsi + theme(text = element_text(size = 30), plot.margin = margin(1,1,1,1, 'cm')), file='~/Desktop/p_ndsi.png', width=ggsave_w, height=ggsave_h)
 
+# Distributions during 1h before and after dawn to dusk
+# means_day = means[means$CutHour >= t_sunrise - 60*60 & # limit to 24 hour window
+                # means$CutHour < t_end + 60*60,]
  ggplot(means, aes(x=Strata, y=ACI, fill=Strata)) +
-  geom_boxplot() + scale_fill_manual(values=strata_colors)
+  geom_boxplot() + # outlier.shape = NA)
+  scale_fill_manual(values=strata_colors) +
+  theme(legend.position='none')
+   #+ coord_cartesian(ylim = c(1620,1850))
 ggplot(means, aes(x=Strata, y=ADI, fill=Strata)) +
-  geom_boxplot() + scale_fill_manual(values=strata_colors)
+  geom_boxplot() + #outlier.shape = NA
+  scale_fill_manual(values=strata_colors) +
+  theme(legend.position='none')
+#+ coord_cartesian(ylim = c(2.025,2.2))
+ggplot(means, aes(x=Strata, y=NDSI, fill=Strata)) +
+  geom_boxplot() + scale_fill_manual(values=strata_colors) +
+  theme(legend.position='none')
 
 
 # data %>% 

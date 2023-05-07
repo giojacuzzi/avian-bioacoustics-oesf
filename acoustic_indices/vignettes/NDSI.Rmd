@@ -57,7 +57,7 @@ files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
 f1_min = 0
 f1_max = 2000
 f2_min = 2000
-f2_max = 11000
+f2_max = 8000
 window = 512  # FFT window size
 
 results = data.frame()
@@ -89,15 +89,15 @@ for (file in files) {
   
   
   # Plot
-  p = spectrogram(sound, alim=c(-55,0)) +
-    labs(title = 'Normalized Difference Soundscape Index (NDSI)',
-         subtitle = paste0('Frequency band limits ', f1_min, '-', f1_max, ' : ', f2_min, '-', f2_max, ' Hz')) +
-    annotate('rect', xmin = 0, xmax = 20, ymin = f1_min/1000, ymax = f1_max/1000,
+  p = spectrogram(sound, alim=c(-55,0), flim=c(0,12), tlim=c(0,10)) +
+    labs(subtitle = paste0('Frequency band limits [', f1_min, ',', f1_max, ') and [', f2_min, ',', f2_max, '] Hz')) +
+    annotate('rect', xmin = 0, xmax = 10, ymin = f1_min/1000, ymax = f1_max/1000-.05,
            alpha = .2, color = 'red', fill = 'red') +
-    annotate('rect', xmin = 0, xmax = 20, ymin = f2_min/1000, ymax = f2_max/1000,
+    annotate('rect', xmin = 0, xmax = 10, ymin = f2_min/1000, ymax = f2_max/1000,
            alpha = .1, color = 'white', fill = 'white') +
-    theme_minimal()
-  print(p)
+    theme(legend.position='none', text = element_text(size = 30))
+  print(p + scale_y_continuous(limits=c(0,12), n.breaks=7))
+  ggsave(p + scale_y_continuous(limits=c(0,12), n.breaks=7), file='~/Desktop/ndsi.png', width=12, height=6)
 }
 ```
 

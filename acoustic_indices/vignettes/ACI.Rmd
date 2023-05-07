@@ -93,6 +93,8 @@ $$
 ACI_{tot}=\sum_{\Delta t=1}^{M}ACI_{\Delta t}
 $$
 
+TODO: Because ACI is cumulative, the longer the time interval calculated the larger the value. Normalize by dividing the result by the duration of the time interval in minutes
+
 ```{r}
 library(soundecology)
 library(tuneR)
@@ -102,6 +104,7 @@ source('helpers.R')
 # Load test data
 path = '~/Desktop/oesf-examples/short'
 files = list.files(path=path, pattern='*.wav', full.names=T, recursive=T)
+files = files[2]
 
 # Parameters
 min_freq = 0 # Hz
@@ -138,21 +141,23 @@ for (file in files) {
 	n_time_bins = dim(aci_soundecology$aci_left_matrix)[2] # num time bins, equal to duration / j
   
   # Plot
-  p = spectrogram(sound, alim=c(-55,0)) +
-    labs(title = 'Acoustic Complexity Index (ACI)',
+  p = spectrogram(sound, alim=c(-55,0), flim=c(0,10, tlim=c(0,5))) +
+    labs(
          subtitle = paste0('Frequency band limits ', min_freq, '-', max_freq, ' Hz')) +
-    theme_minimal()
+    theme(legend.position='none')
   
   for (t in 1:n_time_bins) {
     p = p + annotate('segment', x = j*t, xend = j*t, y = min_freq/1000, yend = max_freq/1000,
-                     alpha = .5, color = 'white', linewidth = 0.2)
+                     alpha = .5, color = 'white', linewidth = 0.5)
   }
   for (f in 1:n_fbins) {
     p = p + annotate('segment', x = 0, xend = 20, y = f*hz_per_bin/1000, yend = f*hz_per_bin/1000,
-                     alpha = .5, color = 'white', linewidth = 0.2)
+                     alpha = .5, color = 'white', linewidth = 0.5)
   }
+  p = p + coord_cartesian(xlim=c(0,10))
   
   print(p)
+  ggsave(p, file='~/Desktop/aci.png', width=6, height=3)
 }
 ```
 
@@ -177,6 +182,60 @@ benchmark = microbenchmark(
 )
 benchmark
 autoplot(benchmark)
+```
+
+```{r}
+file = '~/Desktop/oesf-examples/04.wav'
+source('helpers.R')
+
+# NOTES: 
+steps = c(1,2,5,10,30,60,60*2) # cluster size j parameter (sec)
+delta = 60*2
+
+results = data.frame()
+for (step in steps) {
+  message('Step ', step)
+  sound = readWave(file)
+  if (dc_offset(sound@left)) sound@left = dc_correct(sound@left)
+  
+  dur = length(sound@left) / sound@samp.rate
+  
+  i = 0.0
+  while (i < dur) {
+    j = min(i + delta, dur)
+    test = cutw(sound, f=sound@samp.rate, from=i, to=j, output='Wave')
+
+    # Compute acoustic complexity index
+    aci = acoustic_complexity(test, j = step)
+    index = aci$AciTotAll_left / (delta/60) # normalize
+    
+    message(i, ' to ', j, ' sec: ', index)
+    
+    results = rbind(results, data.frame(
+      step = step,
+      start = i,
+      end   = j,
+      index = index
+    ))
+    i = j
+  }
+}
+results$step = factor(results$step)
+
+# Add a duplicate data point for the last observation
+# of each window size to complete geom_step lines below 
+last_rows = aggregate(. ~ step, results, tail, n = 1)
+last_rows$start = last_rows$end
+results = rbind(results, last_rows)
+
+# Plot results per window size
+ggplot(results, aes(x=start, y=index, color=step)) +
+  geom_step(linewidth=1) +
+  scale_color_viridis_d() +
+  labs(title = 'Effect of cluster size j on acoustic complexity index',
+       subtitle = 'Calculated from a recording of the onset of the dawn chorus',
+       x = 'Time (sec)', y = 'Acoustic index', color = 'Cluster\nSize') +
+  theme_minimal()
 ```
 
 ### References
