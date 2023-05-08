@@ -1,29 +1,50 @@
 # Extract temperature data from Wildlife Acoustics summary files
 source('global.R')
 
-files = list.files('/Volumes/SAFS Backup/DNR', pattern = "*.txt", recursive = T, full.names = T)
-# TODO: include files from both drives
+files = c(
+  list.files('/Volumes/GIOJ Backup/DNR', pattern = '*.txt', recursive=T, full.names=T),
+  list.files('/Volumes/SAFS Backup/DNR', pattern = '*.txt', recursive=T, full.names=T)
+)
 
 results = data.frame()
 i = 1
-for (file in files) {
+while (i <= length(files)) {
+  file = files[i]
+  
   message('(', i, ' of ', length(files), ') Reading ', file)
   i = i+1
   
+  SerialNo = get_serial_from_file_name(file)
+  UnitType = substring(SerialNo, 1, 3)
+
+  cols = c('DATE', 'TIME', 'TEMP_C')
+  
   data = tryCatch({
-    read.table(file, skip = 1, sep = ',', col.names =
-                 c('DATE','TIME','LAT','LATC','LON','LONC','POWER_V',
-                   'TEMP_C','NUM_FILES','MIC0 TYPE','MIC1 TYPE'))
+    
+    if (UnitType=='SM2') {
+      data = na.omit(read.table(file, fill=T)[1:3])
+      colnames(data) = cols
+      data
+    } else {
+      data = read.table(file, skip = 1, sep = ',', col.names =
+                   c('DATE','TIME','LAT','LATC','LON','LONC','POWER_V',
+                     'TEMP_C','NUM_FILES','MIC0 TYPE','MIC1 TYPE'))
+      data = data[,cols]
+    }
   }, error = function(e) {
-    warning(paste('Warning: ', e))
+    message(paste('Error: ', e))
     NULL
   })
   if (is.null(data)) {
-    message('Error reading file, skipping...')
-    next
+    stop()
   }
+  
+  malformatted_rows = which(is.na(as.Date(data$DATE, '%Y-%b-%d')))
+  if (length(malformatted_rows) > 0) {
+    data = data[-malformatted_rows, ]
+  }
+  data = na.omit(data)
 
-  SerialNo = get_serial_from_file_name(file)
   SurveyDate = as.Date(data$DATE, '%Y-%b-%d')
   DataTime = as.POSIXct(paste(SurveyDate, data$TIME), tz=tz)
 
@@ -35,8 +56,7 @@ for (file in files) {
   ))
 }
 
-# Print some stats in degrees Fahrenheit
-message('Finished!')
+message('Finished! Result stats in degrees Fahrenheit')
 print(summary(results$Temp * 9/5 + 32))
 
-# TODO: save results to .csv
+write.csv(results, 'data/output/recording_date_temperature_data.csv')

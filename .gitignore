@@ -1,8 +1,9 @@
+# Output files
+*.csv
+*.png
+
 # Apple files
 .DS_Store
-
-# Images
-*.png
 
 # History files
 .Rhistory
