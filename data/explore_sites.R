@@ -28,10 +28,12 @@ data_per_station %>% group_by(WatershedID, Strata) %>% summarise(NumStations=n()
 # Subset data by year
 data_2020 = data[data$DataYear==2020,]
 data_2021 = data[data$DataYear==2021,]
+data_2022 = data[data$DataYear==2022,]
 
 # Number of stations per watershed per year
 tapply(data_2020$StationName_AGG, data_2020$WatershedID, function(x) { length(unique(x)) })
 tapply(data_2021$StationName_AGG, data_2021$WatershedID, function(x) { length(unique(x)) })
+tapply(data_2022$StationName_AGG, data_2022$WatershedID, function(x) { length(unique(x)) })
 
 # Stations per watershed per strata per year
 data_per_station_2020 = data_2020[!duplicated(data_2020$StationName_AGG),]
@@ -39,6 +41,9 @@ data_per_station_2020 %>% group_by(WatershedID, Strata) %>% summarise(NumStation
   as.data.frame()
 data_per_station_2021 = data_2021[!duplicated(data_2021$StationName_AGG),]
 data_per_station_2021 %>% group_by(WatershedID, Strata) %>% summarise(NumStations=n(), .groups = 'drop') %>%
+  as.data.frame()
+data_per_station_2022 = data_2022[!duplicated(data_2022$StationName_AGG),]
+data_per_station_2022 %>% group_by(WatershedID, Strata) %>% summarise(NumStations=n(), .groups = 'drop') %>%
   as.data.frame()
 
 # 2020 mostly had survey lengths of 10 days, where every day was recorded
@@ -48,5 +53,16 @@ data_2020 %>% group_by(WatershedID, StationName_AGG) %>% summarise(n=n(), .group
 # 2021 mostly had survey lengths of 10 days, but where only 4 days of the 10 were recorded
 data_2021 %>% group_by(WatershedID, StationName_AGG) %>% summarise(total_count=n(), .groups = 'drop') %>%
   as.data.frame()
+# 2022 mostly had 8 days recorded at each site
+data_2022 %>% group_by(WatershedID, StationName_AGG) %>% summarise(total_count=n(), .groups = 'drop') %>%
+  as.data.frame()
 
-
+# Map sites
+library(sp)
+library(sf)
+map_data = subset(data, !duplicated(subset(data, select=c(StationName_AGG, DataYear))))[,c('StationName_AGG', 'StationName', 'WatershedID', 'Strata', 'UTM_E', 'UTM_N', 'DataYear')]
+#Convert the data frame to SpatialPointsDataFrame
+coordinates(map_data)= ~UTM_E + UTM_N
+#Assign a projection to it
+proj4string(map_data) <- CRS('+proj=utm +zone=10 +datum=WGS84')
+mapview::mapview(map_data, zcol='Strata', legend=T) # DataYear, Strata
