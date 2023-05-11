@@ -187,6 +187,7 @@ batch_process_acidx = function(
           #   flim = c(min_freq/1000, max_freq/1000),
           #   nbwindows = (duration/j) # number of windows
           # )
+          if (is.na(ACI)) ACI = 0
         }
         if ('BIO' %in% alpha_indices) { # Bioacoustic index
           BIO = acidx_bio(
@@ -246,7 +247,6 @@ batch_process_acidx = function(
       } #else { NDSI = NA }
       
       # Write results to file
-      # TODO: only include columns for acidx that were requested
       results = paste0(
         paste0(results,'\n'),
         paste(
@@ -335,3 +335,11 @@ alpha_indices = c('BIO', 'ACI')
 batch_process_acidx(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 2, min_freq = 2000, max_freq = 8000, db_threshold = -40)
 # Other
 # batch_process_alpha_indices(input_files, output_path, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
+
+
+
+batch_process_acidx(c('~/Desktop/oesf-examples/04_30min.wav'),
+                    c('~/Desktop/oesf-examples/output/'),
+                    output_file = 'min30',
+                    alpha_indices = c('BIO', 'ACI'), time_interval = 30*60,
+                    ncores = 1, min_freq = 2000, max_freq = 8000, db_threshold = -40)

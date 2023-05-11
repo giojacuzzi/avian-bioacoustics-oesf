@@ -47,7 +47,10 @@ acidx_bio = function(
 ################################################################################
 # Acoustic Complexity Index (ACI)
 # Only compatible with single-channel (mono) data
-# Output identical to `acoustic_complexity` from soundecology package when wn='hamming' specified
+# Note that the result is the cumulative ACI total divided by the duration of the
+# data, in minutes, to facilitate comparison of values computed from different durations
+# When wn='hamming' is specified, output is identical to that of
+# `soundecology::acoustic_complexity()`, divided by the number of minutes
 acidx_aci = function(
     data,          # Either a tuneR Wave object or a `spectro` spectrogram
     fs = 0,        # Sampling rate (hz)
@@ -58,7 +61,7 @@ acidx_aci = function(
     ...            # Additional parameters for internal `spectro` call, if `data` is a Wave object
 ) {
   if (class(data)=='Wave') # an audio file was provided
-    data = spectro(channel(soundfile, which='left'), fs, wl=wl, dB=NULL, plot=F,...)
+    data = spectro(channel(data, which='left'), fs, wl=wl, dB=NULL, plot=F,...)
   
   nsamples = length(data$time)*wl
   duration = nsamples/fs
@@ -79,13 +82,15 @@ acidx_aci = function(
   no_j    = floor(duration / j)
   I_per_j = floor(j/delta_tk) # number of values, in each row, for each j period (no. of columns)
   
+  aci_fl   = rep(NA, spectrum_rows) # NOTE: changed from rep(NA, no_j) in
+  # soundecology, which results in NA values if spectrum_rows < no_j 
   aci_vals = rep(NA, no_j)
-  aci_fl   = rep(NA, no_j)
+
   for (q_index in 1:spectrum_rows) { # for each frequency bin fl
     for (j_index in 1:no_j) { # for each j period of time
       min_col = j_index * I_per_j - I_per_j + 1
       max_col = j_index * I_per_j
-      
+
       D = 0 # difference of values
       for (k in min_col:(max_col - 1))
         D = D + abs(spectrum[q_index,k] - spectrum[q_index,k + 1])
@@ -97,7 +102,7 @@ acidx_aci = function(
   } 
   
   aci = sum(aci_fl)
-  return(aci/(duration/60)) # "The results given are accumulative. Very long samples will return very large values for ACI. I recommend to divide by number of minutes to get a range of values easier to compare."
+  return(aci/(duration/60)) # divide by duration in minutes
 }
 
 ################################################################################

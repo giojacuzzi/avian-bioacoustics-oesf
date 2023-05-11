@@ -44,7 +44,7 @@ message(custom_bio_file == reference_bio$left_area)
 # Eval ACI
 reference_aci = acoustic_complexity(soundfile, min_freq, max_freq, j, fft_w)
 nminutes = length(soundfile)/soundfile@samp.rate/60
-reference_aci = reference_aci$AciTotAll_left/nminutes
+reference_aci = reference_aci$AciTotAll_left/nminutes # divide by duration in minutes to compare
 message('Reference: ', reference_aci)
 spectrogram = spectro(soundfile, f=soundfile@samp.rate, wl=fft_w, plot=F, dB=NULL, wn='hamming')
 custom_aci_spec = acidx_aci(spectrogram, fs = soundfile@samp.rate, fmin = min_freq, fmax = max_freq, j=j)

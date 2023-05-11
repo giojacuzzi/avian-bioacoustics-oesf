@@ -222,7 +222,7 @@ batch_process_alpha_indices = function(
         )
         NDSI = NDSI$ndsi_left
       } else { NDSI = NA }
-      
+
       # Write results to file
       results = paste0(
         results,
@@ -306,3 +306,10 @@ alpha_indices = c('BIO', 'ACI')
 batch_process_alpha_indices(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 2, min_freq = 2000, max_freq = 8000, db_threshold = -40)
 # Other
 # batch_process_alpha_indices(input_files, output_path, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
+
+
+batch_process_alpha_indices(c('~/Desktop/oesf-examples/04_30min.wav'),
+                    c('~/Desktop/oesf-examples/output/'),
+                    output_file = 'original10min',
+                    alpha_indices = c('BIO', 'ACI'), time_interval = 10*60,
+                    ncores = 1, min_freq = 2000, max_freq = 8000, db_threshold = -40)
