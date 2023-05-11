@@ -294,15 +294,15 @@ batch_process_alpha_indices = function(
   message(paste0(' Total time: ', round(time_end['elapsed'], 2), ' sec'))
 }
 
-# # EXAMPLE #########
-# # Params
-# path = '~/../../Volumes/SAFS Work/DNR/test/subset'
-# input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
-# output_path = '~/../../Volumes/SAFS Work/DNR/test/subset/output/'
-# alpha_indices = c('ADI','BIO', 'ACI')
-# # Series
-# # batch_process_alpha_indices(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 1)
-# # Parallel
-# batch_process_alpha_indices(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 2, min_freq = 2000, max_freq = 8000, db_threshold = -40)
-# # Other
-# # batch_process_alpha_indices(input_files, output_path, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
+# EXAMPLE #########
+# Params
+path = '~/../../Volumes/SAFS Work/DNR/test/subset'
+input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
+output_path = '~/../../Volumes/SAFS Work/DNR/test/subset/output/'
+alpha_indices = c('BIO', 'ACI')
+# Series
+# batch_process_alpha_indices(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 1)
+# Parallel
+batch_process_alpha_indices(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 2, min_freq = 2000, max_freq = 8000, db_threshold = -40)
+# Other
+# batch_process_alpha_indices(input_files, output_path, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)

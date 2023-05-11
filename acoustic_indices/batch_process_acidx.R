@@ -3,6 +3,7 @@ library(parallel)
 library(tuneR)
 library(soundecology)
 library(seewave)
+source('acoustic_indices/acidx.R')
 
 # input_files     - a list of paths to .wav files
 # output_path     - path to the output directory
@@ -31,7 +32,7 @@ library(seewave)
 # NOTE: ACI will return NA for long duration files (perhaps >= 10 min + @ 32kHz),
 # this is an issue with the 'soundecology' package
 batch_process_acidx = function(
-    input_files, output_path, output_file = 'batch', alpha_indices = c(), time_interval = NA, ncores = 1, dc_correct = T, digits = 6, diagnostics = T, ...) {
+    input_files, output_path, output_file = 'batch', alpha_indices = c(), wl = 512, time_interval = NA, ncores = 1, dc_correct = T, digits = 6, diagnostics = T, ...) {
   
   # force(db_threshold)
   alpha_indices = sort(alpha_indices)
@@ -50,6 +51,7 @@ batch_process_acidx = function(
   # and element 2 is the diagnostic data (if requested)
   calculate_alpha_indices = function(file, clustered = F, ...) {
     source('helpers.R')
+    source('acoustic_indices/acidx.R')
     
     if (clustered) { # if launched in cluster, require package for each node
       require(soundecology)
@@ -73,18 +75,18 @@ batch_process_acidx = function(
       # max_freq = formals(acoustic_evenness)$max_freq # AEI
       # max_freq = formals(acoustic_complexity)$max_freq # ACI
     }
-    if (!is.null(args[['fft_w']])) {
-      fft_w = args[['fft_w']]
-    } else {
-      fft_w = formals(bioacoustic_index)$fft_w # BIO
-      # fft_w = formals(acoustic_complexity)$fft_w # ACI
-      # fft_w = formals(ndsi)$fft_w # NDSI
-    }
-    if (!is.null(args[['wl']])) { # TODO: combine with fft_w above?
-      wl = args[['wl']]
-    } else {
-      wl = formals(H)$wl # H
-    }
+    # if (!is.null(args[['fft_w']])) {
+    #   fft_w = args[['fft_w']]
+    # } else {
+    #   fft_w = formals(bioacoustic_index)$fft_w # BIO
+    #   # fft_w = formals(acoustic_complexity)$fft_w # ACI
+    #   # fft_w = formals(ndsi)$fft_w # NDSI
+    # }
+    # if (!is.null(args[['wl']])) { # TODO: combine with fft_w above?
+    #   wl = args[['wl']]
+    # } else {
+    #   wl = formals(H)$wl # H
+    # }
     if (!is.null(args[['db_threshold']])) {
       db_threshold = args[['db_threshold']]
     } else {
@@ -160,22 +162,48 @@ batch_process_acidx = function(
         wav_interval = wav
       }
       
-      if ('ACI' %in% alpha_indices) { # Acoustic complexity index
-        ACI = acoustic_complexity( # soundecology
-          wav_interval,
-          min_freq,
-          max_freq,
-          j,
-          fft_w
-        )
-        ACI = ACI$AciTotAll_left
-        # ACI = ACI( # seewave
-        #   wave = wav_interval,
-        #   wl = fft_w,
-        #   flim = c(min_freq/1000, max_freq/1000),
-        #   nbwindows = (duration/j) # number of windows
-        # )
-      } else { ACI = NA }
+      ACI = ADI = AEI = BIO = H = M = NDSI = NA
+      if ('ACI' %in% alpha_indices | 'BIO' %in% alpha_indices) {
+        spectrum = spectro(wav_interval, f=wav_interval@samp.rate, wl=wl, plot=F, dB=NULL)
+        if ('ACI' %in% alpha_indices) { # Acoustic complexity index
+          ACI = acidx_aci(
+            spectrum,
+            fs = wav_interval@samp.rate,
+            fmin = min_freq,
+            fmax = max_freq,
+            j=j
+          )
+          # ACI = acoustic_complexity( # soundecology
+          #   wav_interval,
+          #   min_freq,
+          #   max_freq,
+          #   j,
+          #   wl
+          # )
+          # ACI = ACI$AciTotAll_left
+          # ACI = ACI( # seewave
+          #   wave = wav_interval,
+          #   wl = fft_w,
+          #   flim = c(min_freq/1000, max_freq/1000),
+          #   nbwindows = (duration/j) # number of windows
+          # )
+        }
+        if ('BIO' %in% alpha_indices) { # Bioacoustic index
+          BIO = acidx_bio(
+            spectrum,
+            fs = wav_interval@samp.rate,
+            fmin = min_freq,
+            fmax = max_freq
+          )
+          # BIO = bioacoustic_index( # soundecology
+          #   wav_interval,
+          #   min_freq,
+          #   max_freq,
+          #   wl
+          # )
+          # BIO = BIO$left_area
+        }
+      }
       if ('ADI' %in% alpha_indices) { # Acoustic diversity index
         ADI = acoustic_diversity(
           wav_interval,
@@ -184,7 +212,7 @@ batch_process_acidx = function(
           freq_step
         )
         ADI = ADI$adi_left
-      } else { ADI = NA }
+      } #else { ADI = NA }
       if ('AEI' %in% alpha_indices) { # Acoustic evenness index
         AEI = acoustic_evenness(
           wav_interval,
@@ -193,38 +221,29 @@ batch_process_acidx = function(
           freq_step
         )
         AEI = AEI$aei_left
-      } else { AEI = NA }
-      if ('BIO' %in% alpha_indices) { # Bioacoustic index
-        BIO = bioacoustic_index(
-          wav_interval,
-          min_freq,
-          max_freq,
-          fft_w
-        )
-        BIO = BIO$left_area
-      } else { BIO = NA }
+      } #else { AEI = NA }
       if ('H' %in% alpha_indices) { # Acoustic entropy index
         H = H(
           wav_interval,
           wl
         )
-      } else { H = NA }
+      } #else { H = NA }
       if ('M' %in% alpha_indices) { # Amplitude index
         M = M(
           wav_interval
         )
-      } else { M = NA }
+      } #else { M = NA }
       if ('NDSI' %in% alpha_indices) { # Normalized difference soundscape index
         NDSI = ndsi(
           wav_interval,
-          fft_w,
+          wl,
           anthro_min,
           anthro_max,
           bio_min,
           bio_max
         )
         NDSI = NDSI$ndsi_left
-      } else { NDSI = NA }
+      } #else { NDSI = NA }
       
       # Write results to file
       # TODO: only include columns for acidx that were requested
@@ -309,7 +328,7 @@ batch_process_acidx = function(
 path = '~/../../Volumes/SAFS Work/DNR/test/subset'
 input_files = list.files(path=path, pattern='*.wav', full.names=T, recursive=F)
 output_path = '~/../../Volumes/SAFS Work/DNR/test/subset/output/'
-alpha_indices = c('ADI','BIO', 'ACI')
+alpha_indices = c('BIO', 'ACI')
 # Series
 # batch_process_alpha_indices(input_files, output_path, alpha_indices = alpha_indices, time_interval = 60*2, ncores = 1)
 # Parallel
