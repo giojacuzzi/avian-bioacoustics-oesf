@@ -30,6 +30,11 @@ data_2020 = data[data$DataYear==2020,]
 data_2021 = data[data$DataYear==2021,]
 data_2022 = data[data$DataYear==2022,]
 
+# Observations per weekday per year
+summary(factor(weekdays(data_2020$SurveyDate, T)))
+summary(factor(weekdays(data_2021$SurveyDate, T)))
+summary(factor(weekdays(data_2022$SurveyDate, T)))
+
 # Number of stations per watershed per year
 tapply(data_2020$StationName_AGG, data_2020$WatershedID, function(x) { length(unique(x)) })
 tapply(data_2021$StationName_AGG, data_2021$WatershedID, function(x) { length(unique(x)) })
@@ -46,11 +51,11 @@ data_per_station_2022 = data_2022[!duplicated(data_2022$StationName_AGG),]
 data_per_station_2022 %>% group_by(WatershedID, Strata) %>% summarise(NumStations=n(), .groups = 'drop') %>%
   as.data.frame()
 
-# 2020 mostly had survey lengths of 10 days, where every day was recorded
+# 2020 mostly had deployment lengths of 10 days, where every day was recorded
 library(dplyr)
 data_2020 %>% group_by(WatershedID, StationName_AGG) %>% summarise(n=n(), .groups = 'drop') %>%
   as.data.frame()
-# 2021 mostly had survey lengths of 10 days, but where only 4 days of the 10 were recorded
+# 2021 mostly had deployment lengths of 10 days, but where only 4 days of the 10 were recorded
 data_2021 %>% group_by(WatershedID, StationName_AGG) %>% summarise(total_count=n(), .groups = 'drop') %>%
   as.data.frame()
 # 2022 mostly had 8 days recorded at each site
