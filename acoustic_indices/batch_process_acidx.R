@@ -39,8 +39,7 @@ source('acoustic_indices/acidx.R')
 # Returns the number of files that were successfully processed
 batch_process_acidx = function(
     input_files, output_path, output_file = 'batch', alpha_indices = c(), wl = 512, time_interval = NA, ncores = 1, dc_correct = T, digits = 6, diagnostics = T, ...) {
-  
-  # force(db_threshold)
+
   alpha_indices = sort(alpha_indices)
   if (length(alpha_indices) == 0)
     stop('Specify at least one alpha acoustic index')
@@ -60,13 +59,14 @@ batch_process_acidx = function(
     results = results_diagnostics = file_processed = NULL
     tryCatch({
 
-      if (clustered) { # if launched in cluster, require package for each node
+      # If launched in a cluster, require package for each node
+      if (clustered) {
         require(soundecology)
         require(seewave)
         require(tuneR)
       }
       
-      # Get args and set params
+      # Get arguments and set parameters
       args = list(...)
       if (!is.null(args[['min_freq']])) {
         min_freq = args[['min_freq']]
@@ -218,7 +218,7 @@ batch_process_acidx = function(
             freq_step
           )
           ADI = ADI$adi_left
-        } #else { ADI = NA }
+        }
         if ('AEI' %in% alpha_indices) { # Acoustic evenness index
           AEI = acoustic_evenness(
             wav_interval,
@@ -227,18 +227,18 @@ batch_process_acidx = function(
             freq_step
           )
           AEI = AEI$aei_left
-        } #else { AEI = NA }
+        }
         if ('H' %in% alpha_indices) { # Acoustic entropy index
           H = H(
             wav_interval,
             wl
           )
-        } #else { H = NA }
+        }
         if ('M' %in% alpha_indices) { # Amplitude index
           M = M(
             wav_interval
           )
-        } #else { M = NA }
+        }
         if ('NDSI' %in% alpha_indices) { # Normalized difference soundscape index
           NDSI = ndsi(
             wav_interval,
@@ -249,7 +249,7 @@ batch_process_acidx = function(
             bio_max
           )
           NDSI = NDSI$ndsi_left
-        } #else { NDSI = NA }
+        }
         
         # Write results to file
         results = paste0(
@@ -306,74 +306,71 @@ batch_process_acidx = function(
     cat(diagnostics_header, file = output_diagnostics, append = F) # open diagnostics file
   }
   
-  if (ncores > 1) { # Process in parallel using clusters
+  if (ncores > 1) { # Process in parallel with a cluster
     
-    message(paste0(' Batch processing ', no_input_files,
-                   ' files in parallel using ', ncores, ' cores (',
-                   paste(alpha_indices, collapse=','), ')'))
+    message(' Batch processing ', no_input_files,
+            ' files in parallel using ', ncores, ' cores (',
+            paste(alpha_indices, collapse=','), ')')
     
     cluster = makeCluster(ncores, type = 'PSOCK')
     results = parLapply(cluster, input_files, calculate_alpha_indices, clustered = T, time_interval, ...)
 
-    # Write results to files
-    results_acidx = unlist(sapply(results,"[[",1))
-    # if (length(results_acidx)==0) {
-    #   file.remove(output)
-    # } else {      
-    write.table(paste(results_acidx, collapse = ''),
-                  file = output, append = T, quote = F, col.names = F, row.names = F) 
-    # }
-    if (diagnostics) {
-      results_diagnostics = unlist(sapply(results,"[[",2))
-      # if (length(results_diagnostics)==0) {
-      #   file.remove(output_diagnostics)
-      # } else {
-        write.table(paste(results_diagnostics, collapse = ''),
-                    file = output_diagnostics, append = T, quote = F, col.names = F, row.names = F)
-      # }
+  } else { # Process in series on the main thread
+    
+    message(' Processing ', no_input_files, ' file(s) in series using 1 core')
+
+    results = list()
+    for (file in input_files) {
+      result = calculate_alpha_indices(file, ...)
+      results = append(results, list(result))
     }
-    write.table(na.omit(data.frame('File'=unlist(sapply(results,"[[",3)))),
+  }
+  
+  # Write acoustic indices results to file
+  results_acidx = unlist(sapply(results,"[[",1))
+  write.table(paste(results_acidx, collapse = ''),
+              file = output, append = T, quote = F, col.names = F, row.names = F) 
+  
+  # Write diagnostic results to file
+  if (diagnostics) {
+    results_diagnostics = unlist(sapply(results,"[[",2))
+    write.table(paste(results_diagnostics, collapse = ''),
+                file = output_diagnostics, append = T, quote = F, col.names = F, row.names = F)
+  }
+  
+  if (exists('cluster')) stopCluster(cluster)
+  
+  # Determine how many files were processed, append to '_files_processed.csv'
+  files_processed = data.frame()
+  for (result in results)
+    files_processed = rbind(files_processed, data.frame('File'=result$file_processed))
+  num_files_processed = nrow(files_processed)
+  if (num_files_processed != no_input_files)
+    warning(num_files_processed, ' of ', no_input_files, ' files processed')
+  
+  if (num_files_processed > 0) {
+    write.table(files_processed,
                 file = output_files_processed, sep = '',
                 append = file.exists(output_files_processed),
                 col.names = !file.exists(output_files_processed),
                 row.names = F)
-    Sys.sleep(1) # pause to allow all to end
     
-    stopCluster(cluster)
-    
-  } else { # Process in series on the main thread
-    
-    message(paste0(' Processing ', no_input_files, ' file(s) in series using 1 core'))
-    for (file in input_files) {
-      results = calculate_alpha_indices(file, ...)
-      
-      # if (length(results$results)==0) {
-      #   file.remove(output)
-      # } else {
-        cat(na.omit(results$results), file = output, append = T)
-      # }
-      
-      if (diagnostics) {
-        # if (length(results$diagnostics)==0) {
-        #   file.remove(output_diagnostics)
-        # } else {
-          cat(na.omit(results$diagnostics), file = output_diagnostics, append = T)
-        # }
-      }
-      write.table(na.omit(data.frame('File'=results$file_processed)),
-                  file = output_files_processed, sep = '',
-                  append = file.exists(output_files_processed),
-                  col.names = !file.exists(output_files_processed),
-                  row.names = F)
-    }
+    message(' Created ', output)
+    if (diagnostics) message(' Created ', output_diagnostics)
+
+  } else {
+
+    # Didn't process any files at all, delete the empty files we created
+    file.remove(output)
+    if (diagnostics) file.remove(output_diagnostics)
   }
-  
-  time_end = proc.time() - time_start # stop timer
-  message(paste0(' Created ', output))
-  if (diagnostics) message(paste0(' Created ', output_diagnostics))
-  message(paste0(' Total time: ', round(time_end['elapsed'], 2), ' sec'))
-  
-  return()
+
+  # Stop timer
+  time_end = proc.time() - time_start
+  message(' Total time: ', round(time_end['elapsed']/60, 2),' min (',
+                 round(time_end['elapsed'], 2), ' sec)')
+
+  return(num_files_processed)
 }
 
 # # EXAMPLES #########
