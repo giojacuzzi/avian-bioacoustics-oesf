@@ -31,7 +31,7 @@ get_recording_date_serial_data = function() {
   data$DeployNo   = factor(data$DeployNo)
   data$DataYear   = factor(data$DataYear)
   data$SurveyDate = as.Date(data$SurveyDate)  #as.POSIXct(data$SurveyDate, tz=tz)
-
+  data$DataTime   = as.POSIXct(data$DataTime, tz=tz)
   return(data)
 }
 
@@ -88,6 +88,17 @@ get_date_from_file_name = function(file) {
   date_raw = sapply(substrings, '[[', 2)
   date = ymd(date_raw)
   return(date)
+}
+
+get_time_from_file_name = function(file) {
+  substrings = str_split(str_sub(basename(file), start = 1, end = -5), '_')
+  date_raw = sapply(substrings, '[[', 2)
+  year = substring(date_raw, 1, 4)
+  date = ymd(date_raw) #as.POSIXct(date_raw, tz = tz, format='%Y%m%d')
+  time = as.POSIXct(
+    paste(date_raw, sapply(substrings, '[[', 3)),
+    tz = tz, format='%Y%m%d %H%M%S')
+  return(time)
 }
 
 get_hour_from_file_name = function(file) {

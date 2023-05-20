@@ -33,8 +33,6 @@ source('acoustic_indices/acidx.R')
 # Clipping     - whether any clipping was detected
 # 
 # NOTE: only mono .wav support
-# NOTE: ACI will return NA for long duration files (perhaps >= 10 min + @ 32kHz),
-# this is an issue with the 'soundecology' package
 #
 # Returns the number of files that were successfully processed
 batch_process_acidx = function(
