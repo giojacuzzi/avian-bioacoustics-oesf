@@ -17,7 +17,10 @@ recording_date_serial_output_path = 'data/output/recording_date_serial_data.csv'
 get_joined_data = function() {
   a = get_site_strata_date_serial_data()
   b = get_recording_date_serial_data()
-  return(full_join(a, b, by=c('SerialNo', 'SurveyDate','UnitType','DeployNo','DataYear')))
+  ab = full_join(a, b, by=c('SerialNo', 'SurveyDate','UnitType','DeployNo','DataYear'))
+  c = get_site_date_temperature_data()
+  abc = full_join(ab, c, by=c('SerialNo', 'SurveyDate'))
+  return(abc)
 }
 
 ## Read recording file, date, serial table from file
@@ -32,6 +35,15 @@ get_recording_date_serial_data = function() {
   data$DataYear   = factor(data$DataYear)
   data$SurveyDate = as.Date(data$SurveyDate)  #as.POSIXct(data$SurveyDate, tz=tz)
   data$DataTime   = as.POSIXct(data$DataTime, tz=tz)
+  return(data)
+}
+
+get_site_date_temperature_data = function() {
+  file = 'data/output/aru_temperature_data.csv'
+  message('Reading ', file)
+  data = read.csv(file)
+  data$SerialNo   = factor(data$SerialNo)
+  data$SurveyDate = as.Date(data$SurveyDate)
   return(data)
 }
 
