@@ -36,14 +36,14 @@ source('acoustic_indices/acidx.R')
 #
 # Returns the number of files that were successfully processed
 batch_process_acidx = function(
-    input_files, output_path, output_file = 'batch', alpha_indices = c(), wl = 512, time_interval = NA, ncores = 1, dc_correct = T, digits = 6, diagnostics = T, ...) {
-
+    input_files, output_path, output_file = 'batch', alpha_indices = c(), wl = 512, time_interval = NA, ncores = 1, dc_correct = T, digits = 6, ...) {
+  
   alpha_indices = sort(alpha_indices)
   if (length(alpha_indices) == 0)
     stop('Specify at least one alpha acoustic index')
   if (!all(alpha_indices %in% c('ACI','ADI','AEI','BIO','H','M','NDSI')))
     stop('Unsupported index specified')
-    
+  
   output_header = paste(c('File','Start','End',alpha_indices), collapse = ',')
   diagnostics_header = c('File,SamplingRate,BitDepth,Duration,DcBias,Clipping')
   
@@ -56,7 +56,7 @@ batch_process_acidx = function(
     
     results = results_diagnostics = file_processed = NULL
     tryCatch({
-
+      
       # If launched in a cluster, require package for each node
       if (clustered) {
         require(soundecology)
@@ -139,23 +139,21 @@ batch_process_acidx = function(
       }
       
       # Calculate file diagnostics
-      if (diagnostics) {
-        results_diagnostics = paste0(
-          '\n', file,',',                   # File (including path)
-          wav@samp.rate,',',                # SamplingRate (Hz)
-          wav@bit,',',                      # BitDepth
-          duration,',',                     # Duration (sec)
-          round(mean(wav@left),digits),',', # DcBias (mean amplitude value)
-          clipping(wav)                     # Clipping (boolean)
-        )
-      }
+      results_diagnostics = data.frame(
+        File = file,
+        SamplingRate = wav@samp.rate,
+        BitDepth = wav@bit,
+        Duration = duration,
+        DcBias = round(mean(wav@left),digits),
+        Clipping = clipping(wav)
+      )
       
       # Correct DC offset bias
       if (dc_correct) wav@left = dc_correct(wav@left)
       
       # Calculate requested indices at each time interval
       start = 0.0
-      results = ''
+      results = data.frame()
       while (start < duration) {
         
         end = min(start + time_interval, duration)
@@ -249,27 +247,22 @@ batch_process_acidx = function(
           NDSI = NDSI$ndsi_left
         }
         
-        # Write results to file
-        results = paste0(
-          paste0(results,'\n'),
-          paste(
-            c(
-              file,              # File (including path)
-              start,             # Start time (sec)
-              end,               # End time (sec)
-              na.omit(c(
-                round(ACI,digits), # acoustic complexity index
-                round(ADI,digits), # acoustic diversity index
-                round(AEI,digits), # acoustic evenness index
-                round(BIO,digits), # bioacoustic index
-                round(H,digits),   # acoustic entropy index
-                round(M,digits),   # amplitude index
-                round(NDSI,digits) # normalized difference soundscape index
-              ))
-            ),
-            collapse = ','
-          )
+        # Store results
+        result = data.frame(
+          File = file,
+          TimeStart = start,
+          TimeEnd = end
         )
+        if (!is.na(ACI))  result$ACI  = round(ACI,digits)
+        if (!is.na(ADI))  result$ADI  = round(ADI,digits)
+        if (!is.na(AEI))  result$AEI  = round(AEI,digits)
+        if (!is.na(BIO))  result$BIO  = round(BIO,digits)
+        if (!is.na(H))    result$H    = round(H,digits)
+        if (!is.na(M))    result$M    = round(M,digits)
+        if (!is.na(NDSI)) result$NDSI = round(NDSI,digits)
+        
+        results = rbind(results, result)
+        
         start = end # move to next time interval
       }
     }, error = function(err) {
@@ -277,32 +270,26 @@ batch_process_acidx = function(
     }, warning = function(wrn) {
       warning(wrn$message)
     })
-    if (typeof(results)=='character') {
-      if (results!='') file_processed = file
+    
+    if (!is.null(results)) {
+      return(list(
+        'results' = results,
+        'diagnostics' = results_diagnostics,
+        'file_processed' = file
+      ))
+    } else {
+      return(NULL)
     }
-    return(list(
-      'results' = results,
-      'diagnostics' = results_diagnostics,
-      'file_processed' = file_processed
-    ))
   } # calculate_alpha_indices
   
   no_input_files = length(input_files)
   if (ncores > no_input_files) {
     ncores = no_input_files
-    warning(' Number of cores limited to number of files')
+    message(' Number of cores limited to number of files (', ncores, ')')
   }
   
   ## Start processing
   time_start = proc.time() # start timer
-  if (!dir.exists(output_path)) dir.create(output_path, recursive=T)
-  output = paste0(output_path, output_file, '.csv', collapse = '')
-  output_files_processed = paste0(output_path, '_files_processed.csv', collapse = '')
-  cat(output_header, file = output, append = F) # open results file
-  if (diagnostics) {
-    output_diagnostics = paste0(output_path,  'diagnostics_', output_file, '.csv', collapse = '')
-    cat(diagnostics_header, file = output_diagnostics, append = F) # open diagnostics file
-  }
   
   if (ncores > 1) { # Process in parallel with a cluster
     
@@ -311,64 +298,48 @@ batch_process_acidx = function(
             paste(alpha_indices, collapse=','), ')')
     
     cluster = makeCluster(ncores, type = 'PSOCK')
-    results = parLapply(cluster, input_files, calculate_alpha_indices, clustered = T, time_interval, ...)
-
+    cluster_results = parLapply(cluster, input_files, calculate_alpha_indices, clustered = T, time_interval, ...)
+    
+    if (length(which(sapply(cluster_results, is.null))) > 0)
+      cluster_results = cluster_results[-which(sapply(cluster_results, is.null))]
+    results = suppressMessages(Reduce(full_join, lapply(cluster_results,"[[",1))) #as.data.frame(t(sapply(cluster_results,"[[",1)))
+    diagnostics = suppressMessages(Reduce(full_join, lapply(cluster_results,"[[",2))) #as.data.frame(t(sapply(cluster_results,"[[",2)))
+    files_processed = unlist(sapply(cluster_results,"[[",3))
+    
   } else { # Process in series on the main thread
     
     message(' Processing ', no_input_files, ' file(s) in series using 1 core')
-
-    results = list()
+    
+    results = data.frame()
+    diagnostics = data.frame()
+    files_processed = c()
     for (file in input_files) {
-      result = calculate_alpha_indices(file, ...)
-      results = append(results, list(result))
+      file_results = calculate_alpha_indices(file, ...)
+      results = rbind(results, file_results$results)
+      diagnostics = rbind(diagnostics, file_results$diagnostics)
+      files_processed = append(files_processed, file_results$file_processed)
     }
-  }
-  
-  # Write acoustic indices results to file
-  results_acidx = unlist(sapply(results,"[[",1))
-  write.table(paste(results_acidx, collapse = ''),
-              file = output, append = T, quote = F, col.names = F, row.names = F) 
-  
-  # Write diagnostic results to file
-  if (diagnostics) {
-    results_diagnostics = unlist(sapply(results,"[[",2))
-    write.table(paste(results_diagnostics, collapse = ''),
-                file = output_diagnostics, append = T, quote = F, col.names = F, row.names = F)
   }
   
   if (exists('cluster')) stopCluster(cluster)
   
-  # Determine how many files were processed, append to '_files_processed.csv'
-  files_processed = data.frame()
-  for (result in results)
-    files_processed = rbind(files_processed, data.frame('File'=result$file_processed))
-  num_files_processed = nrow(files_processed)
+  num_files_processed = length(files_processed)
   if (num_files_processed != no_input_files)
-    warning(num_files_processed, ' of ', no_input_files, ' files processed')
+    warning('The following files were not processed (', num_files_processed, ' of ', no_input_files, '):\n ', paste(input_files[which(!input_files %in% files_processed)], collapse='\n '))
   
-  if (num_files_processed > 0) {
-    write.table(files_processed,
-                file = output_files_processed, sep = '',
-                append = file.exists(output_files_processed),
-                col.names = !file.exists(output_files_processed),
-                row.names = F)
-    
-    message(' Created ', output)
-    if (diagnostics) message(' Created ', output_diagnostics)
-
-  } else {
-
-    # Didn't process any files at all, delete the empty files we created
-    file.remove(output)
-    if (diagnostics) file.remove(output_diagnostics)
-  }
-
+  if (ncol(results) == 0) results = NULL
+  if (ncol(diagnostics) == 0) diagnostics = NULL
+  
   # Stop timer
   time_end = proc.time() - time_start
   message(' Total time: ', round(time_end['elapsed']/60, 2),' min (',
-                 round(time_end['elapsed'], 2), ' sec)')
-
-  return(num_files_processed)
+          round(time_end['elapsed'], 2), ' sec)')
+  
+  return(list(
+    results = results,
+    diagnostics = diagnostics,
+    files_processed = files_processed
+  ))
 }
 
 # # EXAMPLES #########
@@ -385,8 +356,10 @@ batch_process_acidx = function(
 # # batch_process_alpha_indices(input_files, output_path, alpha_indices = c('BIO','AEI'), ncores = 3, min_freq = 200, max_freq = 2000, db_threshold = -45)
 # 
 # 
-# batch_process_acidx(c('~/Desktop/oesf-examples/short/03_short.wav', '~/Desktop/oesf-examples/short/04_short.wav'),
-#                     c('~/Desktop/oesf-examples/output/'),
-#                     output_file = 'testing',
-#                     alpha_indices = c('BIO', 'ACI'), time_interval = 30*60,
-#                     ncores = 2, min_freq = 2000, max_freq = 8000, db_threshold = -40)
+
+#
+# out = batch_process_acidx(c('~/Desktop/oesf-examples/short/03_short.wav', '~/Desktop/oesf-examples/short/04_short.wav'),
+#                           c('~/Desktop/oesf-examples/output/'),
+#                           output_file = 'testing',
+#                           alpha_indices = c('BIO', 'ACI'), time_interval = 10,
+#                           ncores = 2, min_freq = 2000, max_freq = 8000, db_threshold = -40)
