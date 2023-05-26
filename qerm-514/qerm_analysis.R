@@ -13,30 +13,20 @@ check_err_independent = function(model) {
 # it appears so
 
 # Are errors identically distributed, i.e. constant/homogeneous variance? -----------------------
-check_err_identically_dist = function(model, data, strata=F) {
-  if (strata) {
-    plot = ggplot(data, aes(x=fitted(model), y=residuals(model), color=Strata)) +
-      geom_point() + geom_hline(yintercept=0) +
-      labs(title = 'Residuals vs Fitted')
-  } else {
-    plot = ggplot(data, aes(x=fitted(model), y=residuals(model))) +
-      geom_point() + geom_hline(yintercept=0) +
-      labs(title = 'Residuals vs Fitted')
-  }
-  # plot(fitted(model), residuals(model),
-  #      xlab = "Fitted Values", ylab = "Residuals",
-  #      ylim = c(-max(residuals(model)),max(residuals(model))))
-  # abline(h=0)
-  # no, errors are heteroscedactic
+check_err_identically_dist = function(model) {
+  plot(fitted(model), residuals(model),
+       xlab = "Fitted Values", ylab = "Residuals",
+       ylim = c(-max(residuals(model)),max(residuals(model))))
+  abline(h=0)
   model_test = lm(I(sqrt(abs(residuals(model)))) ~ I(fitted(model)))
   sumary(model_test)
   print(plot + geom_abline(aes(intercept = coef(model_test)[1], slope = coef(model_test)[2]), color = 'red'))
-  # abline(model_test, col='red') # a significant slope indicates unequal variances
+  abline(model_test, col='red') # a significant slope indicates unequal variances
   # Serious correlation of errors generally requires a structural change in the model
   # Maybe as simple as adding a predictor (covariates), or may be more complex: generalized least squares or other approaches
   
   # Also perform Levene's Test for homogeneous variance - robust to non-normality
-  group = rep(0, nrow(data))
+  group = rep(0, nobs(model))
   group[which(residuals(model)>median(residuals(model)))] <- 1
   group = as.factor(group)
   leveneTest(residuals(model), group) # p=value is small, errors are not homogenous!
@@ -84,9 +74,9 @@ data_atmo = data_atmo[hour(data_atmo$datetime)==6, ]
 data_raw = left_join(data_raw,
                           distinct(data_atmo[, c('SurveyDate', 'temp','humidity', 'precip', 'windgust', 'windspeed', 'cloudcover', 'conditions')]), by = c('SurveyDate'))
 
-# Create dataset without rainy dates
+# Create dataset without noisy dates
 # data_acidx = data_acidx[!data_acidx$Noise=='rain' & !data_acidx$Noise=='wind' & !data_acidx$Noise=='other', ]
-data = data_raw[!data_raw$Noise=='rain', ]
+data = data_raw[data_raw$Noise=='', ]
 data_noisy = data_raw
 
 ############################################################################################################
@@ -120,14 +110,14 @@ aci_lmm_noisy = lmer(
   data = data_noisy
 )
 sumary(aci_lmm_noisy)
-check_err_identically_dist(aci_lmm_noisy, data_noisy)
+check_err_identically_dist(aci_lmm_noisy)
 
 bio_lmm_noisy = lmer(
   BIO ~ Strata + Month + TempMax + TempMax*Strata + (1|WatershedID:StationName_AGG),
   data = data_noisy
 )
 sumary(bio_lmm_noisy)
-check_err_identically_dist(bio_lmm_noisy, data_noisy)
+check_err_identically_dist(bio_lmm_noisy)
 
 # Distribution of response variables
 hist(data_noisy$ACI)
@@ -142,7 +132,7 @@ aci_glmm_noisy = glmer(
 )
 sumary(aci_glmm_noisy)
 
-check_err_identically_dist(aci_glmm_noisy, data_noisy) # no
+check_err_identically_dist(aci_glmm_noisy) # no
 check_err_norm_dist(aci_glmm_noisy) # heavy skew in upper quantiles
 check_err_independent(aci_glmm_noisy) # noisy recordings are not independent!
 
@@ -155,7 +145,7 @@ bio_glmm_noisy = glmer(
 )
 sumary(bio_glmm_noisy)
 
-check_err_identically_dist(bio_glmm_noisy, data_noisy) # no, some structure present
+check_err_identically_dist(bio_glmm_noisy) # no, some structure present
 check_err_norm_dist(bio_glmm_noisy) # slight skew
 check_err_independent(bio_glmm_noisy) # noisy recordings are not independent!
 
@@ -213,20 +203,24 @@ hist(data$BIO)
 
 # TODO: points of influence? outliers?
 
-# Julian date? Precipitation / rain as categorical variable?
-data$JulianDate = as.POSIXlt(data$SurveyDate)$yday
-
-data$ACI_scaled = data$ACI - min(data$ACI) + 1 # Scale ACI?
+# Precipitation / rain as categorical variable?
+# Early and late breeding season?
 
 # Potential variables: TempMax, TempMax*Strata, Month, etc.
 # Fit a generalized linear mixed model
 # Note that this follows similar methods to GLMs and LMMs
 
-glmm_full = glmer(
-  ACI ~ Strata + Month + TempMax + TempMax*Strata + (1|WatershedID:StationName_AGG),
+glmm_null = glmer(
+  ACI ~ (1|WatershedID:StationName_AGG),
   data = data,
   family = Gamma(link='log'), # distribution of data y~f(y), and link function
-  nAGQ = 0 # only way to get convergence (less accurate) 1 is Laplace, >1 Gauss-Hermite
+  nAGQ = 1
+) 
+glmm_full = glmer(
+  ACI ~ Strata + Month + TempMax + (1|WatershedID:StationName_AGG),
+  data = data,
+  family = Gamma(link='log'), # distribution of data y~f(y), and link function
+  nAGQ = 0 # only way to get convergence (less accurate); 1 is Laplace, >1 Gauss-Hermite
 )
 glmm_notemp = glmer(
   ACI ~ Strata + Month + (1|WatershedID:StationName_AGG),
@@ -234,31 +228,57 @@ glmm_notemp = glmer(
   family = Gamma(link='log'),
   nAGQ = 1 # Laplace
 )
-glmm_transf = glmer(
-  ACI_scaled ~ Strata + Month + scale(TempMax) + (1|WatershedID:StationName_AGG),
-  data = data,
+data$ACI_scaled = data$ACI - min(data$ACI) + 1 # TODO: normalize to noise floor ACI
+glmm_scaled = glmer(
+  ACI_scaled ~ Strata + Month + TempMax + (1|WatershedID:StationName_AGG),
+  data = data, # + scale(TempMax)*Month ???
   family = Gamma(link='log'),
-  nAGQ = 1 # Laplace
+  nAGQ = 0
+)
+glmm_scaled_transf = glmer(
+  log(ACI_scaled+0.1) ~ Strata + Month + TempMax + (1|WatershedID:StationName_AGG),
+  data = data, # + scale(TempMax)*Month ???
+  family = Gamma(link='log'),
+  nAGQ = 0
+)
+lmm_scaled_transf = lmer(
+  log(ACI_scaled) ~ Strata + Month + scale(TempMax) + (1|WatershedID:StationName_AGG),
+  data = data
 )
 
 # AIC values
+extractAIC(glmm_null)
 extractAIC(aci_glmm_noisy)
 extractAIC(glmm_full)
 extractAIC(glmm_notemp)
-extractAIC(glmm_transf)
+extractAIC(glmm_scaled)
+extractAIC(glmm_scaled_transf)
+extractAIC(lmm_scaled_transf)
+
+# Goodness of fit via chi-squared -- am I doing this correctly?
+X2 <- sum((data$ACI - fitted(glmm_full))^2 / fitted(glmm_full))
+pchisq(X2, df = nrow(data) - length(coef(glmm_full)), lower.tail = F) # if the p-value is large we assume the model is a good fit
 
 # Are errors independent?
 check_err_independent(aci_glmm_noisy)
 check_err_independent(glmm_full) # it appears so
+check_err_independent(glmm_scaled)
+check_err_independent(glmm_scaled_transf)
+check_err_independent(lmm_scaled_transf)
 
 # Are errors identically distributed, i.e. constant/homogeneous variance?
 check_err_identically_dist(aci_glmm_noisy, data_noisy)
-check_err_identically_dist(glmm_full, data) # no, errors are heteroscedactic; p-value is small, errors not homogenous!
-check_err_identically_dist(glmm_full, data, strata=T)
+check_err_identically_dist(glmm_full) # no, errors are heteroscedactic; p-value is small, errors not homogenous!
+check_err_identically_dist(glmm_scaled)
+check_err_identically_dist(glmm_scaled_transf)
+check_err_identically_dist(lmm_scaled_transf)
 
 # Are errors normally distributed?
 check_err_norm_dist(aci_glmm_noisy)
 check_err_norm_dist(glmm_full) # heavy-tailed, i.e. compared to the normal distribution there is more data located at the extremes of the distribution and less data in the center of the distribution
+check_err_norm_dist(glmm_scaled) # slight left skew (lower tail extended, upper reduced, relative to normal)
+check_err_norm_dist(glmm_scaled_transf)
+check_err_norm_dist(lmm_scaled_transf)
 
 ###################################
 
