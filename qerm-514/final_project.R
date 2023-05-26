@@ -91,6 +91,14 @@ colnames(data_raw)[colnames(data_raw) == 'Strata'] = 'stage'
 colnames(data_raw)[colnames(data_raw) == 'Month'] = 'month'
 colnames(data_raw)[colnames(data_raw) == 'TempMax'] = 'temperature'
 
+# Reorder stage factor
+levels(data_raw$stage)[levels(data_raw$stage) == 'STAND INIT'] = 'Early'
+levels(data_raw$stage)[levels(data_raw$stage) == 'COMP EXCL'] = 'Mid'
+levels(data_raw$stage)[levels(data_raw$stage) == 'THINNED'] = 'Mid (Thinned)'
+levels(data_raw$stage)[levels(data_raw$stage) == 'MATURE'] = 'Late'
+data_raw$stage = factor(data_raw$stage, levels = c('Early', 'Mid', 'Mid (Thinned)', 'Late'))
+stage_colors = c('#A25B5B', '#A4BE7B', '#54436B', '#285430')
+
 # Create dataset without noisy dates
 data = data_raw[data_raw$Noise=='', ] # [rain, wind, other]
 data_noisy = data_raw
@@ -99,16 +107,13 @@ data_noisy = data_raw
 theme_set(theme_minimal())
 
 ggplot(data_raw, aes(x = date, y = aci, color = stage)) + geom_point() +
-  labs(title = 'ACI vs strata over the breeding season')
+  scale_color_manual(values = stage_colors) + labs(title = 'ACI vs strata over the breeding season')
 
-ggplot(data_raw, aes(x = season_thirds, y = aci)) + geom_boxplot() +
-  labs(title = 'ACI vs season')
+ggplot(data_raw, aes(x = season_thirds, y = aci)) + geom_boxplot() + labs(title = 'ACI vs season')
 
-ggplot(data_raw, aes(x = stage, y = aci, color = stage)) + geom_boxplot() +
-  labs(title = 'ACI vs stage')
+ggplot(data_raw, aes(x = stage, y = aci, fill = stage)) + geom_boxplot() + scale_fill_manual(values = stage_colors) + labs(title = 'ACI vs stage')
 
-ggplot(data_raw, aes(x = date, y = temperature, color = stage)) + geom_point() +
-  labs(title = 'Temperature vs strata')
+ggplot(data_raw, aes(x = date, y = temperature, color = stage)) + geom_point() + scale_color_manual(values = stage_colors) + labs(title = 'Temperature vs strata')
 
 # Hypothesis ###################################################################################
 
@@ -134,13 +139,29 @@ ggplot(data_raw, aes(x = date, y = temperature, color = stage)) + geom_point() +
 
 # Boxcox to identify transformation?
 
+glmm_null = glmer(
+  aci ~ (1|watershed:site), data,
+  family = Gamma(link='log'), # distribution of data y~f(y), and link function
+  nAGQ = 1
+) 
+glmm = glmer(
+  aci ~ stage + month + temperature + (1|watershed:site), data,
+  family = Gamma(link='log'),
+  nAGQ = 0 # only way to get convergence (less accurate); 1 is Laplace, >1 Gauss-Hermite
+)
+lmm_null = lmer(
+  log(aci) ~ (1|watershed:site), data
+)
 lmm = lmer(
   log(aci) ~ stage + month + temperature + (1|watershed:site), data
 )
 
+models = list(
+  glmm_null, glmm, lmm_null, lmm
+)
+
 # Identify noisy outliers using diagnostics and points of inference for LMM
-ggplot(data_raw, aes(x = date, y = aci, color = stage, shape = Noise)) + geom_point() +
-  labs(title = 'ACI per strata over time') # rainy observations have high ACI because of extreme amplitude fluctuations
+ggplot(data_raw, aes(x = date, y = aci, color = stage, shape = Noise)) + geom_point() + scale_color_manual(values = stage_colors) + labs(title = 'ACI per strata over time') # rainy observations have high ACI because of extreme amplitude fluctuations
 
 # Remove noisy outliers and compare GLMM vs LMM again
 
@@ -162,11 +183,20 @@ ggplot(data_raw, aes(x = date, y = aci, color = stage, shape = Noise)) + geom_po
 # Peak temperature, mean temperature, hour temperature
 # Month, half season, third season
 
-extractAIC(lmm)
 summary(lmm)
 check_err_identically_dist(lmm)
 check_err_norm_dist(lmm)
 check_err_independent(lmm)
+
+# Compare AIC
+model_selection = t(data.frame(sapply(models, extractAIC)))
+model_selection = cbind(model_selection,
+                        sapply(models, function(m) { as.character(attributes(m)$call[1]) }))
+model_selection = cbind(model_selection,
+                        data.frame(sapply(models, function(m) { paste(attributes(m)$call[2], collapse=' ') })))
+colnames(model_selection) = c('edf', 'AIC', 'type', 'model')
+row.names(model_selection) = NULL
+model_selection
 
 # Inference ####################################################################################
 
