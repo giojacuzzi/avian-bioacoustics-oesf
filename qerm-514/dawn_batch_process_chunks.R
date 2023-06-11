@@ -11,10 +11,10 @@ batch_size = 6
 data = get_recording_date_serial_data() #get_joined_data()
 
 # Only look at 2020 for now
-data = data[data$DataYear==2020, ]
+data = data[data$DataYear==2021, ]
 data = data[!is.na(data$File),]
 
-output_path = normalizePath('/Users/giojacuzzi/repos/olympic-songbirds/acoustic_indices/output/6am/')
+output_path = normalizePath('/Users/giojacuzzi/repos/olympic-songbirds/acoustic_indices/output/24hr/')
 if (file.exists(paste0(output_path, '/files_processed.csv'))) {
   files_processed = read.csv(paste0(output_path, '/files_processed.csv'))
 } else {
@@ -35,8 +35,8 @@ for (date in as.character(unique(data$SurveyDate))) {
   for (serialno in unique(date_data$SerialNo)) {
     date_serial_data = date_data[date_data$SerialNo==serialno,]
     
-    # Get file corresponding to 06:00:00 hour:
-    files = date_serial_data[date_serial_data$NearHour==6, 'File']
+    # EX: Get file corresponding to 06:00:00 hour: date_serial_data$NearHour==6
+    files = date_serial_data[, 'File']
     
     if (length(files) == 0) {
       warning('File(s) for serialno ', serialno, ' on date ', date, ' not found. Skipping.')
@@ -92,7 +92,7 @@ for (date in as.character(sort(unique(as.Date(files_to_process$SurveyDate))))) {
       output_file = output_file, # TODO: remove
       alpha_indices = alpha_indices,
       wl = 512,
-      time_interval = 60 * 60,
+      time_interval = 60 * 10,
       ncores = ncores,
       # ACI, BIO
       min_freq = 1700,
