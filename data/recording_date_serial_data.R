@@ -10,7 +10,7 @@ library(lubridate)
 data = data.frame()
 for (database_path in database_paths) {
   message('Scanning ', database_path)
-  files = list.files(path=paste0(database_path), pattern="*.wav", full.names=T, recursive=T)
+  files = list.files(path=normalizePath(database_path), pattern='\\.wav$', full.names=T, recursive=T)
   
   # NOTE: extracting durations via tuneR too time intensive
   # durations = c()
@@ -49,10 +49,8 @@ for (database_path in database_paths) {
   )
   data = rbind(data, temp)
 }
-if (nrow(data) != 75658) {
-  stop('data length is unexpected!')
-}
-write.csv(data, file=recording_date_serial_output_path, row.names = FALSE)
+
+write.csv(data, file=recording_date_serial_output_path, row.names = F)
 message('Created ', recording_date_serial_output_path)
 
 # Explore

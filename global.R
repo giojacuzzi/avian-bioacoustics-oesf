@@ -5,8 +5,9 @@ library(lubridate)
 
 # Paths to directories comprising the DNR database
 database_paths = c(
-  '~/../../Volumes/GIOJ Backup/DNR',
-  '~/../../Volumes/SAFS Backup/DNR'
+#  '~/../../Volumes/GIOJ Backup/DNR',
+#  '~/../../Volumes/SAFS Backup/DNR'
+  normalizePath('D:\\DNR', mustWork = T)
 )
 database_path_working = '~/../../Volumes/SAFS Work/DNR'
 

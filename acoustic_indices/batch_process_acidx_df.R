@@ -35,7 +35,7 @@ source('acoustic_indices/acidx.R')
 # NOTE: only mono .wav support
 #
 # Returns the number of files that were successfully processed
-batch_process_acidx = function(
+batch_process_acidx_df = function(
     input_files, output_path, output_file = 'batch', alpha_indices = c(), wl = 512, time_interval = NA, ncores = 1, dc_correct = T, digits = 6, ...) {
   
   alpha_indices = sort(alpha_indices)
