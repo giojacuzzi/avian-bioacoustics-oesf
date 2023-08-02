@@ -7,7 +7,7 @@ library(lubridate)
 database_paths = c(
 #  '~/../../Volumes/GIOJ Backup/DNR',
 #  '~/../../Volumes/SAFS Backup/DNR'
-  normalizePath('D:\\DNR', mustWork = T)
+#  normalizePath('D:\\DNR', mustWork = T)
 )
 database_path_working = '~/../../Volumes/SAFS Work/DNR'
 
@@ -69,15 +69,19 @@ get_site_strata_date_serial_data = function() {
   
   file = 'data/ARUdates-site-strata_v2.xlsx'
   message('Reading ', file)
-  data = read.xlsx(file, sheetName = 'ARUdates-site-strata')
+  data = read.xlsx(file, sheetName = 'ARUdates-site-strata') %>% clean_names
   
   # Format data
-  cols_to_factor = c('SurveyID', 'SiteID', 'DataYear', 'DeployNo', 'StationName', 'StationName_AGG', 'SurveyType', 'SerialNo', 'UnitType', 'Strata')
+  data = data %>% rename(date = survey_date, year = data_year, hours = data_hours, deploy = deploy_no, unit = unit_type)
+  data$strata = factor(data$strata, levels=c('STAND INIT', 'COMP EXCL', 'THINNED', 'MATURE'))
+  data$thinned = (data$strata == 'THINNED')
+  data$stage = data$strata
+  levels(data$stage) = list('Early'='STAND INIT', 'Mid'='COMP EXCL', 'Mid'='THINNED', 'Late'='MATURE')
+  levels(data$strata) = list('Stand Initiation'='STAND INIT', 'Competitive Exclusion'='COMP EXCL', 'Thinned'='THINNED', 'Mature'='MATURE')
+  cols_to_factor = c('surveyid', 'siteid', 'year', 'deploy', 'station_name', 'station_name_agg', 'survey_type', 'serial_no', 'unit')
   data[cols_to_factor] = lapply(data[cols_to_factor], factor)
-  data$SurveyDate = as.Date(data$SurveyDate) #as.POSIXct(data$SurveyDate, tz=tz, format='%d/%m/%Y')
-  data$WatershedID = factor(substr(data$StationName_AGG, 1, 2))
-  data$StationName_AGG = factor(data$StationName_AGG)
-  data$StationName = factor(data$StationName)
+  data$watershed = factor(substr(data$station_name_agg, 1, 2))
+  data$site = data$station_name_agg
   
   return(data)
 }
@@ -124,4 +128,25 @@ get_hour_from_file_name = function(file) {
     tz = tz, format='%Y%m%d %H%M%S')
   hour = format(round(time, units='hours'), format='%H')
   return(hour)
+}
+
+# https://www.r-bloggers.com/2019/07/clean-consistent-column-names/
+clean_names <- function(.data, unique = FALSE) {
+  n <- if (is.data.frame(.data)) colnames(.data) else .data
+  n <- gsub("[^a-zA-Z0-9_]+", "_", n)
+  n <- gsub("([A-Z][a-z])", "_\\1", n)
+  n <- tolower(trimws(n))
+  
+  n <- gsub("(^_+|_+$)", "", n)
+  
+  n <- gsub("_+", "_", n)
+  
+  if (unique) n <- make.unique(n, sep = "_")
+  
+  if (is.data.frame(.data)) {
+    colnames(.data) <- n
+    .data
+  } else {
+    n
+  }
 }
