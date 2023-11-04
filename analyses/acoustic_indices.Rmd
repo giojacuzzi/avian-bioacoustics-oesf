@@ -1,0 +1,375 @@
+# QERM 514 Final Project
+
+Gio Jacuzzi
+
+### Hypotheses and Predictions
+
+Hypothesis #1: Commercial thinning of forest stands provides more favorable habitat conditions for songbirds.
+
+Prediction #1: If this is true, we expect to see greater values of the acoustic complexity index in mid-successional stands that have been thinned, compared to those that have not.
+
+Hypothesis #2: Vocalization activity is influenced by atmospheric conditions. Specifically, activity is reduced during periods of high temperature, precipitation, cloudcover, and wind.
+
+Prediction #2: If this is true, each of these covariates should exhibit a negative effect on the acoustic complexity index.
+
+### Data Preprocessing
+
+#### Loading and visualizing the data
+
+Each row of the dataset corresponds to a dawn chorus observation at one site. After factoring, the columns consist of the following:
+
+-   watershed - Watershed identification code
+-   site - Site identification code
+-   strata - Stratified classification of the site [Early, Mid, Mid (Thinned), Late]
+-   date - Date of the observation
+-   aci - Acoustic complexity index, scaled to the noise floor of a silent recording [0, unbounded)
+-   cloudcover - Regional cloudcover [0,100]
+-   humidity - Regional humidity [0,100]
+-   precip - Regional precipitation [0, unbounded)
+-   temp - Regional temperature in Celsius (unbounded)
+-   tempmax - Site-specific peak temperature in Celsius (unbounded)
+-   windgust - Regional wind gust [0, unbounded)
+-   windspeed - Regional wind speed [0, unbounded)
+-   noise - Type of audible noise in raw audio data, if present
+-   month - Month of observation
+-   thinned - Boolean indicating whether the site was subject to thinning
+-   stage - Developmental stage of the site [Early, Mid, Late]
+
+```{r}
+library(rstudioapi)
+library(lubridate)
+library(ggplot2)
+library(glue)
+library(dplyr)
+source('global.R')
+
+# Load and parse the data
+inpath  = 'acoustic_indices/_output/2021'
+outpath = glue(dirname(getSourceEditorContext()$path), '_output')
+
+data = read.csv(glue(inpath, '/results.csv'), colClasses = c(
+  'TimeStart' = 'POSIXct',
+  'TimeEnd' = 'POSIXct',
+  'SerialNo' = 'factor',
+  'SurveyDate' = 'Date'
+)) %>% clean_names() %>% rename(date = survey_date)
+data = full_join(data, get_site_strata_date_serial_data()[,c('serial_no', 'date', 'site', 'watershed', 'strata', 'stage', 'thinned')], by = c('serial_no', 'date'))
+data$time = as.POSIXct(as.numeric(data$time_start) %% 86400, origin = '2000-01-01')
+
+data = na.omit(data)
+
+# TODO: Plot average day
+
+# TODO: Get only the time before sunrise
+
+
+# Examine data structure
+str(data)                                    # 
+summary(data$strata)                         # observations per stratum
+summary(data$watershed)                      # observations per watershed
+tapply(data$strata, data$watershed, summary) # observations per watershed per stratum
+data[!duplicated(data$site),] %>%            # sites per watershed per stratum
+  group_by(watershed, strata) %>%
+  summarise(NumStations=n(), .groups = 'drop') %>%
+    as.data.frame()
+
+# Visualize the data
+theme_set(theme_minimal())
+strata_colors = c('#73E2A7', '#1C7C54',  '#73125A', '#6c584c')
+stage_colors  = c('#73E2A7', '#1C7C54', '#6c584c')
+
+p = ggplot(data, aes(x = date, y = aci, color = strata)) + geom_point() +
+  scale_color_manual(values = strata_colors) + labs(title = 'ACI by strata over the breeding season', x = 'Date', y = 'ACI', color = 'Forest strata'); p
+
+ggsave(p + theme(text = element_text(size = 22), plot.margin = margin(1,1,1,1, 'cm')),
+       file=paste0(path, '/output/aci_season.png'), width=16, height=12)
+
+p = ggplot(data, aes(x=aci)) + geom_histogram(binwidth = 20) + labs(title = 'Histogram of ACI', x = 'ACI', y = 'Count'); p
+
+ggsave(p + theme(text = element_text(size = 28), plot.margin = margin(1,1,1,1, 'cm')),
+       file=paste0(path, '/output/aci_hist.png'), width=12, height=12)
+
+p = ggplot(data, aes(x = month, y = aci)) + geom_boxplot() + labs(title = 'ACI by month', x = 'Month', y = 'ACI'); p
+```
+
+#### Identifying and removing outliers
+
+Looking at the histogram and boxplot, it appears we may have some potential outliers. Note that with mixed models we cannot use the hat matrix to determine outliers or points of influence, so we instead look at a subset of dimensions for outliers (e.g. the histogram and boxplot distributions). After examining the raw audio data corresponding to these high values, we find that they are days with heavy rain, which the ACI algorithm quantifies as high acoustic activity within the frequency band of songbirds. As these observations are not representative and unusable, we remove them from the dataset.
+
+```{r}
+# Filter out observations with audible rain in songbird frequency band
+data_filtered = data[data$noise != 'rain', ]
+
+# Compare ACI distribution against with and without outliers
+library(data.table)
+l = list(data, data_filtered)
+names(l) = c('With audible rain', 'Without audible rain')
+p = ggplot(rbindlist(l, id='id'), aes(x=month, y=aci)) +
+  geom_boxplot() + facet_wrap(~id) + labs(title = 'ACI by month'); p
+
+p = ggplot(rbindlist(l, id='id'), aes(x=aci)) + geom_histogram(binwidth = 20) + facet_wrap(~id) + labs(title = 'Histogram of ACI', x = 'ACI', y = 'Count'); p
+
+# Use filtered data going forward
+data = data_filtered
+dim(data_filtered) # n = 671
+```
+
+### Modeling Methods
+
+#### Model design
+
+We expect that our response variable $y$, ACI, is a function of the categorical predictors of forest strata (Early, Mid, thinned Mid, Late) and month (April, May, June, July) within the breeding season. We order the factor for fixed effect of strata such that its parameters estimated relative to Mid-stage (not thinned). Note that we treat month as a categorical variable because we expect it will not have a linear effect across the breeding season, as different forest habitats supporting different songbird community compositions should exhibit varying peaks in breeding activity over time. We also expect that our response is subject to the effects of several atmospheric covariates that are known to influence songbird vocalization activity, including cloudcover, humidity, precipitation, temperature (regional and site-specific peak), and wind (speed and gust). These covariates are all continuous variables that are scaled prior to being used in modeling.
+
+Because sites were grouped within watershed, and multiple observations were made per site, we plan to use a random effects structure of site nested within watershed, suggesting a mixed model is needed.
+
+```{r}
+# Global model parameters
+y = 'aci'
+x_continuous  = c('cloudcover', 'humidity', 'precip', 'temp', 'tempmax', 'windgust', 'windspeed')
+x_categorical = c('strata', 'month', 'watershed', 'site')
+
+# Scale the continuous fixed effects. Note that they now have mean at 0 and variance = standard deviation = 1.
+data[, x_continuous] = scale(data[, x_continuous])
+```
+
+Further, the distribution of the response variable ACI is heavily right-skewed, resembling a gamma or log-normal distribution, suggesting a generalized model or transformation is needed.
+
+#### Random effects
+
+Looking at the correlations of our predictors, we see that that site and watershed are extremely correlated. As such, it may suffice to use one or the other in a random effect structure. We compare these options by fitting global GLMMs with a Gamma distribution and log-link function via `lme4::glmer` with different random effect structures (a nested random effect of site within watershed, and a random effect of watershed alone).
+
+```{r}
+# Look at correlations (encode categorical variables as integers)
+library(ggcorrplot)
+data_int_encoded = data[, c(y, x_continuous, x_categorical)]
+data_int_encoded[, x_categorical] = lapply(data_int_encoded[, x_categorical], as.numeric)
+model.matrix(~0+., data=data_int_encoded) %>% 
+  cor(use='pairwise.complete.obs') %>% 
+  ggcorrplot(show.diag=FALSE, type='lower', lab=T, lab_size=4)
+
+# Relevel factors so that parameters for fixed effect of strata are estimated relative to 'Mid' (not thinned)
+data$strata = factor(data$strata, levels = c('Mid', 'Mid (Thinned)', 'Early', 'Late'))
+
+# Fit general global models with varying random effects structures and all possible fixed effects included.
+library(lme4)
+cntrl = glmerControl(optimizer = 'bobyqa', tol = 1e-3, optCtrl=list(maxfun=1000000))
+
+global_glmm_nested = glmer(
+  aci ~ strata + month + cloudcover + humidity + precip + temp + tempmax + windgust + windspeed + (1|watershed:site),
+  data = data, control = cntrl, family = Gamma(link='log')
+)
+
+global_glmm_site = glmer(
+  aci ~ strata + month + cloudcover + humidity + precip + temp + tempmax + windgust + windspeed + (1|site),
+  data = data, control = cntrl, family = Gamma(link='log')
+)
+
+global_glmm_watershed = glmer(
+  aci ~ strata + month + cloudcover + humidity + precip + temp + tempmax + windgust + windspeed + (1|watershed),
+  data = data, control = cntrl, family = Gamma(link='log')
+)
+```
+
+Parametric bootstraps with `pbkrkest::PBmodcomp` yield a very small p-value associated with the model using a nested random effect of site within watershed, indicating that it provides a significantly better fit than the alternative.
+
+```{r}
+# Compare random effects structures using parametric bootstraps
+(pb1 = pbkrtest::PBmodcomp(global_glmm_nested, global_glmm_site, nsim = 1000))
+(pb2 = pbkrtest::PBmodcomp(global_glmm_nested, global_glmm_watershed, nsim = 1000))
+```
+
+#### Global model diagnostics and selection
+
+With my random effects structure confirmed, I then investigated whether a global GLMM using `lme4::glmer` or `glmmTMB::glmmTMB`, or an alternative LMM with `lme4::lmer` using a log transformation of $y$, provided a more optimal fit of the data. Both GLMMs were fit with Laplace approximation to minimize differences due to algorithmic implementation.
+
+```{r}
+library(glmmTMB)
+
+# Can use starting values from a simple model to help with convergence, adding values to account for 7 additional fixed effect predictors in complex model
+simple_glmm = glmer(
+  aci ~ strata + month + (1|watershed:site),
+  data = data, control = cntrl, family = Gamma(link='log')
+)
+ss = getME(simple_glmm, c('theta', 'fixef'))
+start = list(fixef = c(as.vector(ss$fixef), rep(1,7)), theta = as.vector(ss$theta))
+
+# GLMM (lme4)
+global_glmm = glmer(
+  aci ~ strata + month + cloudcover + humidity + precip + temp + tempmax + windgust + windspeed + (1|watershed:site),
+  data = data, control = cntrl, family = Gamma(link='log'), nAGQ = 1
+)
+
+# GLMM (glmmTMB)
+global_glmmTMB = glmmTMB(
+  aci ~ strata + month + cloudcover + humidity + precip + temp + tempmax + windgust + windspeed + (1|watershed:site),
+  data = data, family = Gamma(link='log')
+)
+
+# LMM with log transformation (lme4)
+global_lmm = lmer(
+  log(aci) ~ strata + month + cloudcover + humidity + precip + temp + tempmax + windgust + windspeed + (1|watershed:site),
+  data = data
+)
+```
+
+I evaluated modeling assumptions with diagnostic tools from `DHARMa` using standardized residuals. First testing the assumption of normally distributed errors, I found that standardized deviance residual QQ plots of expected against observed values revealed significant deviation for all three models. However, overall uniformity for the glmmTMB and lmer models indicated a fairly close alignment with expected normal distribution of errors, and DHARMa documentation indicated that significant deviation results are common with larger sample sizes and do not necessarily implicate a lack of fit. In contrast, the glmer model exhibited apparent underdispersion, which could be attributed to overfitting. QQ plots of random effects revealed only marginally heavy-tailed distributions.
+
+```{r}
+library(DHARMa)
+
+# DHARMa simulation diagnostics (standardized residuals)
+# See https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html
+n = 1000
+sim_glmer   = simulateResiduals(global_glmm, n)
+sim_glmmTMB = simulateResiduals(global_glmmTMB, n)
+sim_lmer    = simulateResiduals(global_lmm, n)
+
+## Are errors normally distributed?
+
+# QQ plot of deviance residuals (expected vs observed)
+par(mfrow = c(1, 3))
+testUniformity(sim_glmer)
+testUniformity(sim_glmmTMB)
+testUniformity(sim_lmer)
+
+qqnorm(residuals(global_glmm));    qqline(residuals(global_glmm))
+qqnorm(residuals(global_glmmTMB)); qqline(residuals(global_glmmTMB))
+qqnorm(residuals(global_lmm));     qqline(residuals(global_lmm))
+
+# Distribution of random effects
+qqnorm(unlist(ranef(global_glmm)$`watershed:site`), main = 'QQ plot (glmer REs)', pch = 16)
+qqline(unlist(ranef(global_glmm)$`watershed:site`))
+
+qqnorm(unlist(ranef(global_glmmTMB)), main = 'QQ plot (glmmTMB REs)', pch = 16)
+qqline(unlist(ranef(global_glmmTMB)))
+
+qqnorm(unlist(ranef(global_lmm)$`watershed:site`), main = 'QQ plot (lmer REs)', pch = 16)
+qqline(unlist(ranef(global_lmm)$`watershed:site`))
+```
+
+Next I tested the assumption of identically-distributed errors and found that Levene's tests and plots of observed against fitted values indicated a significant degree of heteroskedasticity still present in each model. The glmer model showed deviations in all three quantiles when plotting rank-transformed predictions against standardized residuals, while the glmmTMB and lmer models showed deviations only in their lower and upper quantiles, respectively. The glmmTMB model indicated the best fit of the three, and did not have a significant combined quantile regression test for homogenous variance, while the glmer and lmer models did. Ultimately, this test indicated that the glmmTMB, despite a degree of present heterosketasticity, was a reasonable fit for the data.
+
+```{r}
+library(car)
+
+## Are errors identically distributed, i.e. constant/homogeneous variance?
+
+# Check assumption of identically distributed errors with fitted vs residuals
+# plot and Levene's test for  homogeneous variance (robust to non-normality).
+check_err_identically_dist = function(model) {
+  plot(fitted(model), residuals(model),
+       xlab = 'Fitted', ylab = 'Residuals',
+       ylim = c(-max(residuals(model)),max(residuals(model))))
+  abline(h=0)
+  model_test = lm(I(sqrt(abs(residuals(model)))) ~ I(fitted(model)))
+  abline(model_test, col='red') # a significant slope indicates unequal variances
+
+  group = rep(0, nobs(model))
+  group[which(residuals(model) > median(residuals(model)))] = 1
+  group = as.factor(group)
+  leveneTest(residuals(model), group)
+}
+
+# Fitted vs observed plot
+fitted_vs_observed = function(obs, fit) {
+  plot(obs, fit, xlab = 'Observed', ylab = 'Fitted')
+  abline(lm(obs ~ fit), col='blue')
+  abline(a=0, b=1, col='red')
+}
+
+# Residuals vs predictions
+par(mfrow = c(1, 3))
+testQuantiles(sim_glmer)
+testQuantiles(sim_glmmTMB)
+testQuantiles(sim_lmer)
+
+check_err_identically_dist(global_glmm);    title('glmer')
+check_err_identically_dist(global_glmmTMB); title('glmmTMB')
+check_err_identically_dist(global_lmm);     title('lmer (log transformed)')
+
+# Fitted vs observed values
+par(mfrow = c(1, 3))
+fitted_vs_observed(data$aci, fitted(global_glmm));     title('glmer')
+fitted_vs_observed(data$aci, fitted(global_glmmTMB));  title('glmmTMB')
+fitted_vs_observed(data$aci, exp(fitted(global_lmm))); title('lmer (log transformed)')
+```
+
+Finally testing the assumption of independent errors, I found that Durbin-Watson tests for temporal autocorrelation in residuals aggregated by time indicated independence of the data for all models. I also tested for any remaining outliers, and found none of significant influence.
+
+```{r}
+## Are errors independent?
+
+# Test temporal autocorrelation (Durbin-Watson), aggregating residuals by time
+testTemporalAutocorrelation(
+  recalculateResiduals(sim_glmer, group = data$date),
+  time = unique(data$date)
+)
+testTemporalAutocorrelation(
+  recalculateResiduals(sim_glmmTMB, group = data$date),
+  time = unique(data$date)
+)
+testTemporalAutocorrelation(
+  recalculateResiduals(sim_lmer, group = data$date),
+  time = unique(data$date)
+)
+
+# Can also look at temporal autocorrelation of a specific site
+site_to_test = (data$site == data$site[1])
+testTemporalAutocorrelation(
+  recalculateResiduals(sim_glmer, sel = site_to_test),
+  time = unique(data[site_to_test, 'date'])
+)
+
+# Any outliers remaining after our initial filtering of noisy data?
+par(mfrow = c(3, 1))
+testOutliers(sim_glmer)
+testOutliers(sim_glmmTMB)
+testOutliers(sim_lmer)
+```
+
+Despite using the same model formula and Laplace parameter estimation, the glmer and glmmTMB models exhibited dramatic differences in their diagnostics. I was unable to discern the root cause of these differences for the purposes of this study, but this is an area worthy of future investigation. Ultimately, these diagnostics suggested the glmmTMB model to be suitable for further analysis.
+
+#### Selection of fixed effects
+
+Moving forward with the `glmmTMB` model, I used `MuMIn:dredge` to compare all possible combinations of fixed effects, and found that the top-ranked model used only stage, month, and cloud cover as predictors. Of the top models that produced a delta AICc value of less than 2 (suggesting they are reasonable alternatives to the top-ranked model), we see that cloudcover is the only significant atmospheric covariate (and the only whose boostrapped 95% confidence interval excludes zero). As such, I chose the top-ranked model to use as the basis for my interpretation.
+
+```{r}
+library(MuMIn)
+
+# Generate models for all possible combinations of fixed effects
+options(na.action = 'na.fail')
+model_set = dredge(global_glmmTMB)
+head(model_set, 10)
+
+# Extract the top models with a delta AICc value less than 2
+top_models = get.models(model_set, subset = delta < 2)
+
+# Look at environmental covariates of the top models. Are they significant?
+lapply(top_models, function(model) {
+  summary(model)
+  confint(model, method = 'profile')
+})
+
+# Choose the model with the lowest AICc for further interpetation
+model = top_models[[1]]
+```
+
+### Results
+
+The factor for fixed effect of strata was ordered such that parameters were estimated relative to the non-thinned Mid-stage stratum. Therefore, $\beta_0$ is the acoustic complexity (on the log-link scale) predicted for mid-stage, non-thinned habitat at the start of the breeding season, April, and under mean cloud cover conditions. This equates to an ACI of $e^{3.59}\approx36.23$. All fixed effect variables exhibited a significant effect on ACI. $\beta_1$ is the predicted change in ACI for each 1 standard deviation change in cloud cover. $\beta_2$ through $\beta_4$ correspond to the differences between the months of May, June, and July (respectively) and April, regardless of strata or cloud cover. $\beta_5$ corresponds to the difference of thinned compared to non-thinned mid-stage forest stands, regardless of month or cloud cover. This equates to a multiplicative increase in ACI of $e^{0.566}\approx1.76$. Similarly, $\beta_6$ and $\beta_7$ correspond to the differences between Early and Late stage stands (respectively) and Mid stage, non-thinned stands. The multiplicative increase in ACI for these effects equates to approximately 3.96 and 1.73, respectively.
+
+```{r}
+# Extract model summary and boostrap 95% CIs
+summary(model)
+(ci = as.data.frame(confint(model, method = 'profile')))
+results = cbind(as.data.frame(summary(model)$coefficients$cond), ci[1:8,])
+results$Beta = factor(rownames(results))
+
+# Visualize results
+ggplot(results, aes(x = Beta, y = Estimate)) +
+  geom_pointrange(aes(ymin = `2.5 %`, ymax = `97.5 %`)) +
+  geom_hline(yintercept=0) + labs(y = 'Fixed effect estimate (95% CI)')
+
+data$thinned = factor(data$thinned)
+ggplot(data, aes(x = date, y = aci, color = stage, fill = stage, linetype = thinned)) + geom_line(stat='smooth', method='loess', lwd=2) + scale_color_manual(values = stage_colors) + scale_fill_manual(values = stage_colors) + labs(title = 'ACI by strata over time', x = 'Date', y = 'ACI', color = 'Forest Stage', linetype = 'Thinned')
+```
