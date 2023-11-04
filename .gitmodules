@@ -1,6 +1,0 @@
-[submodule "submodules/BirdNET-Analyzer"]
-	path = submodules/BirdNET-Analyzer
-	url = https://github.com/kahst/BirdNET-Analyzer
-[submodule "submodules/sound-separation"]
-	path = submodules/sound-separation
-	url = https://github.com/google-research/sound-separation
