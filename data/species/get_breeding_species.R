@@ -20,4 +20,6 @@ nrow(species_eBird)
 
 # Inspect merge. Note that JO appears to be outdated (e.g. Winter Wren instead of Pacfic Wren).
 library(dplyr)
-View(full_join(species_eBird, species_JO))
+species_merged = full_join(species_eBird, species_JO)
+View(species_merged)
+write.csv(species_merged, 'data/species/species.csv', row.names = F)

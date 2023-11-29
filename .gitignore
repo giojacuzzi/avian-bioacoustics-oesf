@@ -1,3 +1,6 @@
+# Python virtual environment
+/env/
+
 # Output files
 *.csv
 *.png
