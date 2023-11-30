@@ -1,7 +1,9 @@
-# Python virtual environment
+# Python
 /env/
+*.pyc
 
 # Output files
+*.wav
 *.csv
 *.png
 

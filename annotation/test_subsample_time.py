@@ -21,30 +21,35 @@ directory = '/Users/giojacuzzi/Desktop/audio_test/SMA00351_20210502_000000'
 os.listdir(directory)
 files = find_files_by_date(directory, year, month, day)
 
-# result = AudioSegment.silent(24 * 3600 * 1000, frame_rate=AudioSegment.from_wav(files[0]).frame_rate)
-res = AudioSegment.empty()
+data = AudioSegment.empty()
 
 def remove_dc_offset(audio_segment):
     samples = np.array(audio_segment.get_array_of_samples())
     samples = samples - round(np.mean(samples))
     return(AudioSegment(samples.tobytes(), channels=audio_segment.channels, sample_width=audio_segment.sample_width, frame_rate=audio_segment.frame_rate)) 
 
-for f in files[:2]:
+id = get_metadata_from_filename(files[0])['id']
+
+for f in files:
     print(f)
     metadata = get_metadata_from_filename(f)
     hour_start = int(metadata['hour'])
     sec_start = int(metadata['second'])
     # print(metadata['hour'], metadata['minute'], metadata['second'])
 
-    w_data = AudioSegment.from_wav(f)
-    w_data = remove_dc_offset(w_data)
+    w = AudioSegment.from_wav(f)
+    w = remove_dc_offset(w)
 
-    hr_result = AudioSegment.silent(duration=3600 * 1000, frame_rate=w_data.frame_rate)
-    hr_result = hr_result.overlay(w_data, position=sec_start * 1000)
+    data_hr = AudioSegment.silent(duration=3600 * 1000, frame_rate=w.frame_rate)
+    data_hr = data_hr.overlay(w, position=sec_start * 1000)
     # hr_result.export(f'annotation/_output/test_{hour_start}.wav', format='wav')
-    res = res + hr_result
+    data = data + data_hr
 
-res.export('annotation/_output/res.wav', format='wav')
+# data.export('annotation/_output/data.wav', format='wav')
 
-# from pydub import audio_segment
-# # w0.get_array_of_samples()
+for t in sample_times:
+    print(t)
+    start_time_ms = (t.hour * 60 * 60 + t.minute * 60 + t.second) * 1000
+    end_time_ms = start_time_ms + 60 * 1000 # one minute subsample
+    data_subsample = data[start_time_ms:end_time_ms]
+    data_subsample.export(f'annotation/_output/ss_{id}_{t.hour:02d}{t.minute:02d}{t.second:02d}.wav', format='wav')
