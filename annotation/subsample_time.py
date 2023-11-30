@@ -94,19 +94,19 @@ def subsample(id, lat, lon, year, month, day):
 
     # Print time periods
     print(f'Night (AM): {len(tp_night_am)} samples')
-    print(tp_night_am.astype(str))
+    print([t.strftime('%H:%M:%S') for t in tp_night_am.to_pydatetime()])
 
     print(f'Sunrise: {len(tp_sunrise)} samples')
-    print(tp_sunrise.astype(str))
+    print([t.strftime('%H:%M:%S') for t in tp_sunrise.to_pydatetime()])
 
     print(f'Day: {len(tp_day)} samples')
-    print(tp_day.astype(str))
+    print([t.strftime('%H:%M:%S') for t in tp_day.to_pydatetime()])
 
     print(f'Sunset: {len(tp_sunset)} samples')
-    print(tp_sunset.astype(str))
+    print([t.strftime('%H:%M:%S') for t in tp_sunset.to_pydatetime()])
 
     print(f'Night (PM): {len(tp_night_pm)} samples')
-    print(tp_night_pm.astype(str))
+    print([t.strftime('%H:%M:%S') for t in tp_night_pm.to_pydatetime()])
 
     # Check total time periods sum to 60
     total = sum(len(tp) for tp in [tp_night_am, tp_sunrise, tp_day, tp_sunset, tp_night_pm])

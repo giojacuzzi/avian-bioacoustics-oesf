@@ -52,4 +52,4 @@ for t in sample_times:
     start_time_ms = (t.hour * 60 * 60 + t.minute * 60 + t.second) * 1000
     end_time_ms = start_time_ms + 60 * 1000 # one minute subsample
     data_subsample = data[start_time_ms:end_time_ms]
-    data_subsample.export(f'annotation/_output/ss_{id}_{t.hour:02d}{t.minute:02d}{t.second:02d}.wav', format='wav')
+    data_subsample.export(f'annotation/_output/ss_{id}_{year}{month:02d}{day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}.wav', format='wav')
