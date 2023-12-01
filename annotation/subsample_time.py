@@ -3,33 +3,24 @@ from astral.location import Location
 from astral.sun import sun
 from datetime import date, datetime, timedelta
 import pandas as pd
-
 import os
-
 import re
 
+# Regex to match filename convention
 filename_convention = r'^(?P<id>\w+)_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})\.wav$'
 
 def get_metadata_from_filename(path):
     filename = os.path.basename(path)
-    # Define a regular expression pattern to match the filename convention
     pattern = re.compile(filename_convention)
-
-    # Match the pattern against the filename
     match = pattern.match(filename)
-
     if not match:
         raise ValueError(f"The filename '{filename}' does not match the expected pattern.")
-    
-    # Access matched groups using groupdict()
+
     metadata = match.groupdict()
     return metadata
 
 def find_files_by_date(directory, year, month, day):
-    # Define a regular expression pattern to match the filename convention
     pattern = re.compile(filename_convention)
-
-    # List all files in the directory
     all_files = os.listdir(directory)
     # print(all_files)
 
