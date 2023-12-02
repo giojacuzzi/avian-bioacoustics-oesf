@@ -1,19 +1,25 @@
 import os
 import subprocess
-import shutil
+import helpers
 from pydub import AudioSegment
 
 # Temporary folder for separation files
 # Returns a list of all file paths, including a copy of the original
 path_temp = 'annotation/_output/temp/'
 
+def get_output_path():
+    return(os.path.abspath(path_temp))
+
 def separate(path, num_sources = 4, multichannel = False):
     if not os.path.exists(path_temp):
         os.makedirs(path_temp)
 
-    shutil.copy(path, path_temp)
-
     path_file_stub = os.path.splitext(os.path.basename(path))[0]
+
+    path_local_copy = f'{path_temp}{os.path.basename(path)}'
+    w = AudioSegment.from_wav(path)
+    w = helpers.remove_dc_offset(w)
+    w.export(path_local_copy, format='wav')
 
     if num_sources == 4:
         model_dir = '../sound-separation/models/bird_mixit/bird_mixit_model_checkpoints/output_sources4'
@@ -22,13 +28,13 @@ def separate(path, num_sources = 4, multichannel = False):
         model_dir = '../sound-separation/models/bird_mixit/bird_mixit_model_checkpoints/output_sources8'
         checkpoint = '../sound-separation/models/bird_mixit/bird_mixit_model_checkpoints/output_sources8/model.ckpt-2178900'
 
-    print(f'Separating {os.path.basename(path)} into {num_sources} sources...')
+    print(f'Separating {os.path.basename(path_local_copy)} into {num_sources} sources...')
     subprocess.run([
         'python', '../sound-separation/models/tools/process_wav.py',
         '--model_dir', model_dir,
         '--checkpoint', checkpoint,
         '--num_sources', str(num_sources),
-        '--input', path,
+        '--input', path_local_copy,
         '--output', f'{path_temp}{path_file_stub}.wav'
     ])
 

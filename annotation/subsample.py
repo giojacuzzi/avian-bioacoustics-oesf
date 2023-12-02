@@ -7,7 +7,7 @@ import os
 import re
 
 # Regex to match filename convention
-filename_convention = r'^(?P<id>\w+)_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})\.wav$'
+filename_convention = r'(?P<id>[^_]*)_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}).*'
 
 def get_metadata_from_filename(path):
     filename = os.path.basename(path)
@@ -27,6 +27,7 @@ def find_files_by_date(directory, year, month, day):
     # Filter files based on the filename components
     matching_files = []
     for filename in all_files:
+        # print(filename)
         match = pattern.match(filename)
         if match:
             components = match.groupdict()

@@ -1,7 +1,7 @@
 # Demonstrates the use of birdnetlib on a file, with and without source separation
 from analyze import *
 
-path = '/Users/giojacuzzi/Desktop/audio_test/chorus.wav'
+path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/Annotation/Data/SMA00404_20230518/SMA00404_20230518_045101_SS.wav'
 
 # analyze (no separation)
 print('\nanalyze---------------------------------------------')

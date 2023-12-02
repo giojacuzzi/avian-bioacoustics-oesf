@@ -1,4 +1,4 @@
-from subsample_time import *
+from annotation.subsample import *
 import numpy as np
 from pydub import AudioSegment
 
