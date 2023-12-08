@@ -2,16 +2,22 @@
 from analyze import *
 import separate
 import subprocess
+import pandas as pd
 
-# path = '/Users/giojacuzzi/Downloads/test.wav'
-path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/Annotation/Data/SMA00404_20230518/SMA00404_20230518_052101_SS.wav'
+path = '/Users/giojacuzzi/Downloads/sample.wav'
+path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/Annotation/Data/_Annotator/SMA00556_20230611/SMA00556_20230611_211448_SS.wav'
 
 def get_max_conf_per_species(detections):
-    # TODO: THIS IS INCORRECT!
-    return(detections.groupby('common_name').agg({'scientific_name': 'first', 'confidence': 'max', 'start_time': 'first', 'file': 'first'}).reset_index().sort_values(by='confidence', ascending=False))
+    if (len(detections) > 0):
+        # TODO: THIS IS INCORRECT!
+        return(detections.groupby('common_name').agg({'scientific_name': 'first', 'confidence': 'max', 'start_time': 'first', 'file': 'first'}).reset_index().sort_values(by='confidence', ascending=False))
+    else:
+        return([])
 
 if os.path.exists(separate.get_output_path()):
     shutil.rmtree(os.path.dirname(separate.get_output_path()))
+
+pd.set_option('display.max_rows', None)
 
 print('\nanalyze (no separation)-----------------------------')
 detections_1 = analyze(path)

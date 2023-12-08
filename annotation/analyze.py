@@ -21,7 +21,7 @@ def analyze(path, df=True):
     detections = recording.detections
     for d in detections:
         d['file'] = os.path.basename(path)
-    if df:
+    if df and len(detections) > 0:
         detections = pd.DataFrame(detections).sort_values('start_time')
     return(detections)
 

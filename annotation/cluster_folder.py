@@ -1,5 +1,5 @@
 # path = '/Users/giojacuzzi/Desktop/audio_test/owl.wav'
-path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/Annotation/Data/SMA00404_20230518/SMA00404_20230518_060601_SS.wav'
+path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/Annotation/Data/CGBS/'
 sep = True # perform source separation
 num_sources = 4
 db_max=100  # define spectrogram range (i.e. db threshold)
@@ -20,15 +20,18 @@ import pandas as pd
 
 print(os.path.dirname(path))
 
-if sep:
-    # Separate audio into 4 sources
-    files = separate.separate(path, num_sources)
-    file_mix = ([file for file in files if 'source' not in file])[0]
-    files = [file for file in files if 'source' in file] # discard original mix
-    print(files)
-else:
-    files = [path]
-    file_mix = path
+files = [os.path.join(path, file) for file in os.listdir(path) if file.endswith('.wav')]
+print(files)
+
+# if sep:
+#     # Separate audio into 4 sources
+#     files = separate.separate(path, num_sources)
+#     file_mix = ([file for file in files if 'source' not in file])[0]
+#     files = [file for file in files if 'source' in file] # discard original mix
+#     print(files)
+# else:
+#     files = [path]
+#     file_mix = path
 
 all_rois = pd.DataFrame()
 all_X = pd.DataFrame()
@@ -60,6 +63,8 @@ for f in files:
     if len(df_rois) == 0:
         continue
 
+    df_rois['label'] = os.path.basename(f)
+
     # ax0, fig0 = overlay_rois(Sxx_db, df_rois, **{'vmin':0, 'vmax':60, 'extent':ext})
     # plt.show()
 
@@ -83,6 +88,12 @@ all_rois['labelID'] = all_rois.index
 tsne = TSNE(n_components=2, perplexity=min(len(all_rois) - 1, 12), init='pca', verbose=True)
 Y = tsne.fit_transform(all_X)
 
+print(all_rois)
+
+# print(all_X)
+
+print(Y)
+
 # fig, ax = plt.subplots()
 # ax.scatter(Y[:,0], Y[:,1], c='gray', alpha=0.8)
 # ax.set_xlabel('tsne dim 1')
@@ -94,43 +105,41 @@ from sklearn.cluster import DBSCAN
 cluster = DBSCAN(eps=4.5, min_samples=4).fit(Y)
 print('Number of clusters found:', np.unique(cluster.labels_).size)
 
-# from maad.util import rand_cmap
-# fig, ax = plt.subplots()
-# ax.scatter(Y[:,0], Y[:,1], c=cluster.labels_, cmap=rand_cmap(5 , first_color_black=False), alpha=0.8)
-# ax.set_xlabel('tsne dim 1')
-# ax.set_ylabel('tsne dim 2')
+from sklearn.preprocessing import LabelEncoder
+print(cluster.labels_)
 
-# Load mix as spectrogram
-print(f'Loading {file_mix} as spectrogram...')
-s, fs = sound.load(file_mix)
-# s_filt = sound.select_bandwidth(s, fs, fcut=1000, forder=2, ftype='highpass')
-Sxx, tn, fn, ext = sound.spectrogram(s, fs, nperseg=1024, noverlap=512)
-Sxx_db = power2dB(Sxx, db_range=db_max) + db_max
+# Color points as the files they came from
+# cluster.labels_ = LabelEncoder().fit_transform(all_rois['label'])
+# print(cluster.labels_)
 
-# Overlay bounding box on the original spectrogram
-all_rois['label'] = cluster.labels_.astype(str)
-ax0, fig0 = overlay_rois(Sxx_db, all_rois, **{'vmin':0, 'vmax':60, 'extent':ext})
+from maad.util import rand_cmap
+fig, ax = plt.subplots()
+ax.scatter(Y[:,0], Y[:,1], c=cluster.labels_, cmap=rand_cmap(5 , first_color_black=False), alpha=0.8)
+for i, txt in enumerate(cluster.labels_):
+    ax.text(Y[i, 0], Y[i, 1], all_rois.loc[i, 'label'], fontsize=8, color='black', ha='center', va='center')
+ax.set_xlabel('tsne dim 1')
+ax.set_ylabel('tsne dim 2')
 plt.show()
 
 
-# Save clustered ROIs as a Raven Pro selection table
-selection_table = all_rois.rename(columns={
-    'labelID': 'Selection',
-    'min_t': 'Begin Time (s)',
-    'max_t': 'End Time (s)',
-    'min_f': 'Low Freq (Hz)',
-    'max_f': 'High Freq (Hz)',
-    'label': 'species'
-})
-selection_table['Selection'] = (selection_table['Selection'].astype(int)) + 1
-selection_table['View'] = 'Spectrogram 1'
-selection_table['Channel'] = 1
-selection_table = selection_table[['Selection','View','Channel','Begin Time (s)','End Time (s)','Low Freq (Hz)','High Freq (Hz)','species']]
+# # Save clustered ROIs as a Raven Pro selection table
+# selection_table = all_rois.rename(columns={
+#     'labelID': 'Selection',
+#     'min_t': 'Begin Time (s)',
+#     'max_t': 'End Time (s)',
+#     'min_f': 'Low Freq (Hz)',
+#     'max_f': 'High Freq (Hz)',
+#     'label': 'species'
+# })
+# selection_table['Selection'] = (selection_table['Selection'].astype(int)) + 1
+# selection_table['View'] = 'Spectrogram 1'
+# selection_table['Channel'] = 1
+# selection_table = selection_table[['Selection','View','Channel','Begin Time (s)','End Time (s)','Low Freq (Hz)','High Freq (Hz)','species']]
 
-print(selection_table)
-outpath = f'{os.path.dirname(path)}/{os.path.splitext(os.path.basename(path))[0]}.Table.1.selections.txt'
-print(outpath)
-selection_table.to_csv(outpath, sep='\t', index=False)
+# print(selection_table)
+# outpath = f'{os.path.dirname(path)}/{os.path.splitext(os.path.basename(path))[0]}.Table.1.selections.txt'
+# print(outpath)
+# selection_table.to_csv(outpath, sep='\t', index=False)
 
-# Open folder in finder
-subprocess.run(['/usr/bin/open', outpath])
+# # Open folder in finder
+# subprocess.run(['/usr/bin/open', outpath])

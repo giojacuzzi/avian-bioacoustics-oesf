@@ -1,6 +1,8 @@
 import os
 import subprocess
 import helpers
+import sys
+import shutil
 from pydub import AudioSegment
 
 # Temporary folder for separation files
@@ -11,8 +13,11 @@ def get_output_path():
     return(os.path.abspath(path_temp))
 
 def separate(path, num_sources = 4, multichannel = False):
-    if not os.path.exists(path_temp):
-        os.makedirs(path_temp)
+
+    # Remove any existing temp files
+    if os.path.exists(path_temp):
+        shutil.rmtree(path_temp)
+    os.makedirs(path_temp)
 
     path_file_stub = os.path.splitext(os.path.basename(path))[0]
 

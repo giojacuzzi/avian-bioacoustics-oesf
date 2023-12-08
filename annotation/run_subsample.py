@@ -1,13 +1,13 @@
 # Split a specified site-day into 1-minute subsamples
 
 # ENTER THESE VALUES MANUALLY
-id    = 'SMA00404'
-lat   = 47.64477
-lon   = -124.19109
+id    = 'SMA00556'
+lat   = 47.67369
+lon   = -124.33503
 year  = 2023
-month = 5
-day   = 18
-path  = f'/Volumes/gioj/OESF/2023/D1_20230518_20230528/SMA00404_20230518_000000'
+month = 6
+day   = 11
+path  = f'/Volumes/gioj/OESF/2023/D3_20230611_20230620/SMA00556_20230611_000000'
 #
 
 from subsample import *
@@ -16,7 +16,7 @@ from pydub import AudioSegment
 import helpers
 
 # Create output directory
-outpath = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/Annotation/Data'
+outpath = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/Annotation/Data/_Annotator'
 output = outpath + f'/{id}_{year}{month:02d}{day:02d}'
 if not os.path.exists(output):
     os.makedirs(output)
