@@ -9,7 +9,6 @@ from birdnetlib import Recording
 import datetime
 import os
 import pandas as pd
-import sys
 import time
 
 # Analyzer config
@@ -19,7 +18,7 @@ lon=-124.136721
 # File config
 in_filetype = '.wav'
 in_dir = '/Volumes/gioj_b1/OESF'
-in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment3'
+in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment4'
 out_dir = os.path.dirname(__file__) + '/_output'
 
 # Scrape serial number, date, and time from Song Meter filename
@@ -88,8 +87,8 @@ if __name__ == '__main__':
                 print(f'  {os.path.basename(file)} already analyzed. SKIPPING...')
                 continue
 
-            info = get_info_from_filename(file)
             print(f'  Processing {os.path.basename(file)}...')
+            info = get_info_from_filename(file)
             start_time_file = time.time()
             # print(f"Processing {info['serial_no']} {info['year']}/{info['month']}/{info['day']} {info['hour']}:{info['min']}:{info['sec']}")
 

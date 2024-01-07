@@ -93,9 +93,7 @@ if __name__ == '__main__':
             print(f'{os.path.basename(dir)} already analyzed. Skipping...')
             continue
 
-        print('Processing directory ' + dir +'...')
-        ####
-
+        print('Analyzing directory ' + dir + '...')
         info = get_info_from_filename(os.path.basename(os.path.normpath(dir))) # note 'time' here is nonsense
         print(info['serial_no'])
         print(info['date'])
@@ -109,9 +107,9 @@ if __name__ == '__main__':
             # min_conf=min_conf,
             patterns=[('*' + in_filetype)]
         )
-        
-        # PROCESS
-        ###
+        batch.on_analyze_directory_complete = on_analyze_directory_complete
+        print('Processing directory ' + dir +'...')
+        batch.process()
         print('Finished! Moving on to the next directory...')
 
     print('Finished analyzing all directories!')
