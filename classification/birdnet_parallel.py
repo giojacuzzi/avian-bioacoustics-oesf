@@ -1,26 +1,29 @@
-import pandas as pd
-import glob
-import os
-from birdnetlib.batch import DirectoryMultiProcessingAnalyzer 
+# # For each directory containing .wav files
+#     # If the files in the directory haven't been processed
+#         # Create a batch for the directory
+#         # Process the batch
+#         # Save the results
+
 from birdnetlib.analyzer import Analyzer
+from birdnetlib.batch import DirectoryMultiProcessingAnalyzer 
 import datetime
+import os
+import pandas as pd
 
 # Analyzer config
 lat=47.676786
 lon=-124.136721
-min_conf=0.5
+# min_conf=0.5
 
 # File config
 in_filetype = '.wav'
-in_dir = "D:\\DNR\\2021\\Deployment1_2021April13_14\\S4A04325_20210414_Data"
-# in_dir = 'C:\\Users\\gioj\\Desktop\\test'
-out_dir = os.path.dirname(__file__) + '\\_output\\'
-out_file = 'detections.csv'
-out_path = out_dir + out_file
+in_dir = '/Volumes/gioj_b1/OESF/2020'
+out_dir = os.path.dirname(__file__) + '/_output/'
 
 # Scrape serial number, date, and time from Song Meter filename
 def get_info_from_filename(path):
     filename = os.path.basename(path)
+    print(filename)
     substrs = filename.split(in_filetype)[0].split('_')
     date = substrs[1]
     time = substrs[2]
@@ -62,7 +65,7 @@ def on_analyze_directory_complete(recordings):
             results = pd.concat([results, result], ignore_index=True)
     
     # Save to file
-    pd.DataFrame.to_csv(results, out_dir + str(os.path.basename(os.path.dirname(recordings[0].path))) + '.csv', index=False)
+    pd.DataFrame.to_csv(results.sort_values(by='file'), out_dir + str(os.path.basename(os.path.dirname(recordings[0].path))) + '.csv', index=False)
 
 def getDirectoriesWithFiles(path, filetype):
     directoryList = []
@@ -80,11 +83,19 @@ def getDirectoriesWithFiles(path, filetype):
 if __name__ == '__main__':
     analyzer = Analyzer()
 
-    for dir in getDirectoriesWithFiles(in_dir, in_filetype):
+    already_analyzed = os.listdir(out_dir)
+    dirs = getDirectoriesWithFiles(in_dir, in_filetype)
+    dirs.sort()
 
-        # TODO: if 'dir' is in _output, we have analyzed it before, and should skip it
+    for dir in dirs:
 
-        print('Analyzing directory ' + dir + '...')
+        if (os.path.basename(dir) + '.csv') in already_analyzed:
+            print(f'{os.path.basename(dir)} already analyzed. Skipping...')
+            continue
+
+        print('Processing directory ' + dir +'...')
+        ####
+
         info = get_info_from_filename(os.path.basename(os.path.normpath(dir))) # note 'time' here is nonsense
         print(info['serial_no'])
         print(info['date'])
@@ -95,22 +106,12 @@ if __name__ == '__main__':
             date=dt,
             lat=lat,
             lon=lon,
-            min_conf=min_conf,
+            # min_conf=min_conf,
             patterns=[('*' + in_filetype)]
         )
-        batch.on_analyze_directory_complete = on_analyze_directory_complete
-        print('Processing directory ' + dir +'...')
-        batch.process()
-        print('Done!')
+        
+        # PROCESS
+        ###
+        print('Finished! Moving on to the next directory...')
 
-    print('FINITO DIRECTERO!')
-
-# ##########
-
-# # Load csv of processed files
-
-# # For each directory containing .wav files
-#     # If the files in the directory haven't been processed
-#         # Create a batch for the directory
-#         # Process the batch
-#         # Save the results
+    print('Finished analyzing all directories!')

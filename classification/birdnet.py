@@ -12,7 +12,7 @@ out_file = 'detections.csv'
 out_path = out_dir + out_file
 
 # BirdNET config 
-min_conf = 0.5
+# min_conf = 0.5
 
 # Find files to process
 files = glob.glob('D:\\DNR\\2021\\**\\*' + in_filetype, recursive=True)
@@ -60,7 +60,7 @@ for file in files[0:3]:
         lat=47.676786,
         lon=-124.136721,
         date=dt,
-        min_conf=0.5,
+        # min_conf=0.5,
     )
     recording.analyze()
 
