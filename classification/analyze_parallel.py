@@ -19,9 +19,10 @@ if 'analyzer' not in locals() and 'analyzer' not in globals():
 
 # File config
 in_filetype = '.wav'
-in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment4'
+in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment1/S4A04271_20200412_Data'
 root_dir = '/Volumes/gioj_b1/OESF'
-out_dir = os.path.dirname(__file__) + '/_output'
+# out_dir = os.path.dirname(__file__) + '/_output'
+out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
 
 def analyze_file(file):
     file_out = os.path.splitext(file[len(root_dir):])[0] + '.csv'
