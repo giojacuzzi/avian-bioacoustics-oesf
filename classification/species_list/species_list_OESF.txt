@@ -32,7 +32,7 @@ Geothlypis trichas_Common Yellowthroat
 Accipiter cooperii_Cooper's Hawk
 Junco hyemalis_Dark-eyed Junco
 Dryobates pubescens_Downy Woodpecker
-Muscicapa adusta_African Dusky Flycatcher
+Empidonax oberholseri_Dusky Flycatcher
 Tyrannus tyrannus_Eastern Kingbird
 Sturnus vulgaris_European Starling
 Coccothraustes vespertinus_Evening Grosbeak

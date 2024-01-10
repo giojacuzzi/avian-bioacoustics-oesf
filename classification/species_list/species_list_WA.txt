@@ -218,7 +218,7 @@ Empidonax traillii_Willow Flycatcher
 Empidonax minimus_Least Flycatcher
 Empidonax hammondii_Hammond's Flycatcher
 Empidonax wrightii_Gray Flycatcher
-Muscicapa adusta_African Dusky Flycatcher
+Empidonax oberholseri_Dusky Flycatcher
 Empidonax difficilis_Pacific-slope Flycatcher
 Empidonax occidentalis_Cordilleran Flycatcher
 Sayornis saya_Say's Phoebe
