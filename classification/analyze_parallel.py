@@ -7,22 +7,19 @@ import os
 import pandas as pd
 import time
 
-# Batching config
-n_processes = 8
-
-# Analyzer config
-lat=47.676786
-lon=-124.136721
-
-if 'analyzer' not in locals() and 'analyzer' not in globals():
-    analyzer = Analyzer()
-
 # File config
 in_filetype = '.wav'
 in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment1/S4A04271_20200412_Data'
 root_dir = '/Volumes/gioj_b1/OESF'
-# out_dir = os.path.dirname(__file__) + '/_output'
 out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
+
+# Analyzer config
+n_processes = 8 # cores per batch
+species_list_path=os.path.abspath('classification/species_list/species_list_OESF.txt')
+min_conf = 0.01
+
+if 'analyzer' not in locals() and 'analyzer' not in globals():
+    analyzer = Analyzer(custom_species_list_path=species_list_path)
 
 def analyze_file(file):
     file_out = os.path.splitext(file[len(root_dir):])[0] + '.csv'
@@ -34,24 +31,22 @@ def analyze_file(file):
         print(f'  {os.path.basename(file)} already analyzed. SKIPPING...')
         return
 
-    # TODO: move into try-catch
-    # print(f'  Analyzing {os.path.basename(file)}...')
-    info = get_info_from_filename(file)
-    start_time_file = time.time()
-    dt = datetime.datetime(int(info['year']), int(info['month']), int(info['day']), int(info['hour']), int(info['min']), int(info['sec']))
-
+    # Run analyzer to obtain detections
     try:
-        # Run analyzer
+        start_time_file = time.time()
         recording = Recording(
-            analyzer=analyzer, path=file,
-            lat=lat, lon=lon, date=dt,
-            # min_conf=0.1,
+            analyzer=analyzer,
+            path=file,
+            min_conf=min_conf,
         )
         recording.analyze()
 
         # Store detections in results
         result = pd.DataFrame(recording.detections)
         print(str(len(result)) + ' detections')
+
+        info = get_info_from_filename(file)
+        dt = datetime.datetime(int(info['year']), int(info['month']), int(info['day']), int(info['hour']), int(info['min']), int(info['sec']))
 
         col_names = ['common_name','confidence','start_date','end_date']
         if not result.empty:

@@ -3,6 +3,13 @@ import os
 import pandas as pd
 import time
 
+#
+def find_file_full_path(top_directory, filename):
+    for root, dirs, files in os.walk(top_directory):
+        if filename in files:
+            return os.path.join(root, filename)
+    return None
+
 # Scrape serial number, date, and time from Song Meter filename
 def get_info_from_filename(path):
     filename = os.path.basename(path)
@@ -49,3 +56,11 @@ def list_files_in_directory(directory):
             file_path = os.path.join(root, file)
             file_paths.append(file_path)
     return file_paths
+
+import numpy as np
+from pydub import AudioSegment
+
+def remove_dc_offset(audio_segment):
+    samples = np.array(audio_segment.get_array_of_samples())
+    samples = samples - round(np.mean(samples))
+    return(AudioSegment(samples.tobytes(), channels=audio_segment.channels, sample_width=audio_segment.sample_width, frame_rate=audio_segment.frame_rate))
