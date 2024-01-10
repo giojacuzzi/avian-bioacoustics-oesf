@@ -9,7 +9,7 @@ import time
 
 # File config
 in_filetype = '.wav'
-in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment1/S4A04271_20200412_Data'
+in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment1'
 root_dir = '/Volumes/gioj_b1/OESF'
 out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
 
