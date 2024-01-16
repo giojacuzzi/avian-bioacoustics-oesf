@@ -11,7 +11,7 @@
 
 # Manually run this script for each site, changing in_dir as needed
 top_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data'
-in_dir  = top_dir + '/raw_detections/2020/Deployment1/SMA00351_20200412_Data' # CHANGE ME!
+in_dir  = top_dir + '/raw_detections/2020/Deployment3/SMA00310_20200506_Data' # CHANGE ME!
 out_dir = top_dir + '/top_detections'
 data_dir = '/Volumes/gioj_b1/OESF'
 
@@ -45,7 +45,8 @@ print(all_detections)
 # Display the grouped DataFrame
 top_N_detections = all_detections.groupby('common_name').apply(lambda x: x.nlargest(N, 'confidence')).reset_index(drop=True)
 top_N_detections.rename(columns={'common_name': 'detected'}, inplace=True)
-top_N_detections.insert(0, 'validated', '')
+top_N_detections.insert(0, 'presence', '')
+top_N_detections.insert(0, 'species', '')
 print(top_N_detections)
 
 # Save top_N_detections as excel spreadsheet under a 'top_detections' folder
