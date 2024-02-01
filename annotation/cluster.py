@@ -1,5 +1,5 @@
 # path = '/Users/giojacuzzi/Desktop/audio_test/owl.wav'
-path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/Annotation/Data/SMA00404_20230518/SMA00404_20230518_060601_SS.wav'
+path = '/Users/giojacuzzi/Desktop/audio_test/chorus.wav'
 sep = True # perform source separation
 num_sources = 4
 db_max=100  # define spectrogram range (i.e. db threshold)
@@ -91,7 +91,7 @@ Y = tsne.fit_transform(all_X)
 
 # Cluster ROIs into homogeneous groups
 from sklearn.cluster import DBSCAN
-cluster = DBSCAN(eps=4.5, min_samples=4).fit(Y)
+cluster = DBSCAN(eps=3.5, min_samples=4).fit(Y)
 print('Number of clusters found:', np.unique(cluster.labels_).size)
 
 # from maad.util import rand_cmap

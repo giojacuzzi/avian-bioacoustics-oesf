@@ -8,7 +8,7 @@ from maad.util import power2dB, plot2d, format_features, overlay_rois
 
 # Load file as spectogram
 print('Loading file as spectrogram...')
-s, fs = sound.load('/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/Annotation/Data/SMA00404_20230518/SMA00404_20230518_052101_SS.wav')
+s, fs = sound.load('/Users/giojacuzzi/Desktop/audio_test/chorus.wav')
 s_filt = sound.select_bandwidth(s, fs, fcut=1000, forder=2, ftype='highpass')
 
 db_max=100  # used to define the range of the spectrogram

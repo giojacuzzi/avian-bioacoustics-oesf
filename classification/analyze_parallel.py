@@ -9,14 +9,14 @@ import time
 
 # File config
 in_filetype = '.wav'
-in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment1'
-root_dir = '/Volumes/gioj_b1/OESF'
+in_dir = '/Volumes/gioj/OESF/2020/Deployment5/S4A04325_20200603'
+root_dir = '/Volumes/gioj/OESF'
 out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
 
 # Analyzer config
 n_processes = 8 # cores per batch
 species_list_path=os.path.abspath('classification/species_list/species_list_OESF.txt')
-min_conf = 0.01
+min_conf = 0.0
 
 if 'analyzer' not in locals() and 'analyzer' not in globals():
     analyzer = Analyzer(custom_species_list_path=species_list_path)
@@ -39,6 +39,7 @@ def analyze_file(file):
             path=file,
             min_conf=min_conf,
         )
+        recording.minimum_confidence = min_conf
         recording.analyze()
 
         # Store detections in results

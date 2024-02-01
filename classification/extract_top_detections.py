@@ -11,9 +11,9 @@
 
 # Manually run this script for each site, changing in_dir as needed
 top_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data'
-in_dir  = top_dir + '/raw_detections/2020/Deployment3/SMA00310_20200506_Data' # CHANGE ME!
+in_dir  = top_dir + '/raw_detections/2020/Deployment6/SMA00404_20200618' # CHANGE ME!
 out_dir = top_dir + '/top_detections'
-data_dir = '/Volumes/gioj_b1/OESF'
+data_dir = '/Volumes/gioj/OESF'
 
 extract_audio_files = True
 
@@ -33,6 +33,7 @@ all_detections = pd.DataFrame()
 files = [file for file in os.listdir(in_dir) if file.endswith('.csv')]
 print(f'Finding the top {N} detections per species among {len(files)} files...')
 for file in files:
+    print(file)
     file_path = os.path.join(in_dir, file)
     detections = pd.read_csv(file_path)
     detections['file'] = os.path.basename(os.path.splitext(file_path)[0])
