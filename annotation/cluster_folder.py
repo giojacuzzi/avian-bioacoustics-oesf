@@ -4,7 +4,7 @@ sep = True # perform source separation
 num_sources = 4
 db_max=100  # define spectrogram range (i.e. db threshold)
 
-import separate
+import classification.sound_separation as sound_separation
 import os
 import numpy as np
 import matplotlib.pyplot as plt

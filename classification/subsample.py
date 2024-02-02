@@ -5,9 +5,7 @@ from datetime import date, datetime, timedelta
 import pandas as pd
 import os
 import re
-import numpy as np
 from random import shuffle
-import sys
 
 # Regex to match filename convention
 filename_convention = r'(?P<id>[^_]*)_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}).*'
@@ -115,8 +113,4 @@ def get_subsample_datetimes(id, lat, lon, year, month_start, month_end, day_star
     results = []
     for i in range(0, len(timedeltas)):
         results.append(dates_shuffled[i].normalize().to_pydatetime() + timedeltas_shuffled[i])
-
-    # print('FINAL')
-    # for r in results:
-    #     print(r)
     return results

@@ -4,7 +4,7 @@ sep = True # perform source separation
 num_sources = 4
 db_max=100  # define spectrogram range (i.e. db threshold)
 
-import separate
+import classification.sound_separation as sound_separation
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,7 +22,7 @@ print(os.path.dirname(path))
 
 if sep:
     # Separate audio into 4 sources
-    files = separate.separate(path, num_sources)
+    files = sound_separation.separate(path, num_sources)
     file_mix = ([file for file in files if 'source' not in file])[0]
     files = [file for file in files if 'source' in file] # discard original mix
     print(files)

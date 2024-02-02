@@ -16,7 +16,8 @@ outpath = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.c
 from subsample import *
 import numpy as np
 from pydub import AudioSegment
-import helpers
+import tools
+from run_analyze_parallel import process_file
 
 # Create output directory
 output = outpath + f'/{id}_{year}{month_start:02d}{day_start:02d}'
@@ -45,7 +46,7 @@ for date in pd.date_range(start=datetime(year=year, month=month_start, day=day_s
         sec_start = int(metadata['second'])
 
         w = AudioSegment.from_wav(f)
-        w = helpers.remove_dc_offset(w)
+        w = tools.remove_dc_offset(w)
 
         data_hr = AudioSegment.silent(duration=3600 * 1000, frame_rate=w.frame_rate)
         data_hr = data_hr.overlay(w, position=sec_start * 1000)
@@ -55,7 +56,7 @@ for date in pd.date_range(start=datetime(year=year, month=month_start, day=day_s
     subsample_len = 12 # seconds per subsample
     print(f'Saving {subsample_len} second subsamples to file...')
     for t in datetimes_with_same_date:
-        t_outpath = f'{output}/{id}_T{t.hour:02d}{t.minute:02d}{t.second:02d}_D{t.year}{t.month:02d}{t.day:02d}.wav'
+        t_outpath = f'{output}/{id}_{t.year}{t.month:02d}{t.day:02d}_{t.hour:02d}{t.minute:02d}{t.second:02d}.wav'
         print(t_outpath)
         start_time_ms = (t.hour * 60 * 60 + t.minute * 60 + t.second) * 1000
         end_time_ms = start_time_ms + subsample_len * 1000 # N minute subsample

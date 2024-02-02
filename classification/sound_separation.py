@@ -1,13 +1,13 @@
 import os
 import subprocess
-import helpers
+import tools
 import sys
 import shutil
 from pydub import AudioSegment
 
 # Temporary folder for separation files
 # Returns a list of all file paths, including a copy of the original
-path_temp = 'annotation/_output/temp/'
+path_temp = 'classification/_output/temp/'
 
 def get_output_path():
     return(os.path.abspath(path_temp))
@@ -23,7 +23,7 @@ def separate(path, num_sources = 4, multichannel = False):
 
     path_local_copy = f'{path_temp}{os.path.basename(path)}'
     w = AudioSegment.from_wav(path)
-    w = helpers.remove_dc_offset(w)
+    w = tools.remove_dc_offset(w)
     w.export(path_local_copy, format='wav')
 
     if num_sources == 4:

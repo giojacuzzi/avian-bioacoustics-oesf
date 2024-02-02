@@ -5,7 +5,7 @@ import pandas as pd
 import os
 from subprocess import *
 import shutil
-import separate
+import classification.sound_separation as sound_separation
 
 # Load and initialize BirdNET-Analyzer model
 species_list_path = os.path.abspath('species_list.txt')
@@ -28,7 +28,7 @@ def analyze(path, df=True):
 # 'cleanup' will remove any temporary files
 def analyze_with_separation(path, num_sources = 4, cleanup = True):
     
-    files = separate.separate(path, num_sources)
+    files = sound_separation.separate(path, num_sources)
 
     # Aggregate detections
     detections = []

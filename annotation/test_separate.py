@@ -1,6 +1,8 @@
-import separate
+# Find results in annotation/_output/temp
 
-path = '/Users/giojacuzzi/Desktop/audio_test/chorus.wav'
+import classification.separate as separate
+
+path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/SMA00351_20200412/SMA00351_20200414_060036.wav'
 num_sources = 4
 
 # Multichannel file

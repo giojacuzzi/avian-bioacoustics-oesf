@@ -20,7 +20,7 @@ extract_audio_files = True
 import os
 import pandas as pd
 import sys
-from helper import *
+from classification.tools import *
 from extract_detection_audio import *
 
 N = 5

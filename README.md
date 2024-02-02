@@ -22,3 +22,4 @@ conda create -n birdnet-analyzer python=3.10 -c conda-forge -y
 conda activate birdnet-analyzer
 ```
 
+Run the classifier with classification/run_analyze_parallel.py

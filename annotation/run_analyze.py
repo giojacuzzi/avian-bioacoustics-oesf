@@ -1,6 +1,6 @@
 # Run birdnetlib on a file with source separation and a species list
 from analyze import *
-import separate
+import classification.sound_separation as sound_separation
 import subprocess
 import pandas as pd
 
@@ -13,8 +13,8 @@ path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/
 #     else:
 #         return([])
 
-if os.path.exists(separate.get_output_path()):
-    shutil.rmtree(os.path.dirname(separate.get_output_path()))
+if os.path.exists(sound_separation.get_output_path()):
+    shutil.rmtree(os.path.dirname(sound_separation.get_output_path()))
 
 pd.set_option('display.max_rows', None)
 

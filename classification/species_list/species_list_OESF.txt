@@ -37,6 +37,7 @@ Tyrannus tyrannus_Eastern Kingbird
 Sturnus vulgaris_European Starling
 Coccothraustes vespertinus_Evening Grosbeak
 Passerella iliaca_Fox Sparrow
+Aquila chrysaetos_Golden Eagle
 Regulus satrapa_Golden-crowned Kinglet
 Bubo virginianus_Great Horned Owl
 Dryobates villosus_Hairy Woodpecker
