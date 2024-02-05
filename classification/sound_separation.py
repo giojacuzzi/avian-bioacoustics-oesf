@@ -14,14 +14,15 @@ def get_output_path():
 
 def separate(path, num_sources = 4, multichannel = False):
 
-    # Remove any existing temp files
-    if os.path.exists(path_temp):
-        shutil.rmtree(path_temp)
-    os.makedirs(path_temp)
-
     path_file_stub = os.path.splitext(os.path.basename(path))[0]
 
-    path_local_copy = f'{path_temp}{os.path.basename(path)}'
+    # Remove any existing temp files
+    path_temp_dir = path_temp + path_file_stub
+    if os.path.exists(path_temp_dir):
+        shutil.rmtree(path_temp_dir)
+    os.makedirs(path_temp_dir)
+
+    path_local_copy = f'{path_temp_dir}/{os.path.basename(path)}'
     w = AudioSegment.from_wav(path)
     w = tools.remove_dc_offset(w)
     w.export(path_local_copy, format='wav')
@@ -40,16 +41,16 @@ def separate(path, num_sources = 4, multichannel = False):
         '--checkpoint', checkpoint,
         '--num_sources', str(num_sources),
         '--input', path_local_copy,
-        '--output', f'{path_temp}{path_file_stub}.wav'
+        '--output', f'{path_temp_dir}/{path_file_stub}.wav'
     ])
 
     # Get absolute paths to all files
-    files = sorted(os.listdir(path_temp))
+    files = sorted(os.listdir(path_temp_dir))
     for i in range(len(files)):
-        files[i] = os.path.dirname(os.path.abspath(files[i])) + '/' + path_temp + os.path.basename(files[i])
+        files[i] = os.path.dirname(os.path.abspath(files[i])) + '/' + path_temp_dir + '/' + os.path.basename(files[i])
 
     if multichannel:
-        path_multichannel = f'{path_temp}{path_file_stub}_{1+num_sources}ch.wav'
+        path_multichannel = f'{path_temp_dir}/{path_file_stub}_{1+num_sources}ch.wav'
         channels = []
         for f in files:
             print(f)
@@ -59,9 +60,8 @@ def separate(path, num_sources = 4, multichannel = False):
         elif num_sources == 8:
              multichannel_file = AudioSegment.from_mono_audiosegments(channels[0], channels[1], channels[2], channels[3], channels[4], channels[5], channels[6], channels[7], channels[8])
         multichannel_file.export(path_multichannel, format='wav')
-        # shutil.rmtree(path_temp) # cleanup individual source files
         for f in files:
             os.remove(f)
-        files = [os.path.dirname(os.path.abspath(path_multichannel)) + '/' + path_temp + os.path.basename(path_multichannel)]
+        files = [os.path.dirname(os.path.abspath(path_multichannel)) + '/' + path_temp_dir + '/' + os.path.basename(path_multichannel)]
 
     return(files)

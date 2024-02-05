@@ -2,6 +2,11 @@ import datetime
 import os
 import pandas as pd
 import time
+import numpy as np
+
+# Sigmoid activation for raw logit confidence values
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
 #
 def find_file_full_path(top_directory, filename):
