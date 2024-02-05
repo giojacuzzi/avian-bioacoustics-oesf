@@ -4,14 +4,14 @@ from datetime import datetime
 import pandas as pd
 from pydub import AudioSegment
 from pydub.playback import play
-from classification.tools import *
+from tools import *
 
 ## Given an audio file and the start/end times for a detection event, create a new audio file that extracts the detection event
 # file_in - path to the original file that contains the detection event audio data
 # path_out - path to the output file that will be created
 # date_detection_start, date_detection_end - datetime objects
 # buffer - seconds of audio to include before and after the detection
-def extract_detection_audio(file_in, dir_out, date_detection_start, date_detection_end, tag='', buffer=1.0):
+def extract_detection_audio(file_in, dir_out, date_detection_start, date_detection_end, tag='', buffer=0.0):
 
     info = get_info_from_filename(file_in)
     date_file = datetime.datetime(int(info['year']), int(info['month']), int(info['day']), int(info['hour']), int(info['min']), int(info['sec']))
