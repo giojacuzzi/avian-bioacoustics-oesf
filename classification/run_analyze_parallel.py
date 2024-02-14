@@ -16,27 +16,19 @@ import analyze
 from itertools import repeat
 
 # FOR PROCESSING RAW AUDIO FROM ENTIRE DEPLOYMENTS ---
-# in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment5'
-# root_dir = '/Volumes/gioj_b1/OESF'
-# out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
-# sort_by='start_date'
-# ascending=True
-# ---
-
-# FOR PROCESSING AUDIO SUBSAMPLES FOR ANNOTATION REFERENCE ---
-# root_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/SMA00380_20200604'
-# in_dir = root_dir
-# out_dir = in_dir + '/detections'
-# sort_by = 'confidence'
-# ascending = False
+in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment5'
+root_dir = '/Volumes/gioj_b1/OESF'
+out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
+sort_by='start_date'
+ascending=True
 # ---
 
 ## FOR TESTING
-root_dir = '/Users/giojacuzzi/Desktop/audio_test/1'
-in_dir = root_dir
-out_dir = in_dir + '/predictions'
-sort_by = 'start_date'
-ascending = True
+# root_dir = '/Users/giojacuzzi/Desktop/audio_test/1'
+# in_dir = root_dir
+# out_dir = in_dir + '/predictions'
+# sort_by = 'start_date'
+# ascending = True
 ## /TESTING
 
 # Analyzer config
