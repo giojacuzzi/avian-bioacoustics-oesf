@@ -103,7 +103,7 @@ for table_file in selection_tables:
 print(annotations)
 
 # More clean up of typos
-annotations.loc[annotations['label_truth'].str.contains('not|non', case=False), 'label_truth'] = '0' # a value of 0 indicates the species_predicted is NOT present
+annotations.loc[annotations['label_truth'].str.contains('not|non', case=False), 'label_truth'] = '0' # 0 indicates the species_predicted is NOT present
 annotations['label_truth'].replace(['unknown', 'unkown'], 'unknown', inplace=True)
 
 unique_labels = sorted(annotations['label_truth'].unique()) # Get a sorted list of unique species names
