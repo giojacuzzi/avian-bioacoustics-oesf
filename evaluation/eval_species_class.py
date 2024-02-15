@@ -1,19 +1,31 @@
-# https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc
-# The output of the model is a logistic regression score
-# We need to transform this into a discrete binary classification (e.g. Robin present vs Robin not present)
-# We can do this with a classification threshold.
+##
+# Demo script to evaluate classifier performance for each species class
+# Requires annotations from Google Drive. Ensure these are downloaded locally before running.
+#
+# For a given audio segment, the classifier outputs a logistic regression score for each
+# species class representing its confidence that the species is present in the segment.
+# We need to transform this continuous confidence score into a discrete binary classification
+# (e.g. Robin present vs Robin not present). We can do this with a classification threshold.
 
-# Load required packages
-import os
-import sys
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.special import expit
-import sklearn.metrics
-import re
+# Declare some configuration variables ------------------------------------
 
-# Utility functions -------------------------------------------------
+# Root directory for the annotations data
+dir_in = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020'
+
+species_to_evaluate = 'all' # Evaluate all species classes...
+# species_to_evaluate = ['american robin', 'band-tailed pigeon'] # ...or look at just a few
+
+plot = False # Plot the results
+
+# Load required packages -------------------------------------------------
+import os                       # File navigation
+import pandas as pd             # Data manipulation
+import matplotlib.pyplot as plt # Plotting
+import sklearn.metrics          # Classifier evaluation
+import re                       # Regular expressions
+
+# Define utility functions -------------------------------------------------
+# These helper functions are used to easily encapsulate repeated tasks
 
 # Function to parse species name and confidence from filename
 def get_species_and_confidence_from_file(file):
@@ -36,9 +48,10 @@ def find_files(directory, filetype):
     return results
 
 # Load and aggregate evaluation data -------------------------------------------------
+# This section loads all selection tables from the annotations root folder, aggregates
+# them, and cleans up the data to ensure uniformity across entries.
         
 # Locate all selection tables
-dir_in = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020'
 selection_tables = find_files(dir_in, '.txt')
 
 # Load selection table files and combine into a single 'annotations' dataframe
@@ -97,9 +110,14 @@ unique_labels = sorted(annotations['label_truth'].unique()) # Get a sorted list 
 print(f'{len(unique_labels)} unique labels annotated: {unique_labels}')
 
 # Evaluate model performance on species classes -------------------------------------------------
-# species_to_evaluate = sorted(annotations['species_predicted'].unique()) # Evaluate all species classes...
-species_to_evaluate = ['band-tailed pigeon'] # ...or look at just a few
+# This section uses the annotation data to evaluate performance metrics for each species class,
+# namely the precision, recall, precision-recall curve and AUC.
 
+# If evaluating all species classes, retrieve their names from the data
+if species_to_evaluate == 'all':
+    species_to_evaluate = sorted(annotations['species_predicted'].unique())
+
+performance_metrics = pd.DataFrame()
 for species_name in species_to_evaluate:
     print(f'Evaluating class "{species_name}"...')
 
@@ -143,14 +161,15 @@ for species_name in species_to_evaluate:
     # performs on the positive species class.
     precision, recall, th = sklearn.metrics.precision_recall_curve(labels_binary['label_truth'], labels_binary['confidence'])
 
-    # Plot precision and recall as a function of threshold
-    plt.plot(th, precision[:-1], label='Precision', marker='.') 
-    plt.plot(th, recall[:-1], label='Recall', marker='.')
-    plt.xlabel('threshold') 
-    plt.ylabel('performance')
-    plt.title(f'Threshold Performance: {species_name} (N={len(labels_binary)})')
-    plt.legend() 
-    plt.show()
+    if plot:
+        # Plot precision and recall as a function of threshold
+        plt.plot(th, precision[:-1], label='Precision', marker='.') 
+        plt.plot(th, recall[:-1], label='Recall', marker='.')
+        plt.xlabel('threshold') 
+        plt.ylabel('performance')
+        plt.title(f'Threshold Performance: {species_name} (N={len(labels_binary)})')
+        plt.legend() 
+        plt.show()
 
     # The area under the precision-recall curve, AUC-PR, is a useful summary statistic of the the relationship.
     # The AUC-PR ranges from 0.0 to 1.0, with 1.0 indicating a perfect classifier. However, unlike the AUC
@@ -164,14 +183,24 @@ for species_name in species_to_evaluate:
     # at the ratio of positive to negative examples in the dataset.
     no_skill = len(labels_binary[labels_binary['label_truth']==1]) / len(labels_binary)
 
-    # Plot precision-recall curve
-    plt.plot([0, 1], [no_skill, no_skill], linestyle='--', label='Baseline', color='gray')
-    plt.plot(recall, precision, marker='.', label='Classifier')
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title(f'Precision-Recall (AUC {pr_auc:.2f}): {species_name} (N={len(labels_binary)})')
-    plt.legend()
-    plt.show()
+    if plot:
+        # Plot precision-recall curve
+        plt.plot([0, 1], [no_skill, no_skill], linestyle='--', label='Baseline', color='gray')
+        plt.plot(recall, precision, marker='.', label='Classifier')
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title(f'Precision-Recall (AUC {pr_auc:.2f}): {species_name} (N={len(labels_binary)})')
+        plt.legend()
+        plt.show()
+
+    # Store the performance metrics
+    performance_metrics = pd.concat([performance_metrics, pd.DataFrame({
+        'species': [species_name],
+        'AUC-PR':  [round(pr_auc, 2)],                      # Precision-Recall AUC
+        'p_mean':  [round(precision.mean(),2)],             # Average precision across all examples
+        'N':       [len(labels_binary)],                    # Total number of examples
+        'N_1':     [sum(labels_binary['label_truth'] == 1)] # Total number of positive examples
+    })], ignore_index=True)
 
     # TODO: Use F1-score to determine an optimal threshold, e.g. https://ploomber.io/blog/threshold/
 
@@ -198,3 +227,7 @@ for species_name in species_to_evaluate:
     # plt.title(f'ROC (AUC {roc_auc:.2f}): {species_name} (N={len(labels_binary)})')
     # plt.legend()
     # plt.show()
+
+# Sort and print the performance metrics
+performance_metrics = performance_metrics.sort_values(by='p_mean', ascending=False).reset_index(drop=True)
+print(performance_metrics.to_string())
