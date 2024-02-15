@@ -103,8 +103,9 @@ species_to_evaluate = ['band-tailed pigeon'] # ...or look at just a few
 for species_name in species_to_evaluate:
     print(f'Evaluating class "{species_name}"...')
 
-    # Filter for only examples predicted to be the species 
-    # TODO: In the future, include ALL examples
+    # Filter for only examples predicted to be the species
+    # TODO: In the future, include ALL examples. This requires pulling confidence scores from the raw data,
+    # rather than the detection annotations
     annotations_species = annotations[annotations['species_predicted'] == species_name]
 
     # Exclude files with an "unknown" label_truth from consideration
@@ -123,7 +124,7 @@ for species_name in species_to_evaluate:
         on='file',
         how='left'
     )
-    # print(labels_binary)
+    print(labels_binary)
 
     # Precision is the proportion of true positives among positive predictions, TP/(TP + FP). Intuitively,
     # when the model says "Barred Owl", how often is it correct? Precision matters when the cost of false
