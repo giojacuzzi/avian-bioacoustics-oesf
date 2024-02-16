@@ -20,9 +20,12 @@ def find_file_full_path(top_directory, filename):
     return None
 
 # Scrape serial number, date, and time from Song Meter filename
-def get_info_from_filename(path):
+def parse_metadata_from_filename(path):
     filename = os.path.basename(path)
     substrs = filename.split('.')[0].split('_')
+    if len(substrs) != 3:
+        print('WARNING: Could not get metadata from filename')
+        return
     date = substrs[1]
     time = substrs[2]
     return({

@@ -44,8 +44,8 @@ def analyze_detections(filepath, analyzer, min_confidence, num_separation=1, cle
             shutil.rmtree(os.path.dirname(files[0]))
 
         # Find indices of maximum confidence values for each unique start_time and common_name combination
-        aggregated_detections = pd.DataFrame(detections).sort_values('start_date')
-        i = aggregated_detections.groupby(['start_date', 'common_name'])['confidence'].idxmax()
+        aggregated_detections = pd.DataFrame(detections).sort_values('start_time')
+        i = aggregated_detections.groupby(['start_time', 'common_name'])['confidence'].idxmax()
         aggregated_detections = aggregated_detections.loc[i]
         return aggregated_detections
 

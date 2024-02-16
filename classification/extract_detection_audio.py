@@ -13,7 +13,7 @@ from tools import *
 # buffer - seconds of audio to include before and after the detection
 def extract_detection_audio(file_in, dir_out, date_detection_start, date_detection_end, tag='', buffer=0.0):
 
-    info = get_info_from_filename(file_in)
+    info = parse_metadata_from_filename(file_in)
     date_file = datetime.datetime(int(info['year']), int(info['month']), int(info['day']), int(info['hour']), int(info['min']), int(info['sec']))
 
     file_out = f"{tag}_{info['serial_no']}_{date_detection_start.strftime('%Y%m%d_%H%M%S')}.wav"

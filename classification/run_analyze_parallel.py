@@ -16,26 +16,26 @@ import analyze
 from itertools import repeat
 
 # FOR PROCESSING RAW AUDIO FROM ENTIRE DEPLOYMENTS ---
-in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment5'
-root_dir = '/Volumes/gioj_b1/OESF'
-out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
-sort_by='start_date'
-ascending=True
+# in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment5'
+# root_dir = '/Volumes/gioj_b1/OESF'
+# out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
+# sort_by='start_date'
+# ascending=True
 # ---
 
 ## FOR TESTING
-# root_dir = '/Users/giojacuzzi/Desktop/audio_test/1'
-# in_dir = root_dir
-# out_dir = in_dir + '/predictions'
-# sort_by = 'start_date'
-# ascending = True
+root_dir = '/Users/giojacuzzi/Desktop/audio_test/chorus'
+in_dir = root_dir
+out_dir = in_dir + '/predictions'
+sort_by = 'confidence'
+ascending = False
 ## /TESTING
 
 # Analyzer config
-n_processes = 7 # cores per batch
-min_confidence = 0.0
-num_separation = 1
-cleanup = True
+n_processes = 1 # cores per batch
+min_confidence = 0.1
+num_separation = 4
+cleanup = False
 
 # File config
 in_filetype = '.wav'
@@ -50,7 +50,7 @@ if 'analyzer' not in locals() and 'analyzer' not in globals():
 def process_file(
         filepath,
         min_confidence=0.0,
-        num_separation=4,
+        num_separation=1,
         cleanup=True,
         root_dir=None,
         sort_by='start_date',
@@ -67,6 +67,8 @@ def process_file(
 
     # Run analyzer to obtain detections
     try:
+        info = parse_metadata_from_filename(filepath)
+
         start_time_file = time.time()
         result = analyze.analyze_detections(
             filepath = filepath,
@@ -76,8 +78,11 @@ def process_file(
             cleanup = cleanup
         )
 
-        info = get_info_from_filename(filepath)
-        dt = datetime.datetime(int(info['year']), int(info['month']), int(info['day']), int(info['hour']), int(info['min']), int(info['sec']))
+        if info is None:
+            print('None!')
+            dt = datetime.timedelta(0)
+        else:
+            dt = datetime.datetime(int(info['year']), int(info['month']), int(info['day']), int(info['hour']), int(info['min']), int(info['sec']))
 
         col_names = ['common_name','confidence','logit','start_date']
         if not result.empty:
@@ -118,7 +123,7 @@ def process_dir_parallel(
         root_dir=None,
         n_processes=8, # cores per batch
         min_confidence=0.0,
-        num_separation=4,
+        num_separation=1,
         cleanup = True,
         sort_by='start_date',
         ascending=True
