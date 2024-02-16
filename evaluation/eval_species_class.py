@@ -10,10 +10,13 @@
 # Declare some configuration variables ------------------------------------
 
 # Root directory for the annotations data
-dir_in = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020'
+dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020'
+
+# Root directory for the raw detection data
+dir_detections = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections/2020'
 
 species_to_evaluate = 'all' # Evaluate all species classes...
-# species_to_evaluate = ['american robin', 'band-tailed pigeon'] # ...or look at just a few
+# species_to_evaluate = ['american robin', 'band-tailed pigeon', 'barred owl', 'american kestrel'] # ...or look at just a few
 
 plot = False # Plot the results
 
@@ -23,23 +26,32 @@ import pandas as pd             # Data manipulation
 import matplotlib.pyplot as plt # Plotting
 import sklearn.metrics          # Classifier evaluation
 import re                       # Regular expressions
+import sys
 
 # Define utility functions -------------------------------------------------
 # These helper functions are used to easily encapsulate repeated tasks
 
-# Function to parse species name and confidence from filename
-def get_species_and_confidence_from_file(file):
-    pattern = re.compile(r'(.+)-(\d+\.\d+)_') # Regular expression, e.g. 'Barred Owl-0.9557572603225708_SMA...'
-    match = pattern.match(file)
+# Function to parse species name, confidence, serial number, date, and time from filename
+def parse_metadata_from_file(filename):
+
+    # Regular expression pattern to match the filename
+    pattern = r'^(.+)-([\d.]+)_(\w+)_(\d{8})_(\d{6})\.(\w+)$'
+    match = re.match(pattern, filename)
+
     if match:
         species = match.group(1)
         confidence = float(match.group(2))
-        return species, confidence
+        serialno = match.group(3)
+        date = match.group(4)
+        time = match.group(5)
+        return species, confidence, serialno, date, time
     else:
-        print("Unable to determine species and/or confidence from file:", file)
+        print("WARNING: Unable to parse info from filename:", filename)
+        return
 
 # Find all selection table files under a root directory
 def find_files(directory, filetype):
+
     results = []
     for root, dirs, files in os.walk(directory):
         for file in files:
@@ -52,7 +64,7 @@ def find_files(directory, filetype):
 # them, and cleans up the data to ensure uniformity across entries.
         
 # Locate all selection tables
-selection_tables = find_files(dir_in, '.txt')
+selection_tables = find_files(dir_annotations, '.txt')
 
 # Load selection table files and combine into a single 'annotations' dataframe
 annotations = pd.DataFrame()   
@@ -84,12 +96,13 @@ for table_file in selection_tables:
         table = table.dropna()
 
     # Parse the species names and confidence scores from 'Begin File' column
-    species_and_confidences = list(map(lambda f: get_species_and_confidence_from_file(f), table['begin file']))
-    species, confidences = zip(*species_and_confidences)
+    file_metadata = list(map(lambda f: parse_metadata_from_file(f), table['begin file']))
+    species, confidences, serialnos, dates, times = zip(*file_metadata)
 
     table.rename(columns={'species': 'label_truth'}, inplace=True) # Rename 'species' to 'label_truth'
     table.insert(0, 'species_predicted', species) # Add column for species predicted by the classifier
     table.insert(2, 'confidence', confidences) # Add column for confidence values
+    table['serialno'] = serialnos
 
     # Clean up species names
     table['species_predicted'] = table['species_predicted'].str.lower()
@@ -122,7 +135,7 @@ for species_name in species_to_evaluate:
     print(f'Evaluating class "{species_name}"...')
 
     # Filter for only examples predicted to be the species
-    # TODO: In the future, include ALL examples. This requires pulling confidence scores from the raw data,
+    # TODO: In the future, include examples from all other species as well. This requires pulling confidence scores from the raw data,
     # rather than the detection annotations
     annotations_species = annotations[annotations['species_predicted'] == species_name]
 
@@ -175,8 +188,14 @@ for species_name in species_to_evaluate:
     # The AUC-PR ranges from 0.0 to 1.0, with 1.0 indicating a perfect classifier. However, unlike the AUC
     # of the ROC curve, the AUC-PR of a random (baseline) classifier is equal to the proportion of positive
     # instances in the dataset. This makes it a more conservative (and in many cases, more realistic) metric
-    # when dealing with imbalanced data.
+    # when dealing with imbalanced data. Note that because this is calculated using the interpolated trapezoidal
+    # rule, it can lead to an overestimated measurement of performance
     pr_auc = sklearn.metrics.auc(recall, precision)
+
+    # The average precision from prediction scores (AP) summarizes a precision-recall curve as the weighted mean of
+    # precisions achieved at each threshold, with the increase in recall from the previous threshold used as the
+    # weight. This can provide a more realistic measure of performance than AUC as it is not interpolated among scores.
+    pr_ap = sklearn.metrics.average_precision_score(labels_binary['label_truth'], labels_binary['confidence'])
 
     # A baseline or "unskilled" classifier is one that cannot discriminate between the classes and would
     # predict a random class or a constant class in all cases. This is represented by a horizontal line
@@ -189,7 +208,7 @@ for species_name in species_to_evaluate:
         plt.plot(recall, precision, marker='.', label='Classifier')
         plt.xlabel('Recall')
         plt.ylabel('Precision')
-        plt.title(f'Precision-Recall (AUC {pr_auc:.2f}): {species_name} (N={len(labels_binary)})')
+        plt.title(f'Precision-Recall (AUC {pr_auc:.2f}, AP {pr_ap:.2f}): {species_name} (N={len(labels_binary)})')
         plt.legend()
         plt.show()
 
@@ -197,6 +216,7 @@ for species_name in species_to_evaluate:
     performance_metrics = pd.concat([performance_metrics, pd.DataFrame({
         'species': [species_name],
         'AUC-PR':  [round(pr_auc, 2)],                      # Precision-Recall AUC
+        'AP':      [round(pr_ap, 2)],                      # Average precision
         'p_mean':  [round(precision.mean(),2)],             # Average precision across all examples
         'N':       [len(labels_binary)],                    # Total number of examples
         'N_1':     [sum(labels_binary['label_truth'] == 1)] # Total number of positive examples
