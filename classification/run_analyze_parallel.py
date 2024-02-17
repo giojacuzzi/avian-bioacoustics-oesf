@@ -16,25 +16,25 @@ import analyze
 from itertools import repeat
 
 # FOR PROCESSING RAW AUDIO FROM ENTIRE DEPLOYMENTS ---
-# in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment5'
-# root_dir = '/Volumes/gioj_b1/OESF'
-# out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
-# sort_by='start_date'
-# ascending=True
+in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment4/SMA00556_20200524'
+root_dir = '/Volumes/gioj_b1/OESF'
+out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
+sort_by='start_date'
+ascending=True
 # ---
 
-## FOR TESTING
-root_dir = '/Users/giojacuzzi/Desktop/audio_test/chorus'
-in_dir = root_dir
-out_dir = in_dir + '/predictions'
-sort_by = 'confidence'
-ascending = False
-## /TESTING
+# ## FOR TESTING
+# root_dir = '/Users/giojacuzzi/Desktop/audio_test/chorus'
+# in_dir = root_dir
+# out_dir = in_dir + '/predictions'
+# sort_by = 'confidence'
+# ascending = False
+# ## /TESTING
 
 # Analyzer config
-n_processes = 1 # cores per batch
-min_confidence = 0.1
-num_separation = 4
+n_processes = 7 # cores per batch
+min_confidence = 0.0
+num_separation = 1
 cleanup = False
 
 # File config
