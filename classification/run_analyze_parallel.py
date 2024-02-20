@@ -4,7 +4,6 @@
 # Specifically, APPLY_SIGMOID flag set to False throughout to
 # return logits, not sigmoid activations
 from birdnetlib.analyzer import Analyzer
-from birdnetlib import Recording 
 
 from multiprocessing import Pool
 from tools import *
@@ -16,7 +15,7 @@ import analyze
 from itertools import repeat
 
 # FOR PROCESSING RAW AUDIO FROM ENTIRE DEPLOYMENTS ---
-in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment4/SMA00556_20200524'
+in_dir = '/Volumes/gioj_b1/OESF/2020/Deployment6/SMA00556_20200618'
 root_dir = '/Volumes/gioj_b1/OESF'
 out_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
 sort_by='start_date'
@@ -161,6 +160,7 @@ def process_dir_parallel(
 
 # RUN
 if __name__ == '__main__':
+    out_dir = out_dir + in_dir.replace(root_dir, '') # preserve the directory structure of the original data
     process_dir_parallel(
         in_dir = in_dir,
         out_dir = out_dir,
