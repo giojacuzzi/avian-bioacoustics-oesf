@@ -169,7 +169,7 @@ for species_name in species_to_evaluate:
     # rather than the detection annotations
 
     # For each unique file (i.e. detection), determine if the species was present (1) or not (0) among all labels
-    labels_binary = annotations_species.groupby('file').apply(lambda group: 1 if species_name in group['label_truth'].values else 0).reset_index()
+    labels_binary = annotations_species.groupby('file').apply(lambda group: 1 if species_name in group['label_truth'].values else 'unknown' if 'unknown' in group['label_truth'].values else 0).reset_index()
     labels_binary.columns = ['file', 'label_truth']
     labels_binary = pd.merge(
         labels_binary,
@@ -177,7 +177,7 @@ for species_name in species_to_evaluate:
         on=['file'],
         how='left'
     )
-    # print(labels_binary)
+    print(labels_binary)
 
     annotations = pd.concat([annotations, labels_binary], ignore_index=True) # Store the annotations
 
@@ -194,11 +194,11 @@ for species_name in species_to_evaluate:
 
     # Save 'annotations_species' to 'annotations'
 
-# print('annotations!=================================')
-# print(annotations.to_string())
+print('annotations!=================================')
+print(annotations.to_string())
 
-# print('evaluated detections!========================')
-# print(evaluated_detections.to_string())
+print('evaluated detections!========================')
+print(evaluated_detections.to_string())
 
 print('merge========================================')
 detection_labels = pd.merge(
@@ -213,6 +213,9 @@ if (len(missing_species) > 0):
     print_warning('Removing species with missing annotations')
     detection_labels = detection_labels[~detection_labels['species_predicted'].isin(missing_species)]
 
-print(
-    detection_labels.to_string()
-)
+if detection_labels['label_truth'].isna().any():
+    print_warning('Assuming missing (NaN) label_truth values due to lack of annotation selections are false positives (0)...')
+    detection_labels['label_truth'] = detection_labels['label_truth'].fillna(0)
+print(detection_labels.to_string())
+
+# TODO: Evaluate performance after removing rows with 'unknown' label_truth values
