@@ -15,8 +15,6 @@ extract_audio_files = True
 
 import os
 import pandas as pd
-import numpy as np
-import sys
 from tools import *
 from extract_detection_audio import *
 from datetime import timedelta
