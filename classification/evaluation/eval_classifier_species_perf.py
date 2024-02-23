@@ -16,8 +16,8 @@
 # Set this to a specific directory to evaluate performance on a subset of the data
 dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020'
 
-# Root directory for the raw detection data
-dir_detections = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections/2020'
+# TODO: Root directory for the raw detection data
+# dir_detections = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections/2020'
 
 # Evaluate all species classes...
 species_to_evaluate = 'all'
