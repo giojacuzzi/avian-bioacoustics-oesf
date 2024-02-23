@@ -110,8 +110,9 @@ for table_file in sorted(selection_tables):
     cols_needed = ['species', 'begin file', 'file offset (s)', 'delta time (s)']
     if not all(col in table.columns for col in cols_needed):
         missing_columns = [col for col in cols_needed if col not in table.columns]
-        print_warning(f"{os.path.basename(table_file)} is missing columns {missing_columns}")
+        print_warning(f"Missing columns {missing_columns} in {os.path.basename(table_file)}. Skipping...")
         continue
+
     if table.empty:
         print_warning(f'{table_file} has no selections. Skipping...')
         continue
