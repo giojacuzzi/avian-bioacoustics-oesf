@@ -8,6 +8,7 @@ from process_file import process_file
 from tools import *
 import os
 
+# Output config
 out_dir = '/Users/giojacuzzi/Downloads' # Output directory for detection dataframe
 sort_by = 'confidence'                  # Column to sort dataframe by
 ascending = False                       # Column sort direction
@@ -24,14 +25,13 @@ in_filepath = os.path.normpath(input('\033[34mDrag and drop file to analyze (req
 root_dir = os.path.dirname(in_filepath)
 
 result = process_file(
-    filepath = in_filepath,
-    out_dir = out_dir,
-    min_confidence=min_confidence,
-    num_separation=num_separation,
-    cleanup=cleanup,
-    root_dir=root_dir,
-    sort_by=sort_by,
-    ascending=ascending
+    in_filepath    = in_filepath,
+    out_dir        = out_dir,
+    min_confidence = min_confidence,
+    num_separation = num_separation,
+    cleanup        = cleanup,
+    sort_by        = sort_by,
+    ascending      = ascending
 )
 print(f'Finished analyzing {in_filepath}:')
 

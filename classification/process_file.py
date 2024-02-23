@@ -11,6 +11,7 @@ import pandas as pd
 import time
 import analyze
 from itertools import repeat
+import sys
 
 # Create a global analyzer instance
 if 'analyzer' not in locals() and 'analyzer' not in globals():
@@ -18,31 +19,45 @@ if 'analyzer' not in locals() and 'analyzer' not in globals():
 
 # Run the analyzer on the given file and save the resulting detections to a csv
 def process_file(
-        filepath,
+        in_filepath,
         out_dir,
-        min_confidence=0.0,
-        num_separation=1,
-        cleanup=True,
-        root_dir=None,
-        sort_by='start_date',
-        ascending=True
+        root_dir       = None,
+        min_confidence = 0.0,
+        num_separation = 1,
+        cleanup        = True,
+        sort_by        = 'start_date',
+        ascending      = True
 ):
-    file_out = os.path.splitext(filepath[len(root_dir):])[0] + '.csv'
-    path_out = out_dir + file_out
+    # Save directly to output directory
+    if root_dir is None:
+        file_out = os.path.basename(os.path.splitext(in_filepath)[0]) + '.csv'
+    # Save to the output directory, preserving the original directory structure relative to the root
+    else:
+        if not root_dir in in_filepath:
+            print_error('Root directory must contain input file path')
+            return
+        file_out = os.path.splitext(in_filepath[len(root_dir):])[0] + '.csv'
+    path_out = os.path.normpath(out_dir + '/' + file_out)
+
+    # print(f'in_filepath {in_filepath}')
+    # print(f'root_dir {root_dir}')
+    # print(f'out_dir {out_dir}')
+    # print(f'file_out {file_out}')
+    # print(f'path_out {path_out}')
 
     already_analyzed = list_base_files_by_extension(out_dir, 'csv')
     already_analyzed = [f.rstrip('.csv') for f in already_analyzed]
-    if (os.path.splitext(os.path.basename(filepath))[0]) in already_analyzed:
-        print(f'  {os.path.basename(filepath)} already analyzed. SKIPPING...')
+    if (os.path.splitext(os.path.basename(in_filepath))[0]) in already_analyzed:
+        print(f'  {os.path.basename(in_filepath)} already analyzed. SKIPPING...')
         return
 
     # Run analyzer to obtain detections
     try:
-        info = parse_metadata_from_filename(filepath)
+        info = parse_metadata_from_filename(in_filepath)
 
         start_time_file = time.time()
         result = analyze.analyze_detections(
-            filepath = filepath,
+            filepath = in_filepath,
             analyzer = analyzer,
             min_confidence = min_confidence,
             num_separation = num_separation,
@@ -84,9 +99,9 @@ def process_file(
         pd.DataFrame.to_csv(result, path_out, index=False) 
 
         end_time_file = time.time()
-        print(f'Finished file {filepath}\n({end_time_file - start_time_file} sec)')
+        print_success(f'Finished file {in_filepath}\n({end_time_file - start_time_file} sec)')
 
         return result
 
     except Exception as e:
-        print_error(f'{str(e)}')
+        print_error(f'{str(e)}\n{in_filepath}')

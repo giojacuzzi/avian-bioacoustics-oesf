@@ -1,15 +1,11 @@
 # NOTE: Custom edits to birdnetlib required (see analyzer.py).
 # Specifically, APPLY_SIGMOID flag set to False throughout to
 # return logits, not sigmoid activations
-from birdnetlib.analyzer import Analyzer
 
 from multiprocessing import Pool
 from tools import *
-import datetime
 import os
-import pandas as pd
 import time
-import analyze
 from itertools import repeat
 from process_file import process_file
 
@@ -17,8 +13,8 @@ from process_file import process_file
 def process_dir_parallel(
         in_dir,
         out_dir,
-        in_filetype,
         root_dir=None,
+        in_filetype='.wav',
         n_processes=8, # cores per batch
         min_confidence=0.0,
         num_separation=1,
@@ -26,32 +22,34 @@ def process_dir_parallel(
         sort_by='start_date',
         ascending=True
 ):
-    if root_dir is None:
-        root_dir = in_dir
+    
+    if root_dir is not None and not root_dir in in_dir:
+        print_error('Root directory must contain input directory')
+        return
+
     dirs = getDirectoriesWithFiles(in_dir, in_filetype)
     dirs.sort()
 
     for dir in dirs:
         print('Processing directory ' + dir +'...')
 
-        # DEBUG - skip sm2
+        # DEBUG - skip sm2 model recordings
         if 'SM2' in os.path.basename(dir):
-            print('SM2 directory, skipping!')
+            print_warning('SM2 directory, skipping!')
             continue
 
         start_time_dir = time.time()
         files = list_files_in_directory(dir)
         files = [f for f in files if f.endswith(in_filetype)]
         files.sort()
-        with Pool(min(len(files), n_processes)) as pool: # start batch pool for all files in directory
-            # pool.map(process_file, files, sort_by = 'confidence')
+        with Pool(min(len(files), n_processes)) as pool: # start process pool for all files in directory
             pool.starmap(process_file, zip(
                 files,
                 repeat(out_dir),
+                repeat(root_dir),
                 repeat(min_confidence),
                 repeat(num_separation),
                 repeat(cleanup),
-                repeat(root_dir),
                 repeat(sort_by),
                 repeat(ascending)
             ))
