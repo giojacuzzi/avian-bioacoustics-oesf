@@ -22,7 +22,7 @@ import numpy as np
 from pydub import AudioSegment
 import tools
 from birdnetlib.analyzer import Analyzer
-import run_analyze_parallel
+import classification.run_analyze_dir_parallel as run_analyze_dir_parallel
 import sys
 
 species_list_path = os.path.abspath('classification/species_list/species_list_OESF.txt')

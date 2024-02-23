@@ -2,7 +2,7 @@
 
 # Manually run this script for each site, changing in_dir as needed
 top_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data'
-in_dir  = top_dir + '/raw_detections/2020/Deployment4/SMA00556_20200524' # CHANGE ME
+in_dir  = top_dir + '/raw_detections/2020/Deployment8/SMA00346_20200716' # CHANGE ME
 out_dir = top_dir + '/_annotator'
 data_dir = '/Volumes/gioj_b1/OESF' # CHANGE ME
 

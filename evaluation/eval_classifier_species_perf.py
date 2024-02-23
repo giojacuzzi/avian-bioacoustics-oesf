@@ -7,7 +7,8 @@
 # We need to transform this continuous confidence score into a discrete binary classification
 # (e.g. Robin present vs Robin not present). We can do this with a classification threshold.
 #
-# TODO: 'raw_detections' - Load all raw classifier detections << Needed in future for evaluating alternate classifiers one-to-one, or to use non-species-specific detections for evaluation
+# TODO: Load all raw classifier detections. This is needed in future for evaluating alternate classifiers one-to-one, or to use non-species-specific detections for evaluation
+# TODO: Determine the most commonly-confused (associated) labels per species for false positives.
 
 # Declare some configuration variables ------------------------------------
 
@@ -211,8 +212,8 @@ for species in species_to_evaluate:
 
     # TODO: When including non-detections (FN), do we need to pull confidence scores here instead? For the NaN values?
 
-    print('All annotations and samples:')
-    print(detection_labels)
+    # print('All annotations and samples:')
+    # print(detection_labels)
 
     # For each unique file (i.e. detection), determine if the species was present (1), unknown (?), or not (0) among all annotation labels
     # Simplify the dataframe such that there is only one row per detection.

@@ -4,6 +4,18 @@ import pandas as pd
 import time
 import numpy as np
 
+# Print warning
+def print_warning(l):
+    print(f'\033[33mWARNING: {l}\033[0m')
+
+# Print error
+def print_error(l):
+    print(f'\033[31mERROR: {l}\033[0m')
+
+# Print success
+def print_success(l):
+    print(f'\033[32m{l}\033[0m')
+
 # Sigmoid activation for raw logit confidence values
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -24,7 +36,7 @@ def parse_metadata_from_filename(path):
     filename = os.path.basename(path)
     substrs = filename.split('.')[0].split('_')
     if len(substrs) != 3:
-        print('WARNING: Could not get metadata from filename')
+        print_warning('Could not get metadata from filename')
         return
     date = substrs[1]
     time = substrs[2]
