@@ -14,7 +14,7 @@
 
 # Root directory for the annotations data
 # Set this to a specific directory to evaluate performance on a subset of the data
-dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020'
+dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00410_20200523'
 
 # TODO: Root directory for the raw detection data
 # dir_detections = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections/2020'
@@ -24,7 +24,7 @@ species_to_evaluate = 'all'
 # ...or look at just a few
 # species_to_evaluate = ['american robin', 'common raven', 'band-tailed pigeon', 'barred owl', 'american kestrel']
 
-plot = True # Plot the results
+plot = False # Plot the results
 
 # TODO: Once all annotations are complete and every detection has been evaluated, set this to False
 only_annotated = True # DEBUG: skip files that do not have annotations (selection tables)
@@ -153,7 +153,7 @@ if (len(missing_species) > 0):
     print_warning(f'Missing annotations for the following species:\n{missing_species}')
 
 # Throw warning for unique non-species labels
-species_classes = pd.read_csv('/Users/giojacuzzi/repos/olympic-songbirds/classification/species_list/species_list_OESF.txt', header=None) # Get list of all species
+species_classes = pd.read_csv('/Users/giojacuzzi/repos/avian-bioacoustics-oesf/src/classification/species_list/species_list_OESF.txt', header=None) # Get list of all species
 species_classes = [name.split('_')[1].lower() for name in species_classes[0]]
 unique_labels = sorted(raw_annotations['label_truth'].unique()) # Get a sorted list of unique species names
 unique_labels = [label for label in unique_labels if label not in species_classes]
