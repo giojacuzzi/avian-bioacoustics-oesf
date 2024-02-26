@@ -20,7 +20,7 @@ cleanup = True       # Keep or remove any temporary files created through analys
 
 # -----------------------------------------------------------------------------
 
-# Prompt the user for a file path
+# Prompt the user for a file path. Path must not contain single quotes (').
 in_filepath = input('\033[34mDrag and drop file to analyze (requires full path): \033[0m')
 root_dir = os.path.dirname(in_filepath)
 
