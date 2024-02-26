@@ -17,7 +17,7 @@ Follow setup instructions for [BirdNET-Analyzer](https://github.com/kahst/BirdNE
 pip3 install --upgrade pip
 pip3 install pandas
 pip3 install librosa resampy
-pip3 install tensorflow # 2.5 or later
+pip3 install tensorflow # 2.5 or later, may need to enable "long paths" on Windows
 pip3 install birdnetlib
 ```
 

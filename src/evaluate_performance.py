@@ -14,7 +14,7 @@
 
 # Root directory for the annotations data
 # Set this to a specific directory to evaluate performance on a subset of the data
-dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00410_20200523'
+dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00486_20200523'
 
 # TODO: Root directory for the raw detection data
 # dir_detections = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections/2020'
@@ -30,6 +30,7 @@ plot = False # Plot the results
 only_annotated = True # DEBUG: skip files that do not have annotations (selection tables)
 
 # Load required packages -------------------------------------------------
+import sys
 import os                       # File navigation
 import pandas as pd             # Data manipulation
 import matplotlib.pyplot as plt # Plotting
@@ -143,7 +144,7 @@ for table_file in sorted(selection_tables):
 
 # More clean up of typos
 raw_annotations.loc[raw_annotations['label_truth'].str.contains('not|non', case=False), 'label_truth'] = '0' # 0 indicates the species_predicted is NOT present
-raw_annotations['label_truth'].replace(['unknown', 'unkown'], 'unknown', inplace=True)
+raw_annotations['label_truth'] = raw_annotations['label_truth'].replace(['unknown', 'unkown'], 'unknown')
 
 # Throw warning if missing annotations for any species in species_predicted
 evaluated_species = sorted(evaluated_detections['species_predicted'].unique())
@@ -158,6 +159,8 @@ species_classes = [name.split('_')[1].lower() for name in species_classes[0]]
 unique_labels = sorted(raw_annotations['label_truth'].unique()) # Get a sorted list of unique species names
 unique_labels = [label for label in unique_labels if label not in species_classes]
 print_warning(f'{len(unique_labels)} unique non-species labels annotated: {unique_labels}')
+
+sys.exit()
 
 if species_to_evaluate == 'all':
     species_to_evaluate = sorted(species_classes)
