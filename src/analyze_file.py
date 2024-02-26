@@ -9,24 +9,26 @@ from utils.log import *
 import os
 
 # Output config
-out_dir = '/Users/giojacuzzi/Downloads' # Output directory for detection dataframe TODO: support windows paths and normalize
-sort_by = 'confidence'                  # Column to sort dataframe by
-ascending = False                       # Column sort direction
+out_dir = r'/Users/giojacuzzi/Downloads' # Output directory for detections dataframe
+sort_by = 'confidence'                   # Column to sort dataframe by
+ascending = False                        # Column sort direction
 
 # Analyzer config
 min_confidence = 0.1 # Minimum confidence score to retain a detection
 num_separation = 1   # Number of sounds to separate for analysis. Leave as 1 for original file alone.
-cleanup = False      # Keep or remove any temporary files created through analysis
+cleanup = True       # Keep or remove any temporary files created through analysis
 
 # -----------------------------------------------------------------------------
 
 # Prompt the user for a file path
-in_filepath = os.path.normpath(input('\033[34mDrag and drop file to analyze (requires full path): \033[0m')) # TODO: support non-single quote windows path and normalize
+in_filepath = input('\033[34mDrag and drop file to analyze (requires full path): \033[0m')
 root_dir = os.path.dirname(in_filepath)
 
-# Clean the file path
+# Normalize file paths to support both mac and windows
 if in_filepath.startswith("'") and in_filepath.endswith("'"):
     in_filepath = in_filepath[1:-1]
+in_filepath = os.path.normpath(in_filepath)
+out_dir     = os.path.normpath(out_dir)
 
 result = process_file.process_file(
     in_filepath    = in_filepath,
