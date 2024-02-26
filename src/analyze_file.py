@@ -4,8 +4,8 @@
 # Specifically, APPLY_SIGMOID flag set to False throughout to
 # return logits, not sigmoid activations
 
-from process_file import process_file
-from tools import *
+from classification import process_file
+from utils.log import *
 import os
 
 # Output config
@@ -24,7 +24,7 @@ cleanup = False      # Keep or remove any temporary files created through analys
 in_filepath = os.path.normpath(input('\033[34mDrag and drop file to analyze (requires full path): \033[0m'))[1:-1]
 root_dir = os.path.dirname(in_filepath)
 
-result = process_file(
+result = process_file.process_file(
     in_filepath    = in_filepath,
     out_dir        = out_dir,
     min_confidence = min_confidence,
@@ -33,7 +33,6 @@ result = process_file(
     sort_by        = sort_by,
     ascending      = ascending
 )
-print(f'Finished analyzing {in_filepath}:')
 
 if not result.empty:
     print_success(f'{len(result)} detections of {len(result["common_name"].unique())} unique species:')

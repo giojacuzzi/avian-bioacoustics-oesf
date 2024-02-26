@@ -1,28 +1,5 @@
-import datetime
+from .log import *
 import os
-import pandas as pd
-import time
-import numpy as np
-
-# Print warning
-def print_warning(l):
-    print(f'\033[33mWARNING: {l}\033[0m')
-
-# Print error
-def print_error(l):
-    print(f'\033[31mERROR: {l}\033[0m')
-
-# Print success
-def print_success(l):
-    print(f'\033[32m{l}\033[0m')
-
-# Sigmoid activation for raw logit confidence values
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-# Sigmoid activation pulled directly from BirdNET analyzer.py flat_sigmoid
-def sigmoid_BirdNET(x, sensitivity=-1):
-    return 1 / (1.0 + np.exp(sensitivity * np.clip(x, -15, 15)))
 
 #
 def find_file_full_path(top_directory, filename):
@@ -80,11 +57,3 @@ def list_files_in_directory(directory):
             file_path = os.path.join(root, file)
             file_paths.append(file_path)
     return file_paths
-
-import numpy as np
-from pydub import AudioSegment
-
-def remove_dc_offset(audio_segment):
-    samples = np.array(audio_segment.get_array_of_samples())
-    samples = samples - round(np.mean(samples))
-    return(AudioSegment(samples.tobytes(), channels=audio_segment.channels, sample_width=audio_segment.sample_width, frame_rate=audio_segment.frame_rate))

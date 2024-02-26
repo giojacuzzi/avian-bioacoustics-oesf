@@ -1,8 +1,7 @@
-from tools import *
 from birdnetlib import Recording 
 import os
 import pandas as pd
-import sound_separation as sound_separation
+from . import sound_separation
 from subprocess import *
 import shutil
 

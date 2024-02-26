@@ -1,7 +1,6 @@
 import os
 import subprocess
-import tools
-import sys
+from utils.audio import *
 import shutil
 from pydub import AudioSegment
 
@@ -24,7 +23,7 @@ def separate(path, num_sources = 4, multichannel = False):
 
     path_local_copy = f'{path_temp_dir}/{os.path.basename(path)}'
     w = AudioSegment.from_wav(path)
-    w = tools.remove_dc_offset(w)
+    w = remove_dc_offset(w)
     w.export(path_local_copy, format='wav')
 
     if num_sources == 4:

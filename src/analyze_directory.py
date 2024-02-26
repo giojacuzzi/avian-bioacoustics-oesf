@@ -4,11 +4,10 @@
 # Specifically, APPLY_SIGMOID flag set to False throughout to
 # return logits, not sigmoid activations
 
-from tools import *
-from process_dir import process_dir_parallel
+from classification import process_dir
 
 # Input and output config
-in_dir    = '/Volumes/gioj_b1/OESF/2020/Deployment8/SMA00339_20200717'
+in_dir    = '/Volumes/gioj_b1/OESF/2020/Deployment8'
 root_dir  = '/Volumes/gioj_b1/OESF' # retain directory structure relative to this root
 out_dir   = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections'
 sort_by   = 'start_date' # (e.g. start_date, confidence)
@@ -26,7 +25,7 @@ in_filetype = '.wav'
 # -----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    process_dir_parallel(
+    process_dir.process_dir_parallel(
         in_dir         = in_dir,
         out_dir        = out_dir,
         root_dir       = root_dir,

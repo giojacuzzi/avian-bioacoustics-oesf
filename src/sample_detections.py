@@ -1,4 +1,4 @@
-## Get N random detections per species at each unique site
+## Sample N random detections per species from site deployment data
 
 # Manually run this script for each site, changing in_dir as needed
 top_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data'
@@ -6,19 +6,15 @@ in_dir  = top_dir + '/raw_detections/2020/Deployment8/SMA00346_20200716' # CHANG
 out_dir = top_dir + '/_annotator'
 data_dir = '/Volumes/gioj_b1/OESF' # CHANGE ME
 
-# in_dir = '/Users/giojacuzzi/Desktop/audio_test/detections'
-# out_dir = in_dir + '/out'
-
-N = 6
+N = 6 # number of samples to take
 threshold = 0.1 # only sample from detections above (to filter out "zero-inflated" silence)
 extract_audio_files = True
 
 import os
 import pandas as pd
-from tools import *
-from extract_detection_audio import *
+from utils.files import *
+from annotation.extract_detection_audio import *
 from datetime import timedelta
-import matplotlib.pyplot as plt
 pd.set_option('display.max_rows', None)  # Display all rows
 pd.set_option('display.max_columns', None)  # Display all columns
 pd.set_option('display.width', None)  # Display full width of the DataFrame

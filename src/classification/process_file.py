@@ -3,19 +3,20 @@
 # return logits, not sigmoid activations
 from birdnetlib.analyzer import Analyzer
 
-from multiprocessing import Pool
-from tools import *
 import datetime
 import os
 import pandas as pd
 import time
-import analyze
-from itertools import repeat
-import sys
+from . import analyze
+from utils.log import *
+from utils.files import *
+from utils.bnl import *
 
 # Create a global analyzer instance
 if 'analyzer' not in locals() and 'analyzer' not in globals():
-    analyzer = Analyzer(custom_species_list_path=os.path.abspath('classification/species_list/species_list_OESF.txt'))
+    species_list_path = os.path.abspath('src/classification/species_list/species_list_OESF.txt')
+    print(f'Initializing analyzer with species list {species_list_path}')
+    analyzer = Analyzer(custom_species_list_path=species_list_path)
 
 # Run the analyzer on the given file and save the resulting detections to a csv
 def process_file(
@@ -28,6 +29,7 @@ def process_file(
         sort_by        = 'start_date',
         ascending      = True
 ):
+
     # Save directly to output directory
     if root_dir is None:
         file_out = os.path.basename(os.path.splitext(in_filepath)[0]) + '.csv'
@@ -65,7 +67,6 @@ def process_file(
         )
 
         if info is None:
-            print('None!')
             dt = datetime.timedelta(0)
         else:
             dt = datetime.datetime(int(info['year']), int(info['month']), int(info['day']), int(info['hour']), int(info['min']), int(info['sec']))
@@ -99,7 +100,7 @@ def process_file(
         pd.DataFrame.to_csv(result, path_out, index=False) 
 
         end_time_file = time.time()
-        print_success(f'Finished file {in_filepath}\n({end_time_file - start_time_file} sec)')
+        print_success(f'Finished processing file {in_filepath}\n({(end_time_file - start_time_file):.2f} sec)')
 
         return result
 

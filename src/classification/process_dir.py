@@ -3,24 +3,25 @@
 # return logits, not sigmoid activations
 
 from multiprocessing import Pool
-from tools import *
 import os
 import time
 from itertools import repeat
-from process_file import process_file
+from .process_file import process_file
+from utils.log import *
+from utils.files import *
 
 # Run the analyzer on a directory of files in parallel, creating a csv for each file
 def process_dir_parallel(
         in_dir,
         out_dir,
-        root_dir=None,
-        in_filetype='.wav',
-        n_processes=8, # cores per batch
-        min_confidence=0.0,
-        num_separation=1,
-        cleanup = True,
-        sort_by='start_date',
-        ascending=True
+        root_dir       = None,
+        in_filetype    = '.wav',
+        n_processes    = 8, # cores per batch
+        min_confidence = 0.0,
+        num_separation = 1,
+        cleanup        = True,
+        sort_by        = 'start_date',
+        ascending      = True
 ):
     
     if root_dir is not None and not root_dir in in_dir:
@@ -33,9 +34,9 @@ def process_dir_parallel(
     for dir in dirs:
         print('Processing directory ' + dir +'...')
 
-        # DEBUG - skip sm2 model recordings
+        # NOTE: skip model SM2 recordings
         if 'SM2' in os.path.basename(dir):
-            print_warning('SM2 directory, skipping!')
+            print_warning('Skipping SM2 directory...')
             continue
 
         start_time_dir = time.time()
