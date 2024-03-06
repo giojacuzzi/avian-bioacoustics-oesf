@@ -14,7 +14,7 @@
 
 # Root directory for the annotations data
 # Set this to a specific directory to evaluate performance on a subset of the data
-dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00486_20200523'
+dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00556_20200524'
 
 # TODO: Root directory for the raw detection data
 # dir_detections = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections/2020'
@@ -99,13 +99,13 @@ selection_tables = find_files(dir_annotations, '.txt')
 raw_annotations = pd.DataFrame()
 print('Loading annotation selection tables...')
 for table_file in sorted(selection_tables):
-    # print(f'Loading file {os.path.basename(table_file)}...')
+    print(f'Loading file {os.path.basename(table_file)}...')
 
     table = pd.read_csv(table_file, sep='\t') # Load the file as a dataframe
 
     # Clean up data by normalizing column names and species values to lowercase
     table.columns = table.columns.str.lower()
-    table['species'] = table['species'].str.lower()
+    table['species'] = table['species'].astype(str).str.lower()
 
     # Check the validity of the table
     cols_needed = ['species', 'begin file', 'file offset (s)', 'delta time (s)']

@@ -2,7 +2,7 @@
 
 # Manually run this script for each site, changing in_dir as needed
 top_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data'
-in_dir  = top_dir + '/raw_detections/2020/Deployment8/SMA00346_20200716' # CHANGE ME
+in_dir  = top_dir + '/raw_detections/2020/Deployment2/SMA00351_20200424_Data' # CHANGE ME
 out_dir = top_dir + '/_annotator'
 data_dir = '/Volumes/gioj_b1/OESF' # CHANGE ME
 
@@ -85,10 +85,10 @@ print(detection_samples)
 
 # Save detection_samples as excel spreadsheet
 detection_samples # add columns for annotator and reviewer
-detection_samples.insert(1, 'annotator', '')
-detection_samples.insert(1, 'annotator_notes', '')
 detection_samples.insert(1, 'reviewer', '')
 detection_samples.insert(1, 'reviewer_notes', '')
+detection_samples.insert(1, 'annotator', '')
+detection_samples.insert(1, 'annotator_notes', '')
 dir_out = out_dir + os.path.splitext(in_dir[len(top_dir + '/raw_detections'):])[0]
 if not os.path.exists(dir_out):
     os.makedirs(dir_out)
@@ -119,8 +119,8 @@ if extract_audio_files:
         print(file_path)
 
         date_format = '%Y-%m-%d %H:%M:%S'
-        date_detection_start = datetime.datetime.strptime(start_date, date_format)
-        # date_detection_end   = datetime.datetime.strptime(end_date, date_format)
+        date_detection_start = datetime.strptime(start_date, date_format)
+        # date_detection_end = datetime.strptime(end_date, date_format)
         extract_detection_audio(file_path, dir_out, date_detection_start, date_detection_start + timedelta(seconds=3), tag=f'{common_name}-{confidence}')
     
     print('Finished extracting all detections as audio files!')

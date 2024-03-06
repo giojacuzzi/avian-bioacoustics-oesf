@@ -6,7 +6,7 @@ from pydub import AudioSegment
 
 # Temporary folder for separation files
 # Returns a list of all file paths, including a copy of the original
-path_temp = 'classification/_output/temp/'
+path_temp = '_output/temp/'
 
 def get_output_path():
     return(os.path.abspath(path_temp))
