@@ -91,7 +91,7 @@ def collate_annotations(dirs, overwrite=False, print_annotations=False):
 
         table.rename(columns={'species': 'label_truth'}, inplace=True) # Rename 'species' to 'label_truth'
         table.insert(0, 'species_predicted', species) # Add column for species predicted by the classifier
-        # table.insert(2, 'confidence', confidences) # Add column for confidence values
+        table.insert(2, 'confidence', confidences) # Add column for confidence values
         # table['serialno'] = serialnos
 
         # Clean up species names
@@ -115,15 +115,19 @@ def collate_annotations(dirs, overwrite=False, print_annotations=False):
         if (row['file offset (s)'] + row['delta time (s)']) > 3.0:
             print_warning(f'Annotation extends beyond detection length: {row["file"]}')
 
+    print(raw_annotations)
     # Include any evaluated detections for the species without annotations (which should all be FP)
-    empty_annotations = evaluated_detections.merge(raw_annotations.drop(columns='species_predicted'), on='file', how='outer', indicator=True)
+    empty_annotations = evaluated_detections.merge(raw_annotations.drop(columns='species_predicted'), on=['file', 'confidence'], how='outer', indicator=True)
+    print(empty_annotations)
     empty_annotations = empty_annotations[empty_annotations['_merge'] != 'both'] # Filter out the rows where the indicator value is 'both'
+    print(empty_annotations)
     empty_annotations = empty_annotations.drop(columns='_merge')
+    print(empty_annotations)
     if not empty_annotations.empty:
         print_warning(f'Interpreting {len(empty_annotations)} detections without annotations as absences (0)')
         if print_annotations:
             print_warning(empty_annotations.to_string())
-        raw_annotations = pd.concat([raw_annotations, empty_annotations[['species_predicted', 'label_truth', 'file']]], ignore_index=True)
+        raw_annotations = pd.concat([raw_annotations, empty_annotations[['species_predicted', 'label_truth', 'confidence', 'file']]], ignore_index=True)
         raw_annotations['label_truth'] = raw_annotations['label_truth'].fillna(0)
 
     raw_annotations = raw_annotations.sort_values(by=['species_predicted'])

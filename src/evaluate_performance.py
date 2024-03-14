@@ -30,13 +30,12 @@ species_to_evaluate = 'all'
 # ...or look at just a few
 # species_to_evaluate = ['american robin', 'common raven', 'band-tailed pigeon', 'barred owl', 'american kestrel']
 
-plot = False # Plot the results
+plot = True # Plot the results
 
 # TODO: Once all annotations are complete and every detection has been evaluated, set this to False
-only_annotated = True # DEBUG: skip files that do not have annotations (selection tables)
+only_annotated = False # DEBUG: skip files that do not have annotations (selection tables)
 
 # Load required packages -------------------------------------------------
-import sys
 import pandas as pd             # Data manipulation
 import matplotlib.pyplot as plt # Plotting
 import sklearn.metrics          # Classifier evaluation
@@ -44,10 +43,8 @@ import numpy as np              # Mathematics
 from annotation.annotations import *
 from utils.log import *
 
-# Collate and validate annotation data
-raw_annotations = collate_annotations(dirs)
-
-print(raw_annotations.head())
+# Collate annotation data
+raw_annotations = collate_annotations(dirs, overwrite=False)
 
 species = labels.get_species_classes()
 if species_to_evaluate == 'all':
@@ -113,7 +110,7 @@ for species in species_to_evaluate:
     # then merge the new column back to the original DataFrame
     detection_labels = pd.merge(
         detection_labels.drop(columns=['label_truth', 'file offset (s)', 'delta time (s)']), # drop selection-specific fields that no longer apply
-        detection_labels.groupby('file').apply(compute_label_presence, label=species).reset_index(name='label_truth'), # label_truth here will replace the previous label_truth
+        detection_labels.groupby('file').apply(compute_label_presence, include_groups=False, label=species).reset_index(name='label_truth'), # label_truth here will replace the previous label_truth
         on='file'
     )
     # Drop duplicate rows based on the 'file' column
@@ -133,8 +130,7 @@ for species in species_to_evaluate:
         print_warning(f'No remaining samples for {species}. Skipping...')
         continue
 
-    # print(detection_labels)
-
+    print(detection_labels)
 
     # Precision is the proportion of true positives among positive predictions, TP/(TP + FP). Intuitively,
     # when the model says "Barred Owl", how often is it correct? Precision matters when the cost of false
@@ -153,15 +149,20 @@ for species in species_to_evaluate:
     # performs on the positive species class.
     precision, recall, th = sklearn.metrics.precision_recall_curve(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species)
 
+    padding = 0.01
+    font_size = 9
+
     if plot:
+        figure, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
         # Plot precision and recall as a function of threshold
-        plt.plot(th, precision[:-1], label='Precision', marker='.') 
-        plt.plot(th, recall[:-1], label='Recall', marker='.')
-        plt.xlabel('threshold') 
-        plt.ylabel('performance')
-        plt.title(f'Threshold Performance: {species} (N={len(detection_labels)})')
-        plt.legend() 
-        plt.show()
+        ax1.plot(th, precision[:-1], label='Precision', marker='.') 
+        ax1.plot(th, recall[:-1], label='Recall', marker='.')
+        ax1.set_xlabel('Threshold') 
+        ax1.set_ylabel('Performance')
+        ax1.set_title(f'Threshold performance', fontsize=font_size)
+        ax1.set_xlim(0.0-padding, 1.0+padding)
+        ax1.set_ylim(0.0-padding, 1.0+padding)
+        ax1.legend(loc='lower left') 
 
     # The area under the precision-recall curve, AUC-PR, is a useful summary statistic of the the relationship.
     # The AUC-PR ranges from 0.0 to 1.0, with 1.0 indicating a perfect classifier. However, unlike the AUC
@@ -183,13 +184,14 @@ for species in species_to_evaluate:
 
     if plot:
         # Plot precision-recall curve
-        plt.plot([0, 1], [no_skill, no_skill], linestyle='--', label='Baseline', color='gray')
-        plt.plot(recall, precision, marker='.', label='Classifier')
-        plt.xlabel('Recall')
-        plt.ylabel('Precision')
-        plt.title(f'Precision-Recall (AUC {pr_auc:.2f}, AP {pr_ap:.2f}): {species} (N={len(detection_labels)})')
-        plt.legend()
-        plt.show()
+        ax2.plot([0, 1], [no_skill, no_skill], linestyle='--', label='Baseline', color='gray')
+        ax2.plot(recall, precision, marker='.', label='Classifier')
+        ax2.set_xlabel('Recall')
+        ax2.set_ylabel('Precision')
+        ax2.set_title(f'Precision-Recall (AUC {pr_auc:.2f}, AP {pr_ap:.2f})', fontsize=font_size)
+        ax2.set_xlim([0.0-padding, 1.0+padding])
+        ax2.set_ylim([0.0-padding, 1.0+padding])
+        ax2.legend(loc='lower left')
 
     # Store the performance metrics
     performance_metrics = pd.concat([performance_metrics, pd.DataFrame({
@@ -227,6 +229,10 @@ for species in species_to_evaluate:
     # plt.title(f'ROC (AUC {roc_auc:.2f}): {species_name} (N={len(labels_binary)})')
     # plt.legend()
     # plt.show()
+
+    if plot:
+        figure.suptitle(species, x=0.0, y=1.0, horizontalalignment='left', verticalalignment='top', fontsize=12)
+        plt.show()
 
 # Sort and print the performance metrics
 performance_metrics = performance_metrics.sort_values(by='p_mean', ascending=False).reset_index(drop=True)
