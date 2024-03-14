@@ -1,5 +1,6 @@
 from .log import *
 import os
+import re
 
 #
 def find_file_full_path(top_directory, filename):
@@ -7,6 +8,34 @@ def find_file_full_path(top_directory, filename):
         if filename in files:
             return os.path.join(root, filename)
     return None
+
+# Function to parse species name, confidence, serial number, date, and time from filename
+def parse_metadata_from_file(filename):
+
+    # Regular expression pattern to match the filename
+    pattern = r'^(.+)-([\d.]+)_(\w+)_(\d{8})_(\d{6})\.(\w+)$'
+    match = re.match(pattern, filename)
+
+    if match:
+        species = match.group(1)
+        confidence = float(match.group(2))
+        serialno = match.group(3)
+        date = match.group(4)
+        time = match.group(5)
+        return species, confidence, serialno, date, time
+    else:
+        print_warning("Unable to parse info from filename:", filename)
+        return
+
+# Find all selection table files under a root directory
+def find_files(directory, filetype):
+
+    results = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith(filetype):
+                results.append(os.path.join(root, file))
+    return results
 
 # Scrape serial number, date, and time from Song Meter filename
 def parse_metadata_from_filename(path):

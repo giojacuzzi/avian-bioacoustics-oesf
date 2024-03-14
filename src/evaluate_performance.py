@@ -1,5 +1,5 @@
 ##
-# Demo script to validate evaluation data and evaluate classifier performance for each species class
+# Demo script to evaluate classifier performance for each species class
 # Requires annotations from Google Drive. Ensure these are downloaded locally before running.
 #
 # For a given audio segment, the classifier outputs a logistic regression score for each
@@ -30,140 +30,18 @@ plot = False # Plot the results
 only_annotated = True # DEBUG: skip files that do not have annotations (selection tables)
 
 # Load required packages -------------------------------------------------
-import sys
-import os                       # File navigation
 import pandas as pd             # Data manipulation
 import matplotlib.pyplot as plt # Plotting
 import sklearn.metrics          # Classifier evaluation
-import re                       # Regular expressions
 import numpy as np              # Mathematics
+from utils.log import *
 
-# Define utility functions -------------------------------------------------
-# These helper functions are used to easily encapsulate repeated tasks
-
-# Print warning
-def print_warning(l):
-    print(f'\033[33mWARNING: {l}\033[0m')
-
-# Function to parse species name, confidence, serial number, date, and time from filename
-def parse_metadata_from_file(filename):
-
-    # Regular expression pattern to match the filename
-    pattern = r'^(.+)-([\d.]+)_(\w+)_(\d{8})_(\d{6})\.(\w+)$'
-    match = re.match(pattern, filename)
-
-    if match:
-        species = match.group(1)
-        confidence = float(match.group(2))
-        serialno = match.group(3)
-        date = match.group(4)
-        time = match.group(5)
-        return species, confidence, serialno, date, time
-    else:
-        print_warning("Unable to parse info from filename:", filename)
-        return
-
-# Find all selection table files under a root directory
-def find_files(directory, filetype):
-
-    results = []
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.endswith(filetype):
-                results.append(os.path.join(root, file))
-    return results
-
-## COLLATE ANNOTATION AND DETECTION DATA =================================================
-
-# Declare 'evaluated_detections' - Get the list of files (detections) that were actually evaluated by annotators
-# These are all the .wav files under each site-date folder in e.g. 'annotation/data/_annotator/2020/Deployment4/SMA00410_20200523'
-evaluated_detection_files_paths = find_files(dir_annotations, '.wav')
-evaluated_detection_files = list(map(os.path.basename, evaluated_detection_files_paths))
-# Parse the species names and confidence scores from the .wav filenames
-file_metadata = list(map(lambda f: parse_metadata_from_file(f), evaluated_detection_files))
-species, confidences, serialnos, dates, times = zip(*file_metadata)
-
-evaluated_detections = pd.DataFrame({
-    'file': evaluated_detection_files,
-    'species_predicted': species,
-    'confidence': confidences,
-    'date': dates,
-    'time': times,
-    'serialno': serialnos
-})
-evaluated_detections['species_predicted'] = evaluated_detections['species_predicted'].str.lower()
-
-# Declare 'raw_annotations' - Load, aggregate, and clean all annotation labels (selection tables), which is a subset of 'evaluated_detections'
-# Load selection table files and combine into a single 'raw_annotations' dataframe
-selection_tables = find_files(dir_annotations, '.txt')
-raw_annotations = pd.DataFrame()
-print('Loading annotation selection tables...')
-for table_file in sorted(selection_tables):
-    print(f'Loading file {os.path.basename(table_file)}...')
-
-    table = pd.read_csv(table_file, sep='\t') # Load the file as a dataframe
-
-    # Clean up data by normalizing column names and species values to lowercase
-    table.columns = table.columns.str.lower()
-    table['species'] = table['species'].astype(str).str.lower()
-
-    # Check the validity of the table
-    cols_needed = ['species', 'begin file', 'file offset (s)', 'delta time (s)']
-    if not all(col in table.columns for col in cols_needed):
-        missing_columns = [col for col in cols_needed if col not in table.columns]
-        print_warning(f"Missing columns {missing_columns} in {os.path.basename(table_file)}. Skipping...")
-        continue
-
-    if table.empty:
-        print_warning(f'{table_file} has no selections. Skipping...')
-        continue
-
-    table = table[cols_needed] # Discard unnecessary data
-
-    if table.isna().any().any():
-        print_warning(f'{table_file} contains NaN values. Skipping...')
-        continue
-
-    # Parse the species names and confidence scores from 'Begin File' column
-    file_metadata = list(map(lambda f: parse_metadata_from_file(f), table['begin file']))
-    species, confidences, serialnos, dates, times = zip(*file_metadata)
-
-    table.rename(columns={'species': 'label_truth'}, inplace=True) # Rename 'species' to 'label_truth'
-    table.insert(0, 'species_predicted', species) # Add column for species predicted by the classifier
-    # table.insert(2, 'confidence', confidences) # Add column for confidence values
-    # table['serialno'] = serialnos
-
-    # Clean up species names
-    table['species_predicted'] = table['species_predicted'].str.lower()
-    table['species_predicted'] = table['species_predicted'].str.replace('_', "'")
-    table['label_truth'] = table['label_truth'].str.replace('_', "'")
-
-    table.rename(columns={'begin file': 'file'}, inplace=True) # Rename 'begin file' to 'file'
-
-    raw_annotations = pd.concat([raw_annotations, table], ignore_index=True) # Store the table
-
-# More clean up of typos
-raw_annotations.loc[raw_annotations['label_truth'].str.contains('not|non', case=False), 'label_truth'] = '0' # 0 indicates the species_predicted is NOT present
-raw_annotations['label_truth'] = raw_annotations['label_truth'].replace(['unknown', 'unkown'], 'unknown')
-
-# Throw warning if missing annotations for any species in species_predicted
-evaluated_species = sorted(evaluated_detections['species_predicted'].unique())
-annotated_species = sorted(raw_annotations['species_predicted'].unique())
-missing_species = [species for species in evaluated_species if species not in annotated_species]
-if (len(missing_species) > 0):
-    print_warning(f'Missing annotations for the following species:\n{missing_species}')
-
-# Throw warning for unique non-species labels
-species_classes = pd.read_csv('/Users/giojacuzzi/repos/avian-bioacoustics-oesf/src/classification/species_list/species_list_OESF.txt', header=None) # Get list of all species
-species_classes = [name.split('_')[1].lower() for name in species_classes[0]]
-unique_labels = sorted(raw_annotations['label_truth'].unique()) # Get a sorted list of unique species names
-unique_labels = [label for label in unique_labels if label not in species_classes]
-print_warning(f'{len(unique_labels)} unique non-species labels annotated: {unique_labels}')
-
-sys.exit()
 
 if species_to_evaluate == 'all':
     species_to_evaluate = sorted(species_classes)
+
+if (species in missing_species):
+    print_warning(f'No annotations for {species}')
 
 # print(raw_annotations)
     
@@ -174,8 +52,6 @@ for species in species_to_evaluate:
 
     ## COLLATE SPECIES DATA ===============================================================
     print(f'Collating "{species}" data...')
-    if (species in missing_species):
-        print_warning(f'No annotations for {species}')
 
     # Get all annotations for the species
     if True:
@@ -190,15 +66,6 @@ for species in species_to_evaluate:
     detection_labels = detection_labels.sort_values(by='file')
     # print('All annotations:')
     # print(detection_labels)
-
-    # Include any evaluated detections for the species without annotations (which should all be FP)
-    detection_labels = pd.merge(
-        evaluated_detections[evaluated_detections['species_predicted'] == species],
-        detection_labels,
-        how='left' # 'left' to include all evaluated detections, regardless of whether they have annotations.
-        # 'inner' would only include those detections that have annotations.
-    )
-    detection_labels = detection_labels.sort_values(by='file')
 
     if detection_labels.empty:
         print_warning(f'No samples for {species}. Skipping...')
