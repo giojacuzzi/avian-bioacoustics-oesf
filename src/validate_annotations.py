@@ -6,11 +6,24 @@
 
 # Root directory for the annotations data
 # Set this to a specific directory to evaluate performance on a subset of the data
-dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00349_20200619'
+# dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00349_20200619'
+
+dirs = [
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00410_20200523', # Jack
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00424_20200521', # Stevan
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00486_20200523', # Summer
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00556_20200524', # Gio
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00556_20200618', # Stevan
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00349_20200619', # Mirella
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00399_20200619', # Jessica
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00346_20200716', # Summer
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00339_20200717'  # Jack
+]
 
 print_annotations = False
 
 # Load required packages -------------------------------------------------
+import sys
 import os                       # File navigation
 import pandas as pd             # Data manipulation
 from utils import files, labels
@@ -20,7 +33,14 @@ from utils.log import *
 
 # Declare 'evaluated_detections' - Get the list of files (detections) that were actually evaluated by annotators
 # These are all the .wav files under each site-date folder in e.g. 'annotation/data/_annotator/2020/Deployment4/SMA00410_20200523'
-evaluated_detection_files_paths = files.find_files(dir_annotations, '.wav')
+evaluated_detection_files_paths = []
+for dir in dirs:
+    evaluated_detection_files_paths.extend(files.find_files(dir, '.wav'))
+
+if len(evaluated_detection_files_paths) == 0:
+    print_error('No .wav detection files found')
+    exit()
+
 evaluated_detection_files = list(map(os.path.basename, evaluated_detection_files_paths))
 # Parse the species names and confidence scores from the .wav filenames
 file_metadata = list(map(lambda f: files.parse_metadata_from_file(f), evaluated_detection_files))
@@ -38,11 +58,18 @@ evaluated_detections['species_predicted'] = evaluated_detections['species_predic
 
 # Declare 'raw_annotations' - Load, aggregate, and clean all annotation labels (selection tables), which is a subset of 'evaluated_detections'
 # Load selection table files and combine into a single 'raw_annotations' dataframe
-selection_tables = files.find_files(dir_annotations, '.txt')
+selection_tables = []
+for dir in dirs:
+    selection_tables.extend(files.find_files(dir, '.txt'))
+
+if len(selection_tables) == 0:
+    print_error('No Raven Pro .txt selection table files found')
+    exit()
+
 raw_annotations = pd.DataFrame()
 print('Loading annotation selection tables...')
 for table_file in sorted(selection_tables):
-    print(f'Loading file {os.path.basename(table_file)}...')
+    # print(f'Loading file {os.path.basename(table_file)}...')
 
     table = pd.read_csv(table_file, sep='\t') # Load the file as a dataframe
 
@@ -88,6 +115,7 @@ for table_file in sorted(selection_tables):
     raw_annotations = pd.concat([raw_annotations, table], ignore_index=True) # Store the table
 
 # More clean up of typos
+print('Cleaning annotation labels...')
 raw_annotations['label_truth'] = raw_annotations['label_truth'].apply(labels.clean_label)
 
 # Warn if any annotations extend beyond the length of a single detection file

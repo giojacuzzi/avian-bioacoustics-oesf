@@ -29,14 +29,14 @@ def clean_label(label):
     # Manually consolidate any other specific labels
     consolidated_labels = {
         # Abiotic
-        "abiotic_aircraft": ["airplane", "airplanes", "loud thing (plane?)", "plane"],
+        "abiotic_aircraft": ["aircraft", "airplane", "airplanes", "loud thing (plane?)", "plane"],
         "abiotic_transient": ["raindrops", "water drops", "droplets", "raindrop", "drip", "crackle", "dripping", "rapping on wood", "tap sound", "wood sound", "loud snap sound"],
         "abiotic_vegetation": ["branch", "branch rustling", "branches rustling", "branches snapping","ground  rustling", "ground rustling", "leaves rustling", "rustling", "tree creaking", "branches", "twig rustling", "leaves"],
         "abiotic_rain": ["loud rain"],
         "abiotic_wind": ["wind"],
         "abiotic_water": ["river", "water"],
         "abiotic_other_anthropogenic": ["machinery", "vehicle", "vehicle backing up noise", "vehicle?", "chainsaw"],
-        "abiotic_other": ["other", "random noise", "electricity", "high pitch buzzing", "thunder", "rain/wind", "buzzing sound", "buzz", "buzzing", "static sound", "interesting sound", "mystery noise", "static"],
+        "abiotic_other": ["noise", "other", "random noise", "electricity", "high pitch buzzing", "thunder", "rain/wind", "buzzing sound", "buzz", "buzzing", "static sound", "interesting sound", "mystery noise", "static"],
         # Biotic
         "anuran": ["frog", "frog chirping"],
         "coyote": ["coyotes howling"],
