@@ -12,12 +12,18 @@
 
 # Declare some configuration variables ------------------------------------
 
-# Root directory for the annotations data
-# Set this to a specific directory to evaluate performance on a subset of the data
-dir_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00556_20200524'
-
-# TODO: Root directory for the raw detection data
-# dir_detections = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections/2020'
+# Annotation directories to use as evaluation data
+dirs = [
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00410_20200523', # Jack
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00424_20200521', # Stevan
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00486_20200523', # Summer
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00556_20200524', # Gio
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00556_20200618', # Stevan
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00349_20200619', # Mirella
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00399_20200619', # Jessica
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00346_20200716', # Summer
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00339_20200717'  # Jack
+]
 
 # Evaluate all species classes...
 species_to_evaluate = 'all'
@@ -30,21 +36,29 @@ plot = False # Plot the results
 only_annotated = True # DEBUG: skip files that do not have annotations (selection tables)
 
 # Load required packages -------------------------------------------------
+import sys
 import pandas as pd             # Data manipulation
 import matplotlib.pyplot as plt # Plotting
 import sklearn.metrics          # Classifier evaluation
 import numpy as np              # Mathematics
+from annotation.annotations import *
 from utils.log import *
 
+# Collate and validate annotation data
+raw_annotations = collate_annotations(dirs)
 
+print(raw_annotations.head())
+
+species = labels.get_species_classes()
 if species_to_evaluate == 'all':
-    species_to_evaluate = sorted(species_classes)
+    species_to_evaluate = sorted(species)
 
-if (species in missing_species):
-    print_warning(f'No annotations for {species}')
+# Warn if missing annotations for any species in species_predicted
+species_annotated = [label for label in sorted(raw_annotations['label_truth'].astype(str).unique()) if label in species]
+print(f'Retrieved {len(raw_annotations)} total annotations for {len(species_annotated)}/{len(species)} species classes')
+if len(species_annotated) < len(species):
+    print_warning(f'Missing positive annotations for species: {[label for label in species if label not in species_annotated]}')
 
-# print(raw_annotations)
-    
 performance_metrics = pd.DataFrame() # Container for performance metrics of all species
 
 # For each unique species (or a particular species), compute data labels and evaluate performance
