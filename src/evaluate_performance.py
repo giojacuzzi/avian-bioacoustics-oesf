@@ -144,7 +144,7 @@ for i, species in enumerate(species_to_evaluate):
     # appropriate when the evaluation data are imbalanced between each class (i.e. present vs non-present).
     # This means is that a large number of negative instances won’t skew our understanding of how well our model
     # performs on the positive species class.
-    precision, recall, th = sklearn.metrics.precision_recall_curve(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species)
+    precision, recall, thresholds = sklearn.metrics.precision_recall_curve(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species)
 
     padding = 0.01
     font_size = 9
@@ -152,8 +152,8 @@ for i, species in enumerate(species_to_evaluate):
     if plot:
         fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
         # Plot precision and recall as a function of threshold
-        ax1.plot(th, precision[:-1], label='Precision', marker='.') 
-        ax1.plot(th, recall[:-1], label='Recall', marker='.')
+        ax1.plot(thresholds, precision[:-1], label='Precision', marker='.') 
+        ax1.plot(thresholds, recall[:-1], label='Recall', marker='.')
         ax1.set_xlabel('Threshold') 
         ax1.set_ylabel('Performance')
         ax1.set_title(f'Threshold performance', fontsize=font_size)
@@ -193,10 +193,12 @@ for i, species in enumerate(species_to_evaluate):
     # Store the performance metrics
     performance_metrics = pd.concat([performance_metrics, pd.DataFrame({
         'species':   [species],
-        'AUC-PR':    [round(pr_auc, 2)],                      # Precision-Recall AUC
-        'AP':        [round(pr_ap, 2)],                      # Average precision
-        'p_mean':    [round(precision.mean(),2)],             # Average precision across all examples
-        'N':         [n_examples],                    # Total number of examples
+        'AUC-PR':    [round(pr_auc, 2)],                                # Precision-Recall AUC
+        'AP':        [round(pr_ap, 2)],                                 # Average precision
+        'p_mean':    [round(precision.mean(),2)],                       # Average precision across all thresholds
+        'p_max':     [round(precision[np.argmax(precision[:-1])],2)],   # Maximum precision across all thresholds
+        'p_max_th':  [round(thresholds[np.argmax(precision[:-1])],2)],  # Score threshold to maximize precision
+        'N':         [n_examples],                                      # Total number of examples
         'N_P':       [sum(detection_labels['label_truth'] == species)], # Total number of positive examples
         'N_N':       [sum(detection_labels['label_truth'] != species)], # Total number of negative examples
         'N_unknown': [n_unknown] # Total number of unknown examples excluded from evaluation
@@ -253,7 +255,7 @@ performance_metrics = pd.merge(performance_metrics, potential_species, on='speci
 
 # N POSITIVE EXAMPLES
 print('SPECIES CLASS PERFORMANCE ====================================================')
-sorted_df = performance_metrics.sort_values(by=['N_P', 'N', 'max_conf'], ascending=[False, False, False])
+sorted_df = performance_metrics.sort_values(by=['N_P', 'AUC-PR'], ascending=[False, True])
 print(sorted_df.to_string(index=False))
 
 # COMMON
@@ -272,3 +274,7 @@ if plot:
     for fig, ax in plots:
         fig.show()
         plt.show()
+
+
+# DEBUG
+print((raw_annotations[raw_annotations['species_predicted'] == 'great horned owl']).sort_values(by=['confidence'], ascending=[False]).to_string())

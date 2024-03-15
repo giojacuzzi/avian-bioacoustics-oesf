@@ -132,6 +132,13 @@ def collate_annotations(dirs, overwrite=False, print_annotations=False):
 
     raw_annotations = raw_annotations.sort_values(by=['species_predicted'])
 
+    # Get metadata for each annotation
+    annotations_metadata = list(map(lambda f: files.parse_metadata_from_file(f), raw_annotations['file']))
+    species, confidences, serialnos, dates, times = zip(*annotations_metadata)
+    raw_annotations['date'] = dates
+    raw_annotations['time'] = times
+    raw_annotations['serialno'] = serialnos
+
     # Warn if missing annotations for any species in species_predicted
     evaluated_species = sorted(evaluated_detections['species_predicted'].astype(str).unique())
     annotated_species = sorted(raw_annotations['species_predicted'].astype(str).unique())
