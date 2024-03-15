@@ -59,7 +59,9 @@ if len(species_annotated) < len(species):
 performance_metrics = pd.DataFrame() # Container for performance metrics of all species
 
 # For each unique species (or a particular species), compute data labels and evaluate performance
-for species in species_to_evaluate:
+plots = []
+
+for i, species in enumerate(species_to_evaluate):
 
     ## COLLATE SPECIES DATA ===============================================================
     print(f'Collating "{species}" data...')
@@ -115,8 +117,9 @@ for species in species_to_evaluate:
     )
     # Drop duplicate rows based on the 'file' column
     detection_labels = detection_labels.drop_duplicates(subset='file')
-    print('Species labels by file:')
-    print(detection_labels)
+    # print('Species labels by file:')
+    # print(detection_labels)
+    n_examples = len(detection_labels)
 
     ## EVALUATE SPECIES PERFORMANCE =========================================================
 
@@ -125,12 +128,6 @@ for species in species_to_evaluate:
     if n_unknown > 0:
         print_warning(f"{n_unknown} samples with unknown species. Excluding these from consideration...")
         detection_labels = detection_labels[detection_labels['label_truth'] != 'unknown']
-
-    if detection_labels.empty:
-        print_warning(f'No remaining samples for {species}. Skipping...')
-        continue
-
-    print(detection_labels)
 
     # Precision is the proportion of true positives among positive predictions, TP/(TP + FP). Intuitively,
     # when the model says "Barred Owl", how often is it correct? Precision matters when the cost of false
@@ -153,7 +150,7 @@ for species in species_to_evaluate:
     font_size = 9
 
     if plot:
-        figure, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
+        fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
         # Plot precision and recall as a function of threshold
         ax1.plot(th, precision[:-1], label='Precision', marker='.') 
         ax1.plot(th, recall[:-1], label='Recall', marker='.')
@@ -195,13 +192,14 @@ for species in species_to_evaluate:
 
     # Store the performance metrics
     performance_metrics = pd.concat([performance_metrics, pd.DataFrame({
-        'species': [species],
-        'AUC-PR':  [round(pr_auc, 2)],                      # Precision-Recall AUC
-        'AP':      [round(pr_ap, 2)],                      # Average precision
-        'p_mean':  [round(precision.mean(),2)],             # Average precision across all examples
-        'N':       [len(detection_labels)],                    # Total number of examples
-        'N_1':     [sum(detection_labels['label_truth'] == species)], # Total number of positive examples
-        'N_U':     [n_unknown] # Total number of unknown examples excluded from evaluation
+        'species':   [species],
+        'AUC-PR':    [round(pr_auc, 2)],                      # Precision-Recall AUC
+        'AP':        [round(pr_ap, 2)],                      # Average precision
+        'p_mean':    [round(precision.mean(),2)],             # Average precision across all examples
+        'N':         [n_examples],                    # Total number of examples
+        'N_P':       [sum(detection_labels['label_truth'] == species)], # Total number of positive examples
+        'N_N':       [sum(detection_labels['label_truth'] != species)], # Total number of negative examples
+        'N_unknown': [n_unknown] # Total number of unknown examples excluded from evaluation
     })], ignore_index=True)
 
     # TODO: Use F1-score to determine an optimal threshold, e.g. https://ploomber.io/blog/threshold/
@@ -231,9 +229,46 @@ for species in species_to_evaluate:
     # plt.show()
 
     if plot:
-        figure.suptitle(species, x=0.0, y=1.0, horizontalalignment='left', verticalalignment='top', fontsize=12)
-        plt.show()
+        fig.suptitle(species, x=0.0, y=1.0, horizontalalignment='left', verticalalignment='top', fontsize=12)
+        plt.tight_layout()
+        plots.append((fig, (ax1, ax2)))
 
 # Sort and print the performance metrics
 performance_metrics = performance_metrics.sort_values(by='p_mean', ascending=False).reset_index(drop=True)
-print(performance_metrics.to_string())
+
+# EX: Print the most commonly-confused sounds for a given species class
+species_confused = "great horned owl"
+value_counts = raw_annotations.loc[(raw_annotations['species_predicted']==species_confused)]
+value_counts = value_counts.loc[(value_counts['label_truth']!=species_confused)]
+value_counts = value_counts['label_truth'].value_counts()
+print(value_counts)
+
+max_confidence_per_species = raw_annotations.rename(columns={'species_predicted': 'species'}).groupby('species')['confidence'].max()
+performance_metrics = pd.merge(performance_metrics, max_confidence_per_species, on='species', how='left')
+performance_metrics = performance_metrics.rename(columns={'confidence': 'max_conf'})
+potential_species = pd.read_csv('data/species/Species List - Potential species.csv', index_col=None, usecols=['Common_Name', 'Rarity'])
+potential_species = potential_species.rename(columns={'Common_Name': 'species', 'Rarity': 'rarity'})
+potential_species['species'] = potential_species['species'].str.lower()
+performance_metrics = pd.merge(performance_metrics, potential_species, on='species', how='left')
+
+# N POSITIVE EXAMPLES
+print('SPECIES CLASS PERFORMANCE ====================================================')
+sorted_df = performance_metrics.sort_values(by=['N_P', 'N', 'max_conf'], ascending=[False, False, False])
+print(sorted_df.to_string(index=False))
+
+# COMMON
+print('COMMON SPECIES ===============================================================')
+common_species = performance_metrics.loc[performance_metrics['rarity']=='C']
+common_species = common_species.sort_values(by=['N_P', 'N_unknown', 'max_conf'], ascending=[False, False, False])
+print(common_species.to_string(index=False))
+
+# N MISSING
+print('MISSING SPECIES ==============================================================')
+min_N_P = 7 + 1
+missing_species = performance_metrics.loc[performance_metrics['N_P']<min_N_P]
+print_error(f'{len(missing_species)} species with less than {min_N_P} positive examples:\n{missing_species.to_string(index=False)}')
+
+if plot:
+    for fig, ax in plots:
+        fig.show()
+        plt.show()
