@@ -14,7 +14,7 @@
 
 # Annotation directories to use as evaluation data
 dirs = [
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00410_20200523', # Jack
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00410_20200523' # Jack
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00424_20200521', # Stevan
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00486_20200523', # Summer
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00556_20200524', # Gio
@@ -22,7 +22,12 @@ dirs = [
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00349_20200619', # Mirella
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00399_20200619', # Jessica
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00346_20200716', # Summer
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00339_20200717'  # Jack
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00339_20200717',  # Jack
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment2/SMA00351_20200424_Data' # Mirella
+    
+    # '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00370_20200716', # TODO - Jessica review
+    # '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00404_20200618', # TODO - Iris review
+    # '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00424_20200717' # TODO - Iris review
 ]
 
 # Evaluate all species classes...
@@ -30,7 +35,7 @@ species_to_evaluate = 'all'
 # ...or look at just a few
 # species_to_evaluate = ['american robin', 'common raven', 'band-tailed pigeon', 'barred owl', 'american kestrel']
 
-plot = True # Plot the results
+plot = False # Plot the results
 
 # TODO: Once all annotations are complete and every detection has been evaluated, set this to False
 only_annotated = False # DEBUG: skip files that do not have annotations (selection tables)
@@ -44,7 +49,7 @@ from annotation.annotations import *
 from utils.log import *
 
 # Collate annotation data
-raw_annotations = collate_annotations(dirs, overwrite=False)
+raw_annotations = collate_annotations(overwrite=False)
 
 species = labels.get_species_classes()
 if species_to_evaluate == 'all':
@@ -89,7 +94,7 @@ for i, species in enumerate(species_to_evaluate):
         if only_annotated:
             detection_labels.dropna(subset=['label_truth'], inplace=True)
             if detection_labels.empty:
-                print_warning(f'No remaining samples for {species}. Skipping...')
+                print_warning(f'No remaining detections to evaluate for {species}. Skipping...')
                 continue
         else:
             detection_labels['label_truth'] = detection_labels['label_truth'].fillna(0)
@@ -126,8 +131,12 @@ for i, species in enumerate(species_to_evaluate):
     # Exclude files with an "unknown" label_truth from consideration
     n_unknown = (detection_labels['label_truth'] == 'unknown').sum()
     if n_unknown > 0:
-        print_warning(f"{n_unknown} samples with unknown species. Excluding these from consideration...")
+        print_warning(f"{n_unknown} detections with unknown species. Excluding these from consideration...")
         detection_labels = detection_labels[detection_labels['label_truth'] != 'unknown']
+    
+    if len(detection_labels) == 0:
+        print_warning(f"No remaining known detections to evaluate for '{species}'. Skipping...")
+        continue
 
     # Precision is the proportion of true positives among positive predictions, TP/(TP + FP). Intuitively,
     # when the model says "Barred Owl", how often is it correct? Precision matters when the cost of false
@@ -238,20 +247,17 @@ for i, species in enumerate(species_to_evaluate):
 # Sort and print the performance metrics
 performance_metrics = performance_metrics.sort_values(by='p_mean', ascending=False).reset_index(drop=True)
 
-# EX: Print the most commonly-confused sounds for a given species class
-species_confused = "great horned owl"
-value_counts = raw_annotations.loc[(raw_annotations['species_predicted']==species_confused)]
-value_counts = value_counts.loc[(value_counts['label_truth']!=species_confused)]
-value_counts = value_counts['label_truth'].value_counts()
-print(value_counts)
-
 max_confidence_per_species = raw_annotations.rename(columns={'species_predicted': 'species'}).groupby('species')['confidence'].max()
 performance_metrics = pd.merge(performance_metrics, max_confidence_per_species, on='species', how='left')
 performance_metrics = performance_metrics.rename(columns={'confidence': 'max_conf'})
 potential_species = pd.read_csv('data/species/Species List - Potential species.csv', index_col=None, usecols=['Common_Name', 'Rarity'])
 potential_species = potential_species.rename(columns={'Common_Name': 'species', 'Rarity': 'rarity'})
 potential_species['species'] = potential_species['species'].str.lower()
-performance_metrics = pd.merge(performance_metrics, potential_species, on='species', how='left')
+performance_metrics = pd.merge(potential_species, performance_metrics, on='species', how='left')
+
+cols_as_ints = ['N','N_P','N_N','N_unknown']
+performance_metrics[cols_as_ints] = performance_metrics[cols_as_ints].fillna(0)
+performance_metrics[cols_as_ints] = performance_metrics[cols_as_ints].astype(int)
 
 # N POSITIVE EXAMPLES
 print('SPECIES CLASS PERFORMANCE ====================================================')
@@ -276,5 +282,9 @@ if plot:
         plt.show()
 
 
-# DEBUG
-print((raw_annotations[raw_annotations['species_predicted'] == 'great horned owl']).sort_values(by=['confidence'], ascending=[False]).to_string())
+# # Print "confused" or simultaneously present classes
+# for i, species in enumerate(species_to_evaluate):
+#     print(f'CONFUSED CLASSES FOR {species}:')
+#     species_labels = (raw_annotations[raw_annotations['species_predicted'] == species])
+#     species_labels = species_labels[(species_labels['label_truth'] != '0') & (species_labels['label_truth'] != species)]
+#     print(species_labels['label_truth'].value_counts())

@@ -14,7 +14,7 @@ from utils.log import *
 # Also performs validation
 #
 # Returns a dataframe of collated and validated annotations from all Raven Pro selection tables under the given directory
-def collate_annotations(dirs, overwrite=False, print_annotations=False):
+def collate_annotations(dirs=[], overwrite=False, print_annotations=False):
 
     annotations_filepath = 'data/annotations/processed/annotations_processed.csv'
 
@@ -22,6 +22,10 @@ def collate_annotations(dirs, overwrite=False, print_annotations=False):
     if os.path.exists(annotations_filepath) and not overwrite:
         print(f'Retrieving annotations from {annotations_filepath}')
         return pd.read_csv('data/annotations/processed/annotations_processed.csv', index_col=None)
+    
+    if (overwrite and len(dirs) == 0) or (not overwrite and not os.path.exists(annotations_filepath) and len(dirs) == 0):
+        print_error('At least one directory must be provided to write annotations to file')
+        return
 
     # Declare 'evaluated_detections' - Get the list of files (detections) that were actually evaluated by annotators
     # These are all the .wav files under each site-date folder in e.g. 'annotation/data/_annotator/2020/Deployment4/SMA00410_20200523'
@@ -77,13 +81,13 @@ def collate_annotations(dirs, overwrite=False, print_annotations=False):
             continue
 
         if table.empty:
-            print_warning(f'{table_file} has no selections.')
+            print_warning(f'{os.path.basename(table_file)} has no selections.')
             continue
 
         table = table[cols_needed] # Discard unnecessary data
 
         if table.isna().any().any():
-            print_warning(f'{table_file} contains NaN values')
+            print_warning(f'{os.path.basename(table_file)} contains NaN values')
 
         # Parse the species names and confidence scores from 'Begin File' column
         file_metadata = list(map(lambda f: files.parse_metadata_from_file(f), table['begin file']))
@@ -102,7 +106,7 @@ def collate_annotations(dirs, overwrite=False, print_annotations=False):
         table.rename(columns={'begin file': 'file'}, inplace=True) # Rename 'begin file' to 'file'
 
         if (table['label_truth'] == 'nan').any() or table['label_truth'].isnull().any():
-            print_warning(f'{table_file} contains annotations with missing labels')
+            print_warning(f'{os.path.basename(table_file)} contains annotations with missing labels')
 
         raw_annotations = pd.concat([raw_annotations, table], ignore_index=True) # Store the table
 
@@ -115,16 +119,14 @@ def collate_annotations(dirs, overwrite=False, print_annotations=False):
         if (row['file offset (s)'] + row['delta time (s)']) > 3.0:
             print_warning(f'Annotation extends beyond detection length: {row["file"]}')
 
-    print(raw_annotations)
+    # print(raw_annotations)
+
     # Include any evaluated detections for the species without annotations (which should all be FP)
     empty_annotations = evaluated_detections.merge(raw_annotations.drop(columns='species_predicted'), on=['file', 'confidence'], how='outer', indicator=True)
-    print(empty_annotations)
     empty_annotations = empty_annotations[empty_annotations['_merge'] != 'both'] # Filter out the rows where the indicator value is 'both'
-    print(empty_annotations)
     empty_annotations = empty_annotations.drop(columns='_merge')
-    print(empty_annotations)
     if not empty_annotations.empty:
-        print_warning(f'Interpreting {len(empty_annotations)} detections without annotations as absences (0)')
+        print_warning(f'Interpreting {len(empty_annotations)} detections without annotations as species absences')
         if print_annotations:
             print_warning(empty_annotations.to_string())
         raw_annotations = pd.concat([raw_annotations, empty_annotations[['species_predicted', 'label_truth', 'confidence', 'file']]], ignore_index=True)

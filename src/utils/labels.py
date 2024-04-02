@@ -30,19 +30,19 @@ def clean_label(label):
     consolidated_labels = {
         # Abiotic
         "abiotic_aircraft": ["aircraft", "airplane", "airplanes", "loud thing (plane?)", "plane"],
-        "abiotic_transient": ["raindrops", "water drops", "droplets", "raindrop", "drip", "crackle", "dripping", "rapping on wood", "tap sound", "wood sound", "loud snap sound"],
-        "abiotic_vegetation": ["branch", "branch rustling", "branches rustling", "branches snapping","ground  rustling", "ground rustling", "leaves rustling", "rustling", "tree creaking", "branches", "twig rustling", "leaves"],
-        "abiotic_rain": ["loud rain"],
-        "abiotic_wind": ["wind"],
+        "abiotic_transient": ["raindrops", "water drops", "droplets", "raindrop", "drip", "crackle", "dripping", "rapping on wood", "tap sound", "wood sound", "loud snap sound","dri","drippin","drips","loud drip on wood","popping noise","tapping","tapping sound","snap"],
+        "abiotic_vegetation": ["branch", "branch rustling", "branches rustling", "branches snapping","ground  rustling", "ground rustling", "leaves rustling", "rustling", "tree creaking", "branches", "twig rustling", "leaves","branch cracking","cracking", "creaking","stick breaking","twig creaking","wood cracking","wood creaking","wooden rap","wooden soudn","wooden sound","crackling"],
+        "abiotic_rain": ["rain","loud rain"],
+        "abiotic_wind": ["wind", " wind"],
         "abiotic_water": ["river", "water"],
-        "abiotic_other_anthropogenic": ["machinery", "vehicle", "vehicle backing up noise", "vehicle?", "chainsaw"],
-        "abiotic_other": ["noise", "other", "random noise", "electricity", "high pitch buzzing", "thunder", "rain/wind", "buzzing sound", "buzz", "buzzing", "static sound", "interesting sound", "mystery noise", "static"],
+        "abiotic_other_anthropogenic": ["machinery", "vehicle", "vehicle backing up noise", "vehicle?", "chainsaw", "chainsaw revving","engine","machine banging","vehicle backing up"],
+        "abiotic_other": ["noise", "other", "random noise", "electricity", "high pitch buzzing", "thunder", "rain/wind", "buzzing sound", "buzz", "buzzing", "static sound", "interesting sound", "mystery noise", "static", "banging", "clink noise", "crashing sound","rumbling","thumping sound","bang","hum"],
         # Biotic
-        "anuran": ["frog", "frog chirping"],
+        "anuran": ["frog", "frogs", "frog chirping"],
         "coyote": ["coyotes howling"],
         "dog": ["dogs"],
         "insect": ["bee"],
-        "biotic_other": ["animal"],
+        "biotic_other": ["animal","wingbeats"],
         "0": ["not_target", "not-bird", "not bird", "not'species"], # 0 indicates a predicted species is NOT present
     }
 
