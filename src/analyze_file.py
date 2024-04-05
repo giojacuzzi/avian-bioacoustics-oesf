@@ -40,7 +40,7 @@ result = process_file.process_file(
     ascending      = ascending
 )
 
-if not result.empty:
+if result is not None:
     print_success(f'{len(result)} detections of {len(result["common_name"].unique())} unique species:')
     print(result)
 else:

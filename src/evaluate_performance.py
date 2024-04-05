@@ -14,7 +14,7 @@
 
 # Annotation directories to use as evaluation data
 dirs = [
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00410_20200523' # Jack
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00410_20200523', # Jack
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00424_20200521', # Stevan
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00486_20200523', # Summer
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00556_20200524', # Gio
@@ -33,7 +33,7 @@ dirs = [
 # Evaluate all species classes...
 species_to_evaluate = 'all'
 # ...or look at just a few
-# species_to_evaluate = ['american robin', 'common raven', 'band-tailed pigeon', 'barred owl', 'american kestrel']
+# species_to_evaluate = ["american robin", "white-crowned sparrow", "sooty grouse", "macgillivray's warbler", "townsend's warbler"]
 
 plot = False # Plot the results
 
@@ -49,7 +49,7 @@ from annotation.annotations import *
 from utils.log import *
 
 # Collate annotation data
-raw_annotations = collate_annotations(overwrite=False)
+raw_annotations = collate_annotations(dirs = dirs, overwrite = True)
 
 species = labels.get_species_classes()
 if species_to_evaluate == 'all':
@@ -62,6 +62,8 @@ if len(species_annotated) < len(species):
     print_warning(f'Missing positive annotations for species: {[label for label in species if label not in species_annotated]}')
 
 performance_metrics = pd.DataFrame() # Container for performance metrics of all species
+
+absent_metrics = pd.DataFrame() # Container for metrics of species that are absent (no positive examples)
 
 # For each unique species (or a particular species), compute data labels and evaluate performance
 plots = []
@@ -133,9 +135,12 @@ for i, species in enumerate(species_to_evaluate):
     if n_unknown > 0:
         print_warning(f"{n_unknown} detections with unknown species. Excluding these from consideration...")
         detection_labels = detection_labels[detection_labels['label_truth'] != 'unknown']
+
+    N_P = sum(detection_labels['label_truth'] == species) # Total number of positive examples
+    N_N = sum(detection_labels['label_truth'] != species) # Total number of negative examples
     
     if len(detection_labels) == 0:
-        print_warning(f"No remaining known detections to evaluate for '{species}'. Skipping...")
+        print_error(f"No remaining known detections to evaluate for '{species}'. Skipping...")
         continue
 
     # Precision is the proportion of true positives among positive predictions, TP/(TP + FP). Intuitively,
@@ -207,37 +212,44 @@ for i, species in enumerate(species_to_evaluate):
         'p_mean':    [round(precision.mean(),2)],                       # Average precision across all thresholds
         'p_max':     [round(precision[np.argmax(precision[:-1])],2)],   # Maximum precision across all thresholds
         'p_max_th':  [round(thresholds[np.argmax(precision[:-1])],2)],  # Score threshold to maximize precision
+        'p_max_r':   [round(recall[np.argmax(precision[:-1])],2)],      # Recall at maximum precision using threshold
         'N':         [n_examples],                                      # Total number of examples
-        'N_P':       [sum(detection_labels['label_truth'] == species)], # Total number of positive examples
-        'N_N':       [sum(detection_labels['label_truth'] != species)], # Total number of negative examples
-        'N_unknown': [n_unknown] # Total number of unknown examples excluded from evaluation
+        'N_P':       [N_P],                                             # Total number of positive examples
+        'N_N':       [N_N],                                             # Total number of negative examples
+        'N_unknown': [n_unknown]                                        # Total number of unknown examples excluded from evaluation
     })], ignore_index=True)
 
     # TODO: Use F1-score to determine an optimal threshold, e.g. https://ploomber.io/blog/threshold/
 
-    # # NOTE: ROC EVALUATIONS SHOWN FOR DEMONSTRATION. IMBALANCED EVALUATION DATA PRECLUDES INFERENCE.
-    # # The Receiver Operating Characteristic curve summarizes the tradeoff between the true positive rate (i.e. recall)
-    # # and the false positive rate (FPR) as we vary the confidence threshold. ROC curves are appropriate when the
-    # # evaluation data are balanced between each class (i.e. present vs non-present).
-    # fpr, tpr, th = sklearn.metrics.roc_curve(labels_binary['label_truth'], labels_binary['confidence'], drop_intermediate=False)
+    # NOTE: ROC EVALUATIONS SHOWN FOR DEMONSTRATION. IMBALANCED EVALUATION DATA PRECLUDES INFERENCE.
+    # The Receiver Operating Characteristic curve summarizes the tradeoff between the true positive rate (i.e. recall)
+    # and the false positive rate (FPR) as we vary the confidence threshold. ROC curves are appropriate when the
+    # evaluation data are balanced between each class (i.e. present vs non-present).
+    fpr, tpr, th = sklearn.metrics.roc_curve(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species, drop_intermediate=False)
 
-    # # The ROC Area Under the Curve (ROC-AUC) is a useful summary statistic of the ROC curve that tells us the
-    # # probability that a randomly-selected positive example ranks higher than a randomly-selected negative one.
-    # # ROC-AUC == 1 if our model is perfect, while ROC-AUC == 0.5 if our model is no better than a coin flip.
-    # # Note that a low ROC-AUC can also reflect a class imbalance in the evaluation data.
-    # roc_auc = sklearn.metrics.roc_auc_score(labels_binary['label_truth'], labels_binary['confidence'])
+    # The ROC Area Under the Curve (ROC-AUC) is a useful summary statistic of the ROC curve that tells us the
+    # probability that a randomly-selected positive example ranks higher than a randomly-selected negative one.
+    # ROC-AUC == 1 if our model is perfect, while ROC-AUC == 0.5 if our model is no better than a coin flip.
+    # Note that a low ROC-AUC can also reflect a class imbalance in the evaluation data.
+    if N_P > 0 and N_N > 0:
+        roc_auc = sklearn.metrics.roc_auc_score(detection_labels['label_truth'], detection_labels['confidence'])
+    else:
+        print_warning("Could not compute ROC AUC, no negative examples.")
+        roc_auc = 0.0
 
-    # # Plot ROC
-    # ns_probs = [0 for _ in range(len(labels_binary))] # no skill classifier that only predicts 0 for all examples
-    # ns_roc_auc_score = sklearn.metrics.roc_auc_score(labels_binary['label_truth'], ns_probs)
-    # ns_fpr, ns_tpr, _ = sklearn.metrics.roc_curve(labels_binary['label_truth'], ns_probs, drop_intermediate=False)
-    # plt.plot(ns_fpr, ns_tpr, linestyle='--', label='Baseline', color='gray')
-    # plt.plot(fpr, tpr, marker='.', label='Classifier')
-    # plt.xlabel('False Positive Rate')
-    # plt.ylabel('True Positive Rate (Recall)')
-    # plt.title(f'ROC (AUC {roc_auc:.2f}): {species_name} (N={len(labels_binary)})')
-    # plt.legend()
-    # plt.show()
+    # Plot ROC
+    if False:
+        # ns_probs = [species for _ in range(len(detection_labels))] # no skill classifier that only predicts 1 for all examples
+        # ns_roc_auc_score = sklearn.metrics.roc_auc_score(detection_labels['label_truth'], ns_probs, pos_label=species)
+        # ns_fpr, ns_tpr, _ = sklearn.metrics.roc_curve(detection_labels['label_truth'], ns_probs, pos_label=species, drop_intermediate=False)
+        # plt.plot(ns_fpr, ns_tpr, linestyle='--', label='Baseline', color='gray')
+        ax3.plot(fpr, tpr, marker='.', label='Classifier')
+        ax3.set_xlabel('False Positive Rate')
+        ax3.set_ylabel('True Positive Rate (Recall)')
+        ax3.set_title(f'ROC (AUC {roc_auc:.2f})', fontsize=font_size)
+        ax3.set_xlim([0.0-padding, 1.0+padding])
+        ax3.set_ylim([0.0-padding, 1.0+padding])
+        ax3.legend(loc='lower right')
 
     if plot:
         fig.suptitle(species, x=0.0, y=1.0, horizontalalignment='left', verticalalignment='top', fontsize=12)
