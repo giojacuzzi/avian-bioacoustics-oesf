@@ -4,14 +4,14 @@ from datetime import datetime
 from utils.log import *
 
 # Search pararmeters
-beginYear  = 2023
+beginYear  = 1800
 endYear    = 2024
-regionCode = 'US-WA'
+regionCode = 'na'
 
 # Only download recordings from start_date forward
-start_date = datetime(2023, 6, 1) # June 1 2023
+start_date = datetime(beginYear, 6, 1) # June 1 2023
 
-save_path = '/Users/giojacuzzi/Downloads'
+save_path = '/Users/giojacuzzi/Downloads/Macaulay'
 
 def get_recording_info(taxonCode):
 
@@ -60,23 +60,23 @@ def get_recording_info(taxonCode):
         return []
 
 # Example usage
-taxonCode = 'grhowl'
+taxonCode = 'spoowl2'
 recording_info = get_recording_info(taxonCode)
 
 if recording_info:
     print("Downloading recordings for search query '{}'".format(taxonCode))
 
     # Download each recording
-    for info in recording_info[0:4]:
+    for info in recording_info:
         print(f'Downloading ML{info["id"]} ({info["date"]})...')
-        # download_url = f'https://cdn.download.ams.birds.cornell.edu/api/v1/asset/{id}'
-        # response = requests.get(download_url, stream=True)
-        # if response.status_code == 200: # If request was successful
-        #     with open(f'{save_path}/{taxonCode}-ML{info["id"]}.mp3', 'wb') as f: # Open file for writing
-        #         for chunk in response.iter_content(chunk_size=1024): # Write response data to file
-        #             f.write(chunk)
-        #     print_success("Download successful.")
-        # else:
-        #     print_error("Unable to download the file.")
+        download_url = f'https://cdn.download.ams.birds.cornell.edu/api/v1/asset/{info["id"]}'
+        response = requests.get(download_url, stream=True)
+        if response.status_code == 200: # If request was successful
+            with open(f'{save_path}/{taxonCode}-ML{info["id"]}.mp3', 'wb') as f: # Open file for writing
+                for chunk in response.iter_content(chunk_size=1024): # Write response data to file
+                    f.write(chunk)
+            print_success("Download successful.")
+        else:
+            print_error("Unable to download the file.")
 else:
     print("No recording IDs found for taxon code '{}'".format(taxonCode))
