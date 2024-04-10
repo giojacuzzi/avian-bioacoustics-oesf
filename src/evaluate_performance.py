@@ -30,9 +30,9 @@ dirs = [
 ]
 
 # Evaluate all species classes...
-# species_to_evaluate = 'all'
+species_to_evaluate = 'all'
 # ...or look at just a few
-species_to_evaluate = ["varied thrush", "pacific wren", "evening grosbeak", "hairy woodpecker", "golden-crowned kinglet", "barred owl", "chestnut-backed chickadee", "macgillivray's warbler", "townsend's warbler"]
+# species_to_evaluate = ["varied thrush", "pacific wren", "evening grosbeak", "hairy woodpecker", "golden-crowned kinglet", "barred owl", "chestnut-backed chickadee", "macgillivray's warbler", "townsend's warbler"]
 
 plot = False             # Plot the results
 print_detections = False # Print detections

@@ -9,23 +9,46 @@ def find_file_full_path(top_directory, filename):
             return os.path.join(root, filename)
     return None
 
-# Function to parse species name, confidence, serial number, date, and time from filename
-def parse_metadata_from_file(filename):
+# Function to parse species name, confidence, serial number, date, and timecfrom annotation filename,
+# e.g. "Yellow-rumped Warbler-0.4231688380241394_SMA00399_20200628_204241.wav"
+def parse_metadata_from_annotation_file(filename):
 
     # Regular expression pattern to match the filename
     pattern = r'^(.+)-([\d.]+)_(\w+)_(\d{8})_(\d{6})\.(\w+)$'
     match = re.match(pattern, filename)
 
     if match:
-        species = match.group(1)
+        species    = match.group(1)
         confidence = float(match.group(2))
-        serialno = match.group(3)
-        date = match.group(4)
-        time = match.group(5)
+        serialno   = match.group(3)
+        date       = match.group(4)
+        time       = match.group(5)
         return species, confidence, serialno, date, time
     else:
         print_warning("Unable to parse info from filename:", filename)
+
+# Function to parse species name, confidence, serial number, date, and time from raw audio filepath,
+# e.g. ".../Deployment6/SMA00399_20200619/SMA00399_20200619_040001.wav"
+def parse_metadata_from_raw_audio_filepath(filepath):
+
+    # Regular expression pattern to match the deployment number
+    deployment = re.findall(".Deployment([\d.]+)", filepath)
+    if (len(deployment) != 1):
+        print_error(f'Could not parse Deployment token from {filepath}')
         return
+    else:
+        deployment = deployment[0]
+
+    # Regular expression pattern to match the filename
+    pattern = r'(?P<serialno>\S+?)_(?P<date>\d{8}?)_(?P<time>\d{6}?)\.(?P<type>\w+?)$'
+    match = re.search(pattern, os.path.basename(filepath))
+    if match:
+        serialno = match.group('serialno')
+        date     = match.group('date')
+        time     = match.group('time')
+        return deployment, serialno, date, time
+    else:
+        print_error(f'Unable to parse info from filepath: {filepath}')
 
 # Find all selection table files under a root directory
 def find_files(directory, filetype):

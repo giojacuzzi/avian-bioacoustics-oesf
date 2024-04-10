@@ -38,7 +38,7 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
 
     evaluated_detection_files = list(map(os.path.basename, evaluated_detection_files_paths))
     # Parse the species names and confidence scores from the .wav filenames
-    file_metadata = list(map(lambda f: files.parse_metadata_from_file(f), evaluated_detection_files))
+    file_metadata = list(map(lambda f: files.parse_metadata_from_annotation_file(f), evaluated_detection_files))
     species, confidences, serialnos, dates, times = zip(*file_metadata)
 
     evaluated_detections = pd.DataFrame({
@@ -89,7 +89,7 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
             print_warning(f'{os.path.basename(table_file)} contains NaN values')
 
         # Parse the species names and confidence scores from 'Begin File' column
-        file_metadata = list(map(lambda f: files.parse_metadata_from_file(f), table['begin file']))
+        file_metadata = list(map(lambda f: files.parse_metadata_from_annotation_file(f), table['begin file']))
         species, confidences, serialnos, dates, times = zip(*file_metadata)
 
         table.rename(columns={'species': 'label_truth'}, inplace=True) # Rename 'species' to 'label_truth'
@@ -134,7 +134,7 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
     raw_annotations = raw_annotations.sort_values(by=['species_predicted'])
 
     # Get metadata for each annotation
-    annotations_metadata = list(map(lambda f: files.parse_metadata_from_file(f), raw_annotations['file']))
+    annotations_metadata = list(map(lambda f: files.parse_metadata_from_annotation_file(f), raw_annotations['file']))
     species, confidences, serialnos, dates, times = zip(*annotations_metadata)
     raw_annotations['date'] = dates
     raw_annotations['time'] = times
