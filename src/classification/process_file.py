@@ -95,8 +95,6 @@ def process_file(
         # sort the results
         result = result.sort_values(sort_by, ascending=ascending)
 
-        print(f'OKAY {out_dir} {path_out}')
-
         # Save results to file
         if save_to_file:
             if not os.path.exists(os.path.dirname(path_out)):

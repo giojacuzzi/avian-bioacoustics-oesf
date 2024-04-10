@@ -1,6 +1,6 @@
 # Analyze a single audio file
 
-# NOTE: Custom edits to birdnetlib are used here (see analyzer.py).
+# NOTE: Custom edits to birdnetlib are used here (see analyzer.py and main.py).
 # Specifically, APPLY_SIGMOID flag set to False throughout to
 # return logits, not sigmoid activations
 
