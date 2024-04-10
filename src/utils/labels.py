@@ -31,7 +31,7 @@ def clean_label(label):
         # Abiotic
         "abiotic_aircraft": ["aircraft", "airplane", "airplanes", "loud thing (plane?)", "plane"],
         "abiotic_transient": ["raindrops", "water drops", "droplets", "raindrop", "drip", "crackle", "dripping", "rapping on wood", "tap sound", "wood sound", "loud snap sound","dri","drippin","drips","loud drip on wood","popping noise","tapping","tapping sound","snap"],
-        "abiotic_vegetation": ["branch", "branch rustling", "branches rustling", "branches snapping","ground  rustling", "ground rustling", "leaves rustling", "rustling", "tree creaking", "branches", "twig rustling", "leaves","branch cracking","cracking", "creaking","stick breaking","twig creaking","wood cracking","wood creaking","wooden rap","wooden soudn","wooden sound","crackling"],
+        "abiotic_vegetation": ["branch", "branch rustling", "branches rustling", "branches snapping","ground  rustling", "ground rustling", "leaves rustling", "rustling", "tree creaking", "branches", "twig rustling", "leaves","branch cracking","cracking", "creaking","stick breaking","twig creaking","wood cracking","wood creaking","wooden rap","wooden soudn","wooden sound","crackling","vegetation"],
         "abiotic_rain": ["rain","loud rain"],
         "abiotic_wind": ["wind", " wind"],
         "abiotic_water": ["river", "water"],
