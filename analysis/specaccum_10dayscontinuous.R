@@ -1,10 +1,11 @@
 library(vegan)
 library(ggplot2)
 library(ggrepel)
+library(tidyverse)
 theme_set(theme_minimal())
 
 # path to raw data from a site deployment (stand init from early June)
-path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections/2020/Deployment5/S4A04325_20200603'
+path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections/2020/Deployment5/S4A04271_20200604'
 setwd(path)
 
 sitedate = basename(path)
@@ -22,7 +23,7 @@ samp_per_day = sec_per_day / sample_sec_size
 data_list <- list()
 for (f in files) {
   print(f)
-  data_list[[f]] <- read.csv(f, row.names = NULL)
+  data_list[[f]] <- read_csv(f, show_col_types=FALSE)
 }
 data <- do.call(rbind, data_list)
 rm(data_list)

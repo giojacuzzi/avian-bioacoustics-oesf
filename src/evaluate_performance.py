@@ -23,17 +23,16 @@ dirs = [
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00399_20200619', # Jessica
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00346_20200716', # Summer
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00339_20200717',  # Jack
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment2/SMA00351_20200424_Data' # Mirella
-    
-    # '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00370_20200716', # TODO - Jessica review
-    # '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00404_20200618', # TODO - Iris review
-    # '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00424_20200717' # TODO - Iris review
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment2/SMA00351_20200424_Data', # Mirella
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00370_20200716', # Jessica
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00424_20200717', # Iris
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00404_20200618', # Iris
 ]
 
 # Evaluate all species classes...
 species_to_evaluate = 'all'
 # ...or look at just a few
-# species_to_evaluate = ["american robin", "white-crowned sparrow", "sooty grouse", "macgillivray's warbler", "townsend's warbler"]
+# species_to_evaluate = ["varied thrush", "pacific wren", "evening grosbeak", "hairy woodpecker", "golden-crowned kinglet", "barred owl", "chestnut-backed chickadee", "macgillivray's warbler", "townsend's warbler"]
 
 plot = False # Plot the results
 
@@ -281,6 +280,12 @@ print('COMMON SPECIES ==========================================================
 common_species = performance_metrics.loc[performance_metrics['rarity']=='C']
 common_species = common_species.sort_values(by=['N_P', 'N_unknown', 'max_conf'], ascending=[False, False, False])
 print(common_species.to_string(index=False))
+
+# RARE
+print('RARE SPECIES ===============================================================')
+rare_species = performance_metrics.loc[performance_metrics['rarity']=='R']
+rare_species = rare_species.sort_values(by=['N_P', 'N_unknown', 'max_conf'], ascending=[False, False, False])
+print(rare_species.to_string(index=False))
 
 # N MISSING
 print('MISSING SPECIES ==============================================================')
