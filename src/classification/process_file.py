@@ -21,15 +21,15 @@ if 'analyzer' not in locals() and 'analyzer' not in globals():
 # Run the analyzer on the given file and save the resulting detections to a csv
 def process_file(
         in_filepath,
-        out_dir,
+        out_dir        = '',
         root_dir       = None,
         min_confidence = 0.0,
         num_separation = 1,
         cleanup        = True,
         sort_by        = 'start_date',
-        ascending      = True
+        ascending      = True,
+        save_to_file   = True
 ):
-
     # Save directly to output directory
     if root_dir is None:
         file_out = os.path.basename(os.path.splitext(in_filepath)[0]) + '.csv'
@@ -95,9 +95,13 @@ def process_file(
         # sort the results
         result = result.sort_values(sort_by, ascending=ascending)
 
-        if not os.path.exists(os.path.dirname(path_out)):
-            os.makedirs(os.path.dirname(path_out))
-        pd.DataFrame.to_csv(result, path_out, index=False) 
+        print(f'OKAY {out_dir} {path_out}')
+
+        # Save results to file
+        if save_to_file:
+            if not os.path.exists(os.path.dirname(path_out)):
+                os.makedirs(os.path.dirname(path_out))
+            pd.DataFrame.to_csv(result, path_out, index=False) 
 
         end_time_file = time.time()
         print_success(f'Finished processing file {in_filepath}\n({(end_time_file - start_time_file):.2f} sec)')

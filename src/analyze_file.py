@@ -9,14 +9,15 @@ from utils.log import *
 import os
 
 # Output config
-out_dir = r'/Users/giojacuzzi/Downloads' # Output directory for detections dataframe
-sort_by = 'confidence'                   # Column to sort dataframe by
-ascending = False                        # Column sort direction
+sort_by      = 'confidence' # Column to sort dataframe by
+ascending    = False        # Column sort direction
+save_to_file = False        # Save output to a file
+out_dir      = ''           # Output directory (e.g. '/Users/giojacuzzi/Downloads'), if saving output to file
 
 # Analyzer config
-min_confidence = 0.1 # Minimum confidence score to retain a detection
-num_separation = 1   # Number of sounds to separate for analysis. Leave as 1 for original file alone.
-cleanup = True       # Keep or remove any temporary files created through analysis
+min_confidence = 0.1  # Minimum confidence score to retain a detection
+num_separation = 1    # Number of sounds to separate for analysis. Leave as 1 for original file alone.
+cleanup        = True # Keep or remove any temporary files created through analysis
 
 # -----------------------------------------------------------------------------
 
@@ -37,11 +38,12 @@ result = process_file.process_file(
     num_separation = num_separation,
     cleanup        = cleanup,
     sort_by        = sort_by,
-    ascending      = ascending
+    ascending      = ascending,
+    save_to_file   = save_to_file
 )
 
 if result is not None:
     print_success(f'{len(result)} detections of {len(result["common_name"].unique())} unique species:')
-    print(result)
+    print(result.to_string())
 else:
     print_warning('No detections')

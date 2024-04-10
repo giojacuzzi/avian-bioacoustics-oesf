@@ -18,7 +18,7 @@ ascending   = True
 # Analyzer config
 n_processes    = 7 # cores in pool
 min_confidence = 0.0
-num_separation = 4
+num_separation = 1
 cleanup        = True
 
 # -----------------------------------------------------------------------------
