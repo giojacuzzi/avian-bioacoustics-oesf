@@ -30,11 +30,12 @@ dirs = [
 ]
 
 # Evaluate all species classes...
-species_to_evaluate = 'all'
+# species_to_evaluate = 'all'
 # ...or look at just a few
-# species_to_evaluate = ["varied thrush", "pacific wren", "evening grosbeak", "hairy woodpecker", "golden-crowned kinglet", "barred owl", "chestnut-backed chickadee", "macgillivray's warbler", "townsend's warbler"]
+species_to_evaluate = ["varied thrush", "pacific wren", "evening grosbeak", "hairy woodpecker", "golden-crowned kinglet", "barred owl", "chestnut-backed chickadee", "macgillivray's warbler", "townsend's warbler"]
 
-plot = False # Plot the results
+plot = False             # Plot the results
+print_detections = False # Print detections
 
 # TODO: Once all annotations are complete and every detection has been evaluated, set this to False
 only_annotated = False # DEBUG: skip files that do not have annotations (selection tables)
@@ -47,84 +48,31 @@ import numpy as np              # Mathematics
 from annotation.annotations import *
 from utils.log import *
 
-# Collate annotation data
-raw_annotations = collate_annotations(dirs = dirs, overwrite = True)
+# Get raw annotation data
+raw_annotations = get_raw_annotations(dirs = dirs, overwrite = False)
 
 species = labels.get_species_classes()
 if species_to_evaluate == 'all':
     species_to_evaluate = sorted(species)
-
-# Warn if missing annotations for any species in species_predicted
-species_annotated = [label for label in sorted(raw_annotations['label_truth'].astype(str).unique()) if label in species]
-print(f'Retrieved {len(raw_annotations)} total annotations for {len(species_annotated)}/{len(species)} species classes')
-if len(species_annotated) < len(species):
-    print_warning(f'Missing positive annotations for species: {[label for label in species if label not in species_annotated]}')
+    # Warn if missing annotations for any species in species_predicted
+    species_annotated = [label for label in sorted(raw_annotations['label_truth'].astype(str).unique()) if label in species]
+    print(f'Retrieved {len(raw_annotations)} total annotations for {len(species_annotated)}/{len(species)} species classes')
+    if len(species_annotated) < len(species):
+        print_warning(f'Missing positive annotations for species: {[label for label in species if label not in species_annotated]}')
 
 performance_metrics = pd.DataFrame() # Container for performance metrics of all species
-
-absent_metrics = pd.DataFrame() # Container for metrics of species that are absent (no positive examples)
 
 # For each unique species (or a particular species), compute data labels and evaluate performance
 plots = []
 
+# Collate raw annotation data into species detection labels per species
+collated_detection_labels = collate_annotations_as_detections(raw_annotations, species_to_evaluate, only_annotated=only_annotated, print_detections=print_detections)
+
 for i, species in enumerate(species_to_evaluate):
 
-    ## COLLATE SPECIES DATA ===============================================================
-    print(f'Collating "{species}" data...')
-
-    # Get all annotations for the species
-    if True:
-        # For now, only include detections (TP and FP).
-        detection_labels = raw_annotations[raw_annotations['species_predicted'] == species]
-    else:
-        # TODO: Include not only detections (TP and FP), but also non-detections (FN).
-        detection_labels = raw_annotations[(raw_annotations['species_predicted'] == species) | (raw_annotations['label_truth'] == species_to_evaluate)]
-        # NOTE: The resulting confidence scores are incorrect where species_predicted != species_name
-        detection_labels.loc[detection_labels['species_predicted'] != species, 'confidence'] = np.nan # Set confidence to NaN for the identified rows
-        # TODO: Instead of getting confidence score from the detection file for TP and FP, get ALL confidence scores from the raw data (TP, FP, and FN). Use this to overwrite 'confidence'?
-    detection_labels = detection_labels.sort_values(by='file')
-    # print('All annotations:')
-    # print(detection_labels)
-
-    if detection_labels.empty:
-        print_warning(f'No samples for {species}. Skipping...')
-        continue
-
-    if detection_labels['label_truth'].isna().any():
-        print_warning('Assuming missing (NaN) label_truth values due to lack of annotation selections are false positives (0)...')
-        if only_annotated:
-            detection_labels.dropna(subset=['label_truth'], inplace=True)
-            if detection_labels.empty:
-                print_warning(f'No remaining detections to evaluate for {species}. Skipping...')
-                continue
-        else:
-            detection_labels['label_truth'] = detection_labels['label_truth'].fillna(0)
-
-    # TODO: When including non-detections (FN), do we need to pull confidence scores here instead? For the NaN values?
-
-    # print('All annotations and samples:')
-    # print(detection_labels)
-
-    # For each unique file (i.e. detection), determine if the species was present (1), unknown (?), or not (0) among all annotation labels
-    # Simplify the dataframe such that there is only one row per detection.
-    def compute_label_presence(group, label):
-        if label in group['label_truth'].values:
-            return label
-        elif 'unknown' in group['label_truth'].values:
-            return 'unknown'
-        else:
-            return '0'
-    # Group by the 'file' column and apply the function to compute label_presence,
-    # then merge the new column back to the original DataFrame
-    detection_labels = pd.merge(
-        detection_labels.drop(columns=['label_truth', 'file offset (s)', 'delta time (s)']), # drop selection-specific fields that no longer apply
-        detection_labels.groupby('file').apply(compute_label_presence, include_groups=False, label=species).reset_index(name='label_truth'), # label_truth here will replace the previous label_truth
-        on='file'
-    )
-    # Drop duplicate rows based on the 'file' column
-    detection_labels = detection_labels.drop_duplicates(subset='file')
-    # print('Species labels by file:')
-    # print(detection_labels)
+    # Get detection labels for the species
+    print(f'Getting detection labels for "{species}"...')
+    detection_labels = collated_detection_labels[collated_detection_labels['species_predicted'] == species]
     n_examples = len(detection_labels)
 
     ## EVALUATE SPECIES PERFORMANCE =========================================================
@@ -270,25 +218,28 @@ cols_as_ints = ['N','N_P','N_N','N_unknown']
 performance_metrics[cols_as_ints] = performance_metrics[cols_as_ints].fillna(0)
 performance_metrics[cols_as_ints] = performance_metrics[cols_as_ints].astype(int)
 
+if species_to_evaluate != 'all':
+    performance_metrics = performance_metrics[performance_metrics['species'].isin(species_to_evaluate)]
+
 # N POSITIVE EXAMPLES
-print('SPECIES CLASS PERFORMANCE ====================================================')
+print('SPECIES CLASS PERFORMANCE =============================================================================================')
 sorted_df = performance_metrics.sort_values(by=['N_P', 'AUC-PR'], ascending=[False, True])
 print(sorted_df.to_string(index=False))
 
 # COMMON
-print('COMMON SPECIES ===============================================================')
+print('COMMON SPECIES ========================================================================================================')
 common_species = performance_metrics.loc[performance_metrics['rarity']=='C']
 common_species = common_species.sort_values(by=['N_P', 'N_unknown', 'max_conf'], ascending=[False, False, False])
 print(common_species.to_string(index=False))
 
 # RARE
-print('RARE SPECIES ===============================================================')
+print('RARE SPECIES ==========================================================================================================')
 rare_species = performance_metrics.loc[performance_metrics['rarity']=='R']
 rare_species = rare_species.sort_values(by=['N_P', 'N_unknown', 'max_conf'], ascending=[False, False, False])
 print(rare_species.to_string(index=False))
 
 # N MISSING
-print('MISSING SPECIES ==============================================================')
+print('MISSING SPECIES =======================================================================================================')
 min_N_P = 7 + 1
 missing_species = performance_metrics.loc[performance_metrics['N_P']<min_N_P]
 print_error(f'{len(missing_species)} species with less than {min_N_P} positive examples:\n{missing_species.to_string(index=False)}')

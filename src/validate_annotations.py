@@ -21,5 +21,5 @@ dirs = [
 # Load required packages -------------------------------------------------
 from annotation.annotations import *
 
-# Collate and validate annotation data
-raw_annotations = collate_annotations(dirs, overwrite=True, print_annotations=False)
+# Retrieve and validate annotation data
+raw_annotations = get_raw_annotations(dirs, overwrite=True, print_annotations=False)
