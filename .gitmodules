@@ -1,0 +1,3 @@
+[submodule "src/submodules/birdnetlib"]
+	path = src/submodules/birdnetlib
+	url = https://github.com/giojacuzzi/birdnetlib
