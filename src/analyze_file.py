@@ -1,9 +1,5 @@
 # Analyze a single audio file
 
-# NOTE: Custom edits to birdnetlib are used here (see analyzer.py and main.py).
-# Specifically, APPLY_SIGMOID flag set to False throughout to
-# return logits, not sigmoid activations
-
 from classification import process_file
 from utils.log import *
 import os
@@ -15,9 +11,10 @@ save_to_file = False        # Save output to a file
 out_dir      = ''           # Output directory (e.g. '/Users/giojacuzzi/Downloads'), if saving output to file
 
 # Analyzer config
-min_confidence = 0.1  # Minimum confidence score to retain a detection
-num_separation = 1    # Number of sounds to separate for analysis. Leave as 1 for original file alone.
-cleanup        = True # Keep or remove any temporary files created through analysis
+min_confidence = 0.1   # Minimum confidence score to retain a detection (only used if apply_sigmoid is True)
+apply_sigmoid  = False # Sigmoid transformation or raw logit score
+num_separation = 1     # Number of sounds to separate for analysis. Leave as 1 for original file alone.
+cleanup        = True  # Keep or remove any temporary files created through analysis
 
 # -----------------------------------------------------------------------------
 
@@ -35,6 +32,7 @@ result = process_file.process_file(
     in_filepath    = in_filepath,
     out_dir        = out_dir,
     min_confidence = min_confidence,
+    apply_sigmoid  = apply_sigmoid,
     num_separation = num_separation,
     cleanup        = cleanup,
     sort_by        = sort_by,

@@ -1,13 +1,13 @@
-# NOTE: Custom edits to birdnetlib required (see analyzer.py).
-# Specifically, APPLY_SIGMOID flag set to False throughout to
-# return logits, not sigmoid activations
 from birdnetlib.analyzer import Analyzer, MODEL_VERSION
-
-import datetime
+import birdnetlib.analyzer
+from birdnetlib import Recording 
 import os
 import pandas as pd
+from . import sound_separation
+from subprocess import *
+import shutil
+import datetime
 import time
-from . import analyze
 from utils.log import *
 from utils.files import *
 from utils.bnl import *
@@ -17,7 +17,7 @@ import sys
 if 'analyzer' not in locals() and 'analyzer' not in globals():
 
     # Check for correct version for this project
-    expected_version = '2.4'
+    expected_version = '2.4-Gio'
     if MODEL_VERSION != expected_version:
         print_error(f'birdnetlib.analyzer MODEL_VERSION {MODEL_VERSION} incompatible. Please install the expected version {expected_version}')
         sys.exit()
@@ -26,12 +26,58 @@ if 'analyzer' not in locals() and 'analyzer' not in globals():
     print(f'Initializing analyzer with species list {species_list_path}')
     analyzer = Analyzer(custom_species_list_path=species_list_path)
 
+# path - path to a .wav file
+# cleanup - remove any temporary files created during analysis
+# num_separation - the number of sound channels to separate. '1' will leave the original file unaltered.
+def analyze_detections(filepath, analyzer, min_confidence, apply_sigmoid=True, num_separation=1, cleanup=True):
+    
+    if (num_separation > 1):
+        files = sound_separation.separate(filepath, num_separation)
+    else:
+        files = [filepath] # original file, no sound separation
+
+    # Obtain detections across file(s)
+    detections = pd.DataFrame()
+    for file in files:
+
+        birdnetlib.analyzer.APPLY_SIGMOID = apply_sigmoid # Overwrite flag to return logit values instead of sigmoid transforms
+        
+        recording = Recording(
+            analyzer=analyzer,
+            path=file,
+            min_conf=min_confidence,
+        )
+        recording.minimum_confidence = min_confidence # necessary override to enforce 0.0 case
+        recording.analyze()
+        file_detections = pd.DataFrame(recording.detections)
+        print(f'analyze_detections found {str(len(file_detections))} detections')
+
+        file_detections['file_origin'] = os.path.basename(file)
+        if (len(file_detections) > 0):
+            detections = pd.concat([detections, file_detections], ignore_index=True)
+        else:
+            print('no detections')
+    
+    if num_separation == 1:
+        return detections
+    else:
+        # Aggregate detections for source separation
+        if cleanup:
+            shutil.rmtree(os.path.dirname(files[0]))
+
+        # Find indices of maximum confidence values for each unique start_time and common_name combination
+        aggregated_detections = pd.DataFrame(detections).sort_values('start_time')
+        i = aggregated_detections.groupby(['start_time', 'common_name'])['confidence'].idxmax()
+        aggregated_detections = aggregated_detections.loc[i]
+        return aggregated_detections
+
 # Run the analyzer on the given file and save the resulting detections to a csv
 def process_file(
         in_filepath,
         out_dir        = '',
         root_dir       = None,
         min_confidence = 0.0,
+        apply_sigmoid  = True,
         num_separation = 1,
         cleanup        = True,
         sort_by        = 'start_date',
@@ -60,10 +106,11 @@ def process_file(
         info = parse_metadata_from_filename(in_filepath)
 
         start_time_file = time.time()
-        result = analyze.analyze_detections(
+        result = analyze_detections(
             filepath = in_filepath,
             analyzer = analyzer,
             min_confidence = min_confidence,
+            apply_sigmoid = apply_sigmoid,
             num_separation = num_separation,
             cleanup = cleanup
         )
@@ -73,21 +120,31 @@ def process_file(
         else:
             dt = datetime.datetime(int(info['year']), int(info['month']), int(info['day']), int(info['hour']), int(info['min']), int(info['sec']))
 
-        col_names = ['common_name','confidence','logit','start_date']
+        # Only keep essential data
+        if apply_sigmoid:
+            col_names = ['common_name','confidence','start_date']
+        else:
+            col_names = ['common_name','confidence','logit','start_date']
+
         if not result.empty:
+
+            # Create columns for start date and (if applicable) raw logit value and rounded sigmoid activated confidence score
             start_deltas = list(map(lambda s: datetime.timedelta(days=0, seconds=s), list(result['start_time'])))
             start_dates = list(map(lambda d: dt + d, start_deltas))
-
-            # Create columns for raw logit value, rounded sigmoid activated confidence, and start date
-            result = result.rename(columns={'confidence': 'logit'})
-            result['confidence'] = sigmoid_BirdNET(result['logit'])
             result['start_date'] = start_dates
 
             # end_deltas = list(map(lambda s: datetime.timedelta(days=0, seconds=s), list(result['end_time'])))
             # end_dates = list(map(lambda d: dt + d, end_deltas))
             # result['end_date'] = end_dates
 
-            result = result[col_names] # only keep essential values
+            # If analyzer returned raw logit values in the 'confidence' column, create
+            # a unique column each for logit values and sigmoid confidence scores.
+            if not apply_sigmoid:
+                result = result.rename(columns={'confidence': 'logit'})
+                result['confidence'] = sigmoid_BirdNET(result['logit'])
+
+            result = result[col_names]
+
         else:
             result = pd.DataFrame(columns=col_names)
         
@@ -108,3 +165,20 @@ def process_file(
 
     except Exception as e:
         print_error(f'{str(e)}\n{in_filepath}')
+
+##### TEST
+# species_list_path = os.path.abspath('classification/species_list/species_list_OESF.txt')
+# print(analyze_detections(
+#     filepath = '/Users/giojacuzzi/Desktop/audio_test/1/SMA00351_20200414_060036.wav',
+#     analyzer = Analyzer(custom_species_list_path=species_list_path),
+#     min_confidence = 0.5,
+#     num_separation = 1,
+#     cleanup = True
+# ))
+# print(analyze_detections(
+#     filepath = '/Users/giojacuzzi/Desktop/audio_test/1/SMA00351_20200414_060036.wav',
+#     analyzer = Analyzer(custom_species_list_path=species_list_path),
+#     min_confidence = 0.5,
+#     num_separation = 4,
+#     cleanup = True
+# ))

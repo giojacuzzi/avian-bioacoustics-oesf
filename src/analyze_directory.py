@@ -1,6 +1,6 @@
 # Analyze directories of files in parallel
 
-# NOTE: Custom edits to birdnetlib required (see analyzer.py and main.py).
+# TODO: check custom edits to birdnetlib required (see analyzer.py and main.py).
 # Specifically, APPLY_SIGMOID flag set to False throughout to
 # return logits, not sigmoid activations
 
