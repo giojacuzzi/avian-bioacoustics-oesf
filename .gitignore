@@ -8,6 +8,9 @@
 *.csv
 *.png
 
+# (Exceptions)
+!data/species/Species List - Potential species.csv
+
 # Apple files
 .DS_Store
 
