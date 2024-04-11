@@ -1,7 +1,7 @@
 # NOTE: Custom edits to birdnetlib required (see analyzer.py).
 # Specifically, APPLY_SIGMOID flag set to False throughout to
 # return logits, not sigmoid activations
-from birdnetlib.analyzer import Analyzer
+from birdnetlib.analyzer import Analyzer, MODEL_VERSION
 
 import datetime
 import os
@@ -11,9 +11,17 @@ from . import analyze
 from utils.log import *
 from utils.files import *
 from utils.bnl import *
+import sys
 
 # Create a global analyzer instance
 if 'analyzer' not in locals() and 'analyzer' not in globals():
+
+    # Check for correct version for this project
+    expected_version = '2.4'
+    if MODEL_VERSION != expected_version:
+        print_error(f'birdnetlib.analyzer MODEL_VERSION {MODEL_VERSION} incompatible. Please install the expected version {expected_version}')
+        sys.exit()
+
     species_list_path = os.path.abspath('src/classification/species_list/species_list_OESF.txt')
     print(f'Initializing analyzer with species list {species_list_path}')
     analyzer = Analyzer(custom_species_list_path=species_list_path)
@@ -40,12 +48,6 @@ def process_file(
             return
         file_out = os.path.splitext(in_filepath[len(root_dir):])[0] + '.csv'
     path_out = os.path.normpath(out_dir + '/' + file_out)
-
-    # print(f'in_filepath {in_filepath}')
-    # print(f'root_dir {root_dir}')
-    # print(f'out_dir {out_dir}')
-    # print(f'file_out {file_out}')
-    # print(f'path_out {path_out}')
 
     already_analyzed = list_base_files_by_extension(out_dir, 'csv')
     already_analyzed = [f.rstrip('.csv') for f in already_analyzed]
@@ -89,10 +91,8 @@ def process_file(
         else:
             result = pd.DataFrame(columns=col_names)
         
-        # Discard any detections below the minimum confidence
+        # Discard any detections below the minimum confidence and sort results
         result = result[result['confidence'] >= min_confidence]
-
-        # sort the results
         result = result.sort_values(sort_by, ascending=ascending)
 
         # Save results to file
