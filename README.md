@@ -9,17 +9,21 @@
 - [Python](https://www.python.org/downloads/) 3.9+ 64-bit (3.10 recommended, ensure "Add path to environment variables" is checked during install)
 
 ### Package dependencies
-From a terminal shell within the virtual environment, follow setup instructions for [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer) and [birdnetlib](https://github.com/joeweiss/birdnetlib). Steps are shown below:
+From a terminal shell within the virtual environment, run:
 
 ```
+# Install dependencies
 pip3 install --upgrade pip
 pip3 install pandas
 pip3 install librosa resampy
 pip3 install tensorflow # 2.5 or later, may need to enable "long paths" on Windows
 
-git submodule update --init --recursive # Download birdnetlib fork
-pip3 install src/submodules/birdnetlib # Install to venv
+# Update birdnetlib fork and install package to venv
+git submodule update --init --recursive
+pip3 install src/submodules/birdnetlib
 ```
+
+> This should install all dependencies you need to run, for example, `analyze_file.py`. For further reference, see setup instructions for [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer) and [birdnetlib](https://github.com/joeweiss/birdnetlib).
 
 To install sound separation dependencies:
 - Install [gsutil](https://cloud.google.com/storage/docs/gsutil_install)
