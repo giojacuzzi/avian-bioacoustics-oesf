@@ -12,15 +12,9 @@
 From a terminal shell within the virtual environment, run:
 
 ```
-# Install dependencies
-pip3 install --upgrade pip
-pip3 install pandas
-pip3 install librosa resampy
-pip3 install tensorflow # 2.5 or later, may need to enable "long paths" on Windows
-
-# Update birdnetlib fork and install package to venv
 git submodule update --init --recursive
-pip3 install src/submodules/birdnetlib
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
 > This should install all dependencies you need to run, for example, `analyze_file.py`. For further reference, see setup instructions for [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer) and [birdnetlib](https://github.com/joeweiss/birdnetlib).

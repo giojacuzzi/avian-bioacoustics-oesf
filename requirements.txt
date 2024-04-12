@@ -1,0 +1,7 @@
+pandas==2.2.2
+Levenshtein==0.25.1
+librosa==0.10.1
+resampy==0.4.3
+tensorflow==2.16.1 # Windows users may need to enable "long paths"
+scikit-maad==1.4.1
+./src/submodules/birdnetlib # Install the local birdnetlib submodule fork as a package
