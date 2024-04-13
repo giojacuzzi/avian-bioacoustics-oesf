@@ -147,9 +147,7 @@ def process_file(
 
         else:
             result = pd.DataFrame(columns=col_names)
-        
-        # Discard any detections below the minimum confidence and sort results
-        result = result[result['confidence'] >= min_confidence]
+
         result = result.sort_values(sort_by, ascending=ascending)
 
         # Save results to file
@@ -164,7 +162,7 @@ def process_file(
         return result
 
     except Exception as e:
-        print_error(f'{str(e)}\n{in_filepath}')
+        print_error(f'({type(e).__name__}) {e}\n{in_filepath}')
 
 ##### TEST
 # species_list_path = os.path.abspath('classification/species_list/species_list_OESF.txt')
