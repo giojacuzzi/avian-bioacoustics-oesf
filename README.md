@@ -9,7 +9,7 @@
 - [Python](https://www.python.org/downloads/) 3.9+ 64-bit (3.10 recommended, ensure "Add path to environment variables" is checked during install)
 
 ### Package dependencies
-From a terminal shell within the virtual environment, run:
+From a terminal shell within the virtual environment, navigate to the root directory of this repository (`.../avian-bioacoustics-oesf`), and run:
 
 ```
 git submodule update --init --recursive
@@ -19,9 +19,15 @@ pip install -r requirements.txt
 
 > This should install all dependencies you need to run, for example, `analyze_file.py`. For further reference, see setup instructions for [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer) and [birdnetlib](https://github.com/joeweiss/birdnetlib).
 
-To install sound separation dependencies:
-- Install [gsutil](https://cloud.google.com/storage/docs/gsutil_install)
-- Clone [bird_mixit](https://github.com/google-research/sound-separation/tree/master/models/bird_mixit) repository
+### Optional: Sound separation dependencies
+
+This repository has a fork of [bird_mixit](https://github.com/google-research/sound-separation/tree/master/models/bird_mixit) as a submodule, which is used to perform sound separation.
+1. Follow steps to install [gsutil](https://cloud.google.com/storage/docs/gsutil_install)
+1. Install bird_mixit model checkpoints via a terminal shell (see below)
+
+```
+gsutil -m cp -r gs://gresearch/sound_separation/bird_mixit_model_checkpoints data/models/
+```
 
 ## Contents
 - `analyses` – ecological analyses and models (e.g. species accumulation curves)

@@ -27,15 +27,15 @@ def separate(path, num_sources = 4, multichannel = False):
     w.export(path_local_copy, format='wav')
 
     if num_sources == 4:
-        model_dir = '../sound-separation/models/bird_mixit/bird_mixit_model_checkpoints/output_sources4'
-        checkpoint = '../sound-separation/models/bird_mixit/bird_mixit_model_checkpoints/output_sources4/model.ckpt-3223090'
+        model_dir  = 'data/models/bird_mixit_model_checkpoints/output_sources4'
+        checkpoint = 'data/models/bird_mixit_model_checkpoints/output_sources4/model.ckpt-3223090'
     if num_sources == 8:
-        model_dir = '../sound-separation/models/bird_mixit/bird_mixit_model_checkpoints/output_sources8'
-        checkpoint = '../sound-separation/models/bird_mixit/bird_mixit_model_checkpoints/output_sources8/model.ckpt-2178900'
+        model_dir  = 'data/models/bird_mixit_model_checkpoints/output_sources8'
+        checkpoint = 'data/models/bird_mixit_model_checkpoints/output_sources8/model.ckpt-2178900'
 
     print(f'Separating {os.path.basename(path_local_copy)} into {num_sources} sources...')
     subprocess.run([
-        'python', '../sound-separation/models/tools/process_wav.py',
+        'python', 'src/submodules/sound-separation/models/tools/process_wav.py',
         '--model_dir', model_dir,
         '--checkpoint', checkpoint,
         '--num_sources', str(num_sources),

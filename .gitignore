@@ -11,6 +11,9 @@
 # (Exceptions)
 !data/species/Species List - Potential species.csv
 
+# Model files
+/data/models/bird_mixit_model_checkpoints/
+
 # Apple files
 .DS_Store
 
