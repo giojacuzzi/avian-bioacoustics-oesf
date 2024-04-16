@@ -4,6 +4,9 @@ import re
 import pandas as pd
 from utils.log import *
 
+# File with table containing ID and ecological data for monitored species
+species_list_filepath = 'data/species/species_list - complete.csv'
+
 #
 def find_file_full_path(top_directory, filename):
     for root, dirs, files in os.walk(top_directory):
@@ -53,12 +56,14 @@ def parse_metadata_from_raw_audio_filepath(filepath):
         print_error(f'Unable to parse info from filepath: {filepath}')
 
 # Find all selection table files under a root directory
-def find_files(directory, filetype):
+def find_files(directory, suffix=None, prefix=None):
 
     results = []
     for root, dirs, files in os.walk(directory):
         for file in files:
-            if file.endswith(filetype):
+            suffix_match = (suffix is None) or (suffix is not None and file.endswith(suffix))
+            prefix_match = (prefix is None) or (prefix is not None and file.startswith(prefix))
+            if suffix_match and prefix_match:
                 results.append(os.path.join(root, file))
     return results
 
@@ -132,7 +137,7 @@ def get_raw_metadata(dirs=[], overwrite=False):
     # These are all the .wav files under each site-date folder in e.g. 'annotation/data/_annotator/2020/Deployment4/SMA00410_20200523'
     filepaths = []
     for dir in dirs:
-        filepaths.extend(find_files(dir, '.wav'))
+        filepaths.extend(find_files(dir, suffix='.wav'))
 
     if len(filepaths) == 0:
         print_error('No .wav files found')

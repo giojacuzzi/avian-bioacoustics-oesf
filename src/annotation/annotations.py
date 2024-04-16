@@ -172,7 +172,7 @@ def collate_annotations_as_detections(raw_annotations, species_to_collate, only_
 
     for i, species in enumerate(species_to_collate):
 
-        print(f'Collating "{species}" annotation data...')
+        print(f'Collating annotation data for "{species}"...')
 
         # Get all annotations for the species
         if True:
@@ -233,4 +233,60 @@ def collate_annotations_as_detections(raw_annotations, species_to_collate, only_
 
         collated_detection_labels = pd.concat([collated_detection_labels, detection_labels], ignore_index=True) # Store the detections
     
+    return collated_detection_labels
+
+
+# Collate raw detections from MacCaulay reference data for the specified species classes, such
+# that each file is assigned a single maximum confidence score.
+#
+# Returns a dataframe of collated macaulay reference examples
+def collate_macaulay_references(species_to_collate, print_detections=False):
+
+    collated_detection_labels = pd.DataFrame()
+
+    species_list = pd.read_csv(files.species_list_filepath, index_col=None, usecols=['common_name', 'id'])
+    species_list['common_name'] = species_list['common_name'].str.lower()
+
+    for i, species in enumerate(species_to_collate):
+
+        print(f'Collating MacCaulay reference data for "{species}"...')
+
+        # Convert species common name to ID
+        species_id = species_list.loc[species_list['common_name'] == species, 'id']
+        if species_id.empty:
+            print_error(f'Unable to find species ID for {species}')
+            continue
+        else:
+            species_id = species_id.iloc[0]
+
+        # Get the list of MacCaulay files (detections)
+        dir_detections = '/Users/giojacuzzi/Desktop/Macaulay/detections'
+        evaluated_detection_filepaths = []
+        evaluated_detection_filepaths.extend(files.find_files(dir_detections, prefix=species_id, suffix='.csv'))
+        evaluated_detection_filepaths = sorted(evaluated_detection_filepaths)
+        
+        if len(evaluated_detection_filepaths) == 0:
+            print_error(f'Unable to find references for {species}')
+            continue
+
+        # For each file, obtain the maximum detection confidence for the species 
+        for file in evaluated_detection_filepaths:
+            file_detections = pd.read_csv(file, index_col=None, usecols=['common_name', 'confidence'])
+            file_detections['common_name'] = file_detections['common_name'].str.lower()
+            file_detections = file_detections.loc[file_detections['common_name'] == species, ]
+            max_confidence = file_detections['confidence'].max()
+
+            detection_labels = pd.DataFrame({
+                'species_predicted': [species],
+                'confidence':        [max_confidence],
+                'file':              [file],
+                'label_truth':       [species]
+            })
+            detection_labels['confidence'] = detection_labels['confidence'].fillna(0.0)
+
+            collated_detection_labels = pd.concat([collated_detection_labels, detection_labels], ignore_index=True) # Store the detections
+
+    if print_detections:
+        print(collated_detection_labels)
+
     return collated_detection_labels
