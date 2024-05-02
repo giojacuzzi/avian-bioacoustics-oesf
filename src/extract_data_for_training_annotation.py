@@ -3,9 +3,10 @@ from utils.log import *
 import pandas as pd
 import os
 
-species_to_annotate = 'pacific-slope flycatcher'
+species_to_annotate = 'pacific wren'
 
 output_path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/training_data'
+output_path = '/Users/giojacuzzi/Downloads'
 
 # Get raw annotation data
 raw_annotations = get_raw_annotations()
@@ -19,7 +20,7 @@ print(collated_detection_labels.to_string())
 random_detection = collated_detection_labels.sample(n=1)
 # print(random_detection.to_string())
 
-# TODO: extract data for annotation...
+# Extract data for annotation...
 raw_metadata = files.get_raw_metadata()
 # print(raw_metadata)
 
@@ -59,7 +60,11 @@ selection_table = pd.DataFrame({
 print(selection_table)
 print(os.path.basename(merged_df["filepath"]))
 
-filepath = f'{output_path}/{species_to_annotate}/{os.path.splitext(os.path.basename(merged_df["filepath"]))[0]}.Table.1.selections.txt'
+file = f'{os.path.splitext(os.path.basename(merged_df["filepath"]))[0]}.Table.1.selections.txt'
+path = f'{output_path}/{species_to_annotate}'
+if not os.path.exists(path):
+    os.makedirs(path)
 
+filepath = f'{path}/{file}'
 selection_table.to_csv(filepath, sep='\t', index=False)
 print_success(f'Saved {filepath}')

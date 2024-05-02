@@ -12,7 +12,7 @@ out_dir      = ''           # Output directory (e.g. '/Users/giojacuzzi/Download
 
 # Analyzer config
 min_confidence = 0.1   # Minimum confidence score to retain a detection (only used if apply_sigmoid is True)
-apply_sigmoid  = False # Sigmoid transformation or raw logit score
+apply_sigmoid  = True # Sigmoid transformation or raw logit score
 num_separation = 1     # Number of sounds to separate for analysis. Leave as 1 for original file alone.
 cleanup        = True  # Keep or remove any temporary files created through analysis
 
