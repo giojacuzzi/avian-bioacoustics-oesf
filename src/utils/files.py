@@ -120,7 +120,7 @@ def list_files_in_directory(directory):
 # Returns a dataframe of raw metadata from all raw acoustic monitoring data under the given directories
 def get_raw_metadata(dirs=[], overwrite=False):
 
-    metadata_filepath = 'data/metadata/processed/raw_metadata.csv'
+    metadata_filepath = 'data/metadata/raw_metadata.csv'
 
     # Return previously processed annotations unless overwrite requested
     if os.path.exists(metadata_filepath) and not overwrite:
