@@ -14,12 +14,19 @@
 
 # Evaluate all species classes...
 species_to_evaluate = 'all'
-# ...or look at just a few
-# species_to_evaluate = ["american kestrel", "vesper sparrow", "western kingbird", "spotted owl", "tree swallow", "peregrine falcon", "dusky flycatcher", "rufous hummingbird", "eastern kingbird", "brown-headed cowbird", "lewis's woodpecker", "northern goshawk", "sagebrush sparrow"]
-# species_to_evaluate = ["varied thrush", "pacific wren", "evening grosbeak", "hairy woodpecker", "golden-crowned kinglet", "barred owl", "chestnut-backed chickadee", "macgillivray's warbler", "townsend's warbler"]
 
-plot = False             # Plot the results
-print_detections = False # Print detections
+# # ...or look at just a few
+# species_to_evaluate = []
+# # WADNR TARGET SPECIES
+# species_to_evaluate += ["pileated woodpecker", "pacific-slope flycatcher", "hutton's vireo", "chestnut-backed chickadee", "bewick's wren", "pacific wren", "varied thrush", "brown creeper", "orange-crowned warbler", "wilson's warbler", "spotted owl", "barred owl", "marbled murrelet", "canada jay", "steller's jay", "american crow", "common raven", "golden eagle", "northern goshawk", "peregrine falcon", "vaux's swift", "rufous hummingbird"]
+# # OTHER TARGETS
+# species_to_evaluate += ["great horned owl", "band-tailed pigeon", "white-crowned sparrow"]
+# # INDIVIDUAL
+species_to_evaluate = ["marbled murrelet"]
+
+plot = False              # Plot the results
+print_detections = True # Print detections
+sort_by = 'label_truth' # Detection sort, if printing, e.g. 'confidence' or 'label_truth'
 
 # TODO: Once all annotations are complete and every detection has been evaluated, set this to False
 only_annotated = False # DEBUG: skip files that do not have annotations (selection tables)
@@ -41,6 +48,7 @@ dirs = [
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00404_20200618', # Iris
 ]
 
+import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 from annotation.annotations import *
@@ -48,7 +56,7 @@ from utils.log import *
 from classification.performance import *
 
 # Get raw annotation data and check for missing annotations
-raw_annotations = get_raw_annotations(dirs = dirs, overwrite = False)
+raw_annotations = get_raw_annotations(dirs = dirs, overwrite = True)
 species = labels.get_species_classes()
 if species_to_evaluate == 'all':
     species_to_evaluate = sorted(species)
@@ -57,9 +65,16 @@ if species_to_evaluate == 'all':
     print(f'Retrieved {len(raw_annotations)} total annotations for {len(species_annotated)}/{len(species)} species classes')
     if len(species_annotated) < len(species):
         print_warning(f'Missing positive annotations for species: {[label for label in species if label not in species_annotated]}')
+else:
+    species_to_evaluate = sorted(species_to_evaluate)
 
 # Collate raw annotation data into species detection labels per species
-collated_detection_labels = collate_annotations_as_detections(raw_annotations, species_to_evaluate, only_annotated=only_annotated, print_detections=print_detections)
+collated_detection_labels = collate_annotations_as_detections(raw_annotations, species_to_evaluate, only_annotated=only_annotated)
+
+# Print detections sorted by descending confidence
+if print_detections:
+    collated_detection_labels = collated_detection_labels.sort_values(by=[sort_by], ascending=[False])
+    print(collated_detection_labels.to_string())
 
 # Collate Macaulay reference detections per species
 collated_macaulay_references = collate_macaulay_references(species_to_collate=species_to_evaluate, print_detections=False)
@@ -78,7 +93,7 @@ for i, species in enumerate(species_to_evaluate):
     performance_metrics = pd.concat([performance_metrics, species_performance_metrics], ignore_index=True)
 
     macaulay_references = collated_macaulay_references[collated_macaulay_references['species_predicted'] == species]
-    macaulay_performance_metrics = evaluate_species_performance(macaulay_references, species, plot=True)
+    macaulay_performance_metrics = evaluate_species_performance(macaulay_references, species, plot=False)
     macaulay_reference_performance_metrics = pd.concat([macaulay_reference_performance_metrics, macaulay_performance_metrics], ignore_index=True)
 
 # Sort and print the performance metrics
@@ -100,7 +115,7 @@ if species_to_evaluate != 'all':
     performance_metrics = performance_metrics[performance_metrics['species'].isin(species_to_evaluate)]
 
 print('SPECIES CLASS PERFORMANCE =============================================================================================')
-performance_metrics = performance_metrics.sort_values(by=['N_P', 'AUC-PR'], ascending=[False, True])
+performance_metrics = performance_metrics.sort_values(by=['p_max_th', 'AUC-PR'], ascending=[False, True])
 print(performance_metrics.to_string(index=False))
 
 print('COMMON SPECIES ========================================================================================================')
@@ -125,12 +140,12 @@ print(macaulay_reference_performance_metrics.to_string(index=False))
 if plot:
     plt.show()
 
-# # Print "confused" or simultaneously present classes
-# for i, species in enumerate(species_to_evaluate):
-#     print(f'CONFUSED CLASSES FOR {species}:')
-#     species_labels = (raw_annotations[raw_annotations['species_predicted'] == species])
-#     species_labels = species_labels[(species_labels['label_truth'] != '0') & (species_labels['label_truth'] != species)]
-#     print(species_labels['label_truth'].value_counts())
+# Print "confused" or simultaneously present classes
+for i, species in enumerate(species_to_evaluate):
+    print(f'CONFUSED CLASSES FOR {species}:')
+    species_labels = (raw_annotations[raw_annotations['species_predicted'] == species])
+    species_labels = species_labels[(species_labels['label_truth'] != '0') & (species_labels['label_truth'] != species)]
+    print(species_labels['label_truth'].value_counts())
 
 output_filepath = 'data/classification/performance_metrics.csv'
 performance_metrics.to_csv(output_filepath, index=False)
