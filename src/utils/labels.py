@@ -36,7 +36,7 @@ def clean_label(label):
         "abiotic_wind": ["wind", " wind"],
         "abiotic_water": ["river", "water"],
         "abiotic_logging": ["chainsaw", "chainsaw revving", "chaindaw", "chainsa","chinsaw"],
-        "abiotic_other_anthropogenic": ["machinery", "machine", "vehicle", "vehicle backing up noise", "truck reverse sound", "vehicle?","engine","machine banging","vehicle backing up", "car"],
+        "abiotic_vehicle_reverse": ["machinery", "machine", "vehicle", "vehicle backing up noise", "truck reverse sound", "vehicle?","engine","machine banging","vehicle backing up", "car"],
         "abiotic_other": ["noise", "other", "random noise", "electricity", "high pitch buzzing", "thunder", "rain/wind", "buzzing sound", "buzz", "buzzing", "static sound", "interesting sound", "mystery noise", "static", "banging", "clink noise", "crashing sound","rumbling","thumping sound","bang","hum","really loud noise","loud noise","thunk"],
         # Biotic
         "anuran": ["frog", "frogs", "frog chirping"],

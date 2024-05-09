@@ -1,3 +1,5 @@
+# Prerequisite routine to generate raw metadata cache
+
 from utils import files
 from utils.log import *
 

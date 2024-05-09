@@ -64,29 +64,11 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
     raw_annotations = pd.DataFrame()
     print('Loading annotation selection tables...')
     for table_file in sorted(selection_tables):
-        # print(f'Loading file {os.path.basename(table_file)}...')
 
-        table = pd.read_csv(table_file, sep='\t') # Load the file as a dataframe
-
-        # Clean up data by normalizing column names and species values to lowercase
-        table.columns = table.columns.str.lower()
-        table['species'] = table['species'].astype(str).str.lower()
-
-        # Check the validity of the table
-        cols_needed = ['species', 'begin file', 'file offset (s)', 'delta time (s)']
-        if not all(col in table.columns for col in cols_needed):
-            missing_columns = [col for col in cols_needed if col not in table.columns]
-            print_warning(f"Missing columns {missing_columns} in {os.path.basename(table_file)}. Skipping...")
-            continue
-
+        table = files.load_raven_selection_table(table_file)
         if table.empty:
-            print_warning(f'{os.path.basename(table_file)} has no selections.')
+            print('There was a problem with loading the selection tables. Skipping...')
             continue
-
-        table = table[cols_needed] # Discard unnecessary data
-
-        if table.isna().any().any():
-            print_warning(f'{os.path.basename(table_file)} contains NaN values')
 
         # Parse the species names and confidence scores from 'Begin File' column
         file_metadata = list(map(lambda f: files.parse_metadata_from_annotation_file(f), table['begin file']))

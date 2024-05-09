@@ -1,23 +1,28 @@
-## Sample N random detections per species from site deployment data
+# Randomly sample audio from a number of detections for each species class from a site deployment for use as test data
 
-# Manually run this script for each site, changing in_dir as needed
+# Manually run this script for each site deployment, changing in_dir as needed
 top_dir = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data'
-in_dir  = top_dir + '/raw_detections/2020/Deployment2/SMA00351_20200424_Data' # CHANGE ME
-out_dir = top_dir + '/_annotator'
+in_dir  = top_dir + '/raw_detections/2020/Deployment2/SMA00380_20200424_Data' # CHANGE ME
+out_dir = '/Users/giojacuzzi/Downloads/sample_detections/' #top_dir + '/_annotator'
 data_dir = '/Volumes/gioj_b1/OESF' # CHANGE ME
 
 N = 6 # number of samples to take
 threshold = 0.1 # only sample from detections above (to filter out "zero-inflated" silence)
 extract_audio_files = True
 
+import sys
 import os
 import pandas as pd
+from utils.log import *
 from utils.files import *
 from annotation.extract_detection_audio import *
 from datetime import timedelta
 pd.set_option('display.max_rows', None)  # Display all rows
 pd.set_option('display.max_columns', None)  # Display all columns
 pd.set_option('display.width', None)  # Display full width of the DataFrame
+
+## Sample N random detections per species from site deployment data
+print_error('THIS IS DEBUG CODE - ONLY EXTRACTS MIN DETECTIONS PER SPECIES')
 
 # combine all the detections at that site
 # Initialize an empty DataFrame to store the combined data
@@ -55,20 +60,26 @@ print(all_detections.groupby('common_name')['confidence'].agg(['min', 'max']))
 # For each species, select N detections at random.
 print(f'Selecting {N} random samples per species...')
 
-# We will pull available detections from the pool of all detections
-available_detections = all_detections[all_detections['confidence'] > threshold]
+# # We will pull available detections from the pool of all detections
+# available_detections = all_detections[all_detections['confidence'] > threshold]
 
 # Function to sample N rows from each group without replacement.
-# Also intentionally includes the sample with the maximum confidence.
+# Also intentionally includes the samples with the maximum/minimum confidence.
 def sample_group(group, N):
-    sampled = group.sample(min(len(group), N))
-    max_confidence_row = group.loc[group['confidence'].idxmax()]
-    if max_confidence_row.name not in sampled.index:
-        sampled = pd.concat([sampled, max_confidence_row.to_frame().T])
+
+    # available_detections = group[group['confidence'] > threshold]
+    # sampled = available_detections.sample(min(len(available_detections), N))
+
+    # max_confidence_row = group.loc[group['confidence'].idxmax()]
+    # if max_confidence_row.name not in sampled.index:
+        # sampled = pd.concat([sampled, max_confidence_row.to_frame().T])
+    min_confidence_row = group.loc[group['confidence'].idxmin()]
+    # if min_confidence_row.name not in sampled.index:
+    sampled = min_confidence_row.to_frame().T #pd.concat([sampled, min_confidence_row.to_frame().T])
     stats = {
-        'min_confidence': group['confidence'].min(),
-        'max_confidence': group['confidence'].max(),
-        'avg_confidence': group['confidence'].mean()
+        'min_confidence':  group['confidence'].min(),
+        'max_confidence':  group['confidence'].max(),
+        'mean_confidence': group['confidence'].mean()
     }
     print(f"Common Name: {group['common_name'].iloc[0]}")
     print("Sampled Rows:")
@@ -79,7 +90,7 @@ def sample_group(group, N):
     return sampled
 
 # Apply the sampling function to each group
-detection_samples = available_detections.groupby('common_name', group_keys=False).apply(sample_group, N=N)
+detection_samples = all_detections.groupby('common_name', group_keys=False).apply(sample_group, N=N)
 # detection_samples = detection_samples.sort_values(by='common_name')
 print(detection_samples)
 
@@ -96,7 +107,10 @@ path_out = dir_out + '/_annotations_' + os.path.basename(dir_out) + '.xlsx'
 print(f'Saving to {path_out}')
 if not os.path.exists(os.path.dirname(path_out)):
     os.makedirs(os.path.dirname(path_out))
+    os.makedirs(os.path.dirname(path_out) + '/min_conf_common') # DEBUG
 pd.DataFrame.to_excel(detection_samples, path_out, index=False)
+
+unique_segments = []
 
 if extract_audio_files:
     # Now extract audio files for each detection
@@ -121,6 +135,13 @@ if extract_audio_files:
         date_format = '%Y-%m-%d %H:%M:%S'
         date_detection_start = datetime.strptime(start_date, date_format)
         # date_detection_end = datetime.strptime(end_date, date_format)
+
+        # DEBUG
         extract_detection_audio(file_path, dir_out, date_detection_start, date_detection_start + timedelta(seconds=3), tag=f'{common_name}-{confidence}')
+
+        # TODO: If date_detection_start is not in unique_segments, append it and then extract the audio
+        if date_detection_start not in unique_segments:
+            unique_segments.append(date_detection_start)
+            extract_detection_audio(file_path, dir_out + '/min_conf_common', date_detection_start, date_detection_start + timedelta(seconds=3), tag='')
     
-    print('Finished extracting all detections as audio files!')
+    print_success('Finished extracting all detections as audio files!')

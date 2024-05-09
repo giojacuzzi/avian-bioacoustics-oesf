@@ -161,3 +161,29 @@ def get_raw_metadata(dirs=[], overwrite=False):
     file_metadata.to_csv(metadata_filepath, index=False)
     print_success(f'Saved annotations to {metadata_filepath}')
     return file_metadata
+
+# Load a Raven selection table (tab-separated .txt) as a pandas dataframe and validate contents
+def load_raven_selection_table(table_file, cols_needed = ['species', 'begin file', 'file offset (s)', 'delta time (s)']):
+    table = pd.read_csv(table_file, sep='\t') # Load the file as a dataframe
+
+    # Clean up data by normalizing column names and species values to lowercase
+    table.columns = table.columns.str.lower()
+    if 'species' in table.columns:
+        table['species'] = table['species'].astype(str).str.lower()
+    if 'class' in table.columns:
+        table['class'] = table['class'].astype(str).str.lower()
+
+    # Check the validity of the table
+    if not all(col in table.columns for col in cols_needed):
+        missing_columns = [col for col in cols_needed if col not in table.columns]
+        print_error(f"Missing columns {missing_columns} in {os.path.basename(table_file)}.")
+        return
+
+    if table.empty:
+        print_warning(f'{os.path.basename(table_file)} has no selections.')
+    
+    if table.isna().any().any():
+        print_warning(f'{os.path.basename(table_file)} contains NaN values')
+    
+    table = table[cols_needed] # Discard unnecessary data
+    return table

@@ -14,49 +14,40 @@
 
 # Evaluate all species classes...
 species_to_evaluate = 'all'
+species_wadnr_priority = ["pileated woodpecker", "pacific-slope flycatcher", "hutton's vireo", "chestnut-backed chickadee", "bewick's wren", "pacific wren", "varied thrush", "brown creeper", "orange-crowned warbler", "wilson's warbler", "spotted owl", "barred owl", "marbled murrelet", "canada jay", "steller's jay", "american crow", "common raven", "golden eagle", "northern goshawk", "peregrine falcon", "vaux's swift", "rufous hummingbird"]
 
 # # ...or look at just a few
 # species_to_evaluate = []
 # # WADNR TARGET SPECIES
-# species_to_evaluate += ["pileated woodpecker", "pacific-slope flycatcher", "hutton's vireo", "chestnut-backed chickadee", "bewick's wren", "pacific wren", "varied thrush", "brown creeper", "orange-crowned warbler", "wilson's warbler", "spotted owl", "barred owl", "marbled murrelet", "canada jay", "steller's jay", "american crow", "common raven", "golden eagle", "northern goshawk", "peregrine falcon", "vaux's swift", "rufous hummingbird"]
+# species_to_evaluate += species_wadnr_priority
 # # OTHER TARGETS
 # species_to_evaluate += ["great horned owl", "band-tailed pigeon", "white-crowned sparrow"]
 # # INDIVIDUAL
-species_to_evaluate = ["marbled murrelet"]
+# species_to_evaluate = ["red-breasted nuthatch"]
 
-plot = False              # Plot the results
+plot = True              # Plot the results
 print_detections = True # Print detections
-sort_by = 'label_truth' # Detection sort, if printing, e.g. 'confidence' or 'label_truth'
+sort_by = 'confidence' # Detection sort, if printing, e.g. 'confidence' or 'label_truth'
 
 # TODO: Once all annotations are complete and every detection has been evaluated, set this to False
 only_annotated = False # DEBUG: skip files that do not have annotations (selection tables)
 
 # Annotation directories to use as evaluation data
 dirs = [
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00410_20200523', # Jack
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00424_20200521', # Stevan
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00486_20200523', # Summer
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment4/SMA00556_20200524', # Gio
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00556_20200618', # Stevan
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00349_20200619', # Mirella
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00399_20200619', # Jessica
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00346_20200716', # Summer
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00339_20200717',  # Jack
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment2/SMA00351_20200424_Data', # Mirella
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00370_20200716', # Jessica
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment8/SMA00424_20200717', # Iris
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment6/SMA00404_20200618', # Iris
+    # '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment2/COMBO_SMA00380_SMA00309_SMA00349',
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020',
 ]
 
-import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 from annotation.annotations import *
 from utils.log import *
 from classification.performance import *
 
-# Get raw annotation data and check for missing annotations
+# Retrieve and validate raw annotation data
 raw_annotations = get_raw_annotations(dirs = dirs, overwrite = True)
+
+# Check for missing annotations
 species = labels.get_species_classes()
 if species_to_evaluate == 'all':
     species_to_evaluate = sorted(species)
@@ -75,6 +66,14 @@ collated_detection_labels = collate_annotations_as_detections(raw_annotations, s
 if print_detections:
     collated_detection_labels = collated_detection_labels.sort_values(by=[sort_by], ascending=[False])
     print(collated_detection_labels.to_string())
+
+    pd.set_option('display.max_colwidth', None)
+    print(f'Confirmed presence ({species_to_evaluate}):')
+    print(collated_detection_labels[collated_detection_labels['label_truth'].isin(species_to_evaluate)]['file'].to_string(index=False))
+    print('Unknown presence/absence ("unknown"):')
+    print(collated_detection_labels[collated_detection_labels['label_truth'] == 'unknown']['file'].to_string(index=False))
+    print('Confirmed absence ("0"):')
+    print(collated_detection_labels[collated_detection_labels['label_truth'] == '0']['file'].to_string(index=False))
 
 # Collate Macaulay reference detections per species
 collated_macaulay_references = collate_macaulay_references(species_to_collate=species_to_evaluate, print_detections=False)
@@ -117,6 +116,10 @@ if species_to_evaluate != 'all':
 print('SPECIES CLASS PERFORMANCE =============================================================================================')
 performance_metrics = performance_metrics.sort_values(by=['p_max_th', 'AUC-PR'], ascending=[False, True])
 print(performance_metrics.to_string(index=False))
+
+print('WADNR PRIORITY SPECIES =======================================================================================================')
+wadnr_species = performance_metrics[performance_metrics['species'].isin(species_wadnr_priority)]
+print(wadnr_species.to_string(index=False))
 
 print('COMMON SPECIES ========================================================================================================')
 common_species = performance_metrics.loc[performance_metrics['rarity']=='C']
