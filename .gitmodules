@@ -4,3 +4,6 @@
 [submodule "src/submodules/sound-separation"]
 	path = src/submodules/sound-separation
 	url = https://github.com/giojacuzzi/sound-separation
+[submodule "src/submodules/BirdNET-Analyzer"]
+	path = src/submodules/BirdNET-Analyzer
+	url = https://github.com/giojacuzzi/BirdNET-Analyzer.git
