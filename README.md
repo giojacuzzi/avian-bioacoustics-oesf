@@ -34,3 +34,10 @@ gsutil -m cp -r gs://gresearch/sound_separation/bird_mixit_model_checkpoints dat
 - `annotation` – extracting samples for annotation and clustering
 - `classification` – run classifier on audio/directory, evaluate performance
 - `data` – data associated with the study area and project
+
+## Training
+```
+cd src/submodules/BirdNET-Analyzer/
+# Ensure you have training data located in the input directory and a valid output directory
+python3 train.py --i /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/2020_05_10 --o /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/models/2020_05_10/custom_classifier.tflite
+```

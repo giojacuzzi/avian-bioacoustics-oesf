@@ -8,11 +8,14 @@
 *.csv
 *.png
 
-# Model files
-/data/models/bird_mixit_model_checkpoints/
+# Model and training files
+/data/training/*
+/data/models/*
 
 # (Exceptions)
 !/data/species/*
+!/data/training/readme.md
+!/data/models/readme.md
 
 # Apple files
 .DS_Store
