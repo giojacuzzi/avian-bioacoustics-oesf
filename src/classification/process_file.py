@@ -13,18 +13,20 @@ from utils.files import *
 from utils.bnl import *
 import sys
 
-# Create a global analyzer instance
-if 'analyzer' not in locals() and 'analyzer' not in globals():
+# # TODO: cache analyzer
+# # Create a global analyzer instance
+# if 'analyzer' not in locals() and 'analyzer' not in globals():
 
-    # Check for correct version for this project
-    expected_version = '2.4-Gio'
-    if MODEL_VERSION != expected_version:
-        print_error(f'birdnetlib.analyzer MODEL_VERSION {MODEL_VERSION} incompatible. Please install the expected version {expected_version}')
-        sys.exit()
+#     # Check for correct version for this project
+#     expected_version = '2.4-Gio'
+#     if MODEL_VERSION != expected_version:
+#         print_error(f'birdnetlib.analyzer MODEL_VERSION {MODEL_VERSION} incompatible. Please install the expected version {expected_version}')
+#         sys.exit()
 
-    species_list_path = os.path.abspath('src/classification/species_list/species_list_OESF.txt')
-    print(f'Initializing analyzer with species list {species_list_path}')
-    analyzer = Analyzer(custom_species_list_path=species_list_path)
+#     species_list_path = os.path.abspath('src/classification/species_list/species_list_OESF.txt')
+#     print(f'Initializing analyzer with species list {species_list_path}')
+#     # analyzer = Analyzer(custom_species_list_path=species_list_path)
+#     analyzer = Analyzer(classifier_model_path='/Users/giojacuzzi/Desktop/OESF_training_output/Custom_Classifier.tflite', classifier_labels_path='/Users/giojacuzzi/Desktop/OESF_training_output/Custom_Classifier_Labels.txt')
 
 # path - path to a .wav file
 # cleanup - remove any temporary files created during analysis
@@ -76,6 +78,8 @@ def process_file(
         in_filepath,
         out_dir        = '',
         root_dir       = None,
+        analyzer_filepath = None,
+        labels_filepath = 'src/classification/species_list/species_list_OESF.txt',
         min_confidence = 0.0,
         apply_sigmoid  = True,
         num_separation = 1,
@@ -94,6 +98,19 @@ def process_file(
             return
         file_out = os.path.splitext(in_filepath[len(root_dir):])[0] + '.csv'
     path_out = os.path.normpath(out_dir + '/' + file_out)
+
+    if analyzer_filepath is None:
+        # Use default pre-trained analyzer
+        labels_filepath = os.path.abspath(labels_filepath)
+        print(f'Initializing pre-trained analyzer with species list {labels_filepath}')
+        analyzer = Analyzer(custom_species_list_path=labels_filepath)
+        # TODO: cache analyzer
+    else:
+        analyzer_filepath = os.path.abspath(analyzer_filepath)
+        labels_filepath = os.path.abspath(labels_filepath)
+        print(f'Initializing custom analyzer {analyzer_filepath} with species list {labels_filepath}')
+        analyzer = Analyzer(classifier_model_path=analyzer_filepath, classifier_labels_path=labels_filepath)
+        # TODO: cache analyzer
 
     already_analyzed = list_base_files_by_extension(out_dir, 'csv')
     already_analyzed = [f.rstrip('.csv') for f in already_analyzed]

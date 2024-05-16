@@ -1,4 +1,5 @@
 # Analyze a single audio file
+# NOTE: Must be executed from the top directory of the repo
 
 from classification import process_file
 from utils.log import *
@@ -16,6 +17,13 @@ apply_sigmoid  = True # Sigmoid transformation or raw logit score
 num_separation = 1     # Number of sounds to separate for analysis. Leave as 1 for original file alone.
 cleanup        = True  # Keep or remove any temporary files created through analysis
 
+# DEFAULT PRE-TRAINED
+analyzer_filepath = None
+labels_filepath   = 'src/classification/species_list/species_list_OESF.txt'
+# CUSTOM
+# analyzer_filepath = 'data/models/Custom/Custom_Classifier.tflite'
+# labels_filepath   = 'data/models/Custom/Custom_Classifier_Labels.txt'
+
 # -----------------------------------------------------------------------------
 
 # Prompt the user for a file path. Path must not contain single quotes (').
@@ -31,6 +39,8 @@ out_dir     = os.path.normpath(out_dir)
 result = process_file.process_file(
     in_filepath    = in_filepath,
     out_dir        = out_dir,
+    analyzer_filepath = analyzer_filepath,
+    labels_filepath = labels_filepath,
     min_confidence = min_confidence,
     apply_sigmoid  = apply_sigmoid,
     num_separation = num_separation,
