@@ -49,13 +49,14 @@ def evaluate_species_performance(detection_labels, species, plot):
     if plot:
         fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
         # Plot precision and recall as a function of threshold
-        ax1.plot(thresholds, precision[:-1], label='Precision', marker='.') 
-        ax1.plot(thresholds, recall[:-1], label='Recall', marker='.')
+        ax1.plot(thresholds, precision[:-1], label='Precision') #, marker='.' 
+        ax1.plot(thresholds, recall[:-1], label='Recall') # , marker='.'
         ax1.set_xlabel('Threshold') 
         ax1.set_ylabel('Performance')
-        ax1.set_title(f'Threshold performance', fontsize=font_size)
+        ax1.set_title(f'{species}\nThreshold performance', fontsize=font_size)
         ax1.set_xlim(0.0-padding, 1.0+padding)
         ax1.set_ylim(0.0-padding, 1.0+padding)
+        ax1.set_box_aspect(1)
         ax1.legend(loc='lower left') 
 
     # The area under the precision-recall curve, AUC-PR, is a useful summary statistic of the the relationship.
@@ -79,13 +80,14 @@ def evaluate_species_performance(detection_labels, species, plot):
     if plot:
         # Plot precision-recall curve
         ax2.plot([0, 1], [no_skill, no_skill], linestyle='--', label='Baseline', color='gray')
-        ax2.plot(recall, precision, marker='.', label='Classifier')
+        ax2.plot(recall, precision, label='Classifier') #  marker='.',
         ax2.set_xlabel('Recall')
         ax2.set_ylabel('Precision')
-        ax2.set_title(f'Precision-Recall (AUC {pr_auc:.2f}, AP {pr_ap:.2f})', fontsize=font_size)
+        ax2.set_title(f'{species}\nPrecision-Recall (AUC {pr_auc:.2f}, AP {pr_ap:.2f})', fontsize=font_size)
         ax2.set_xlim([0.0-padding, 1.0+padding])
         ax2.set_ylim([0.0-padding, 1.0+padding])
         ax2.legend(loc='lower left')
+        ax2.set_box_aspect(1)
 
     # TODO: Use F1-score to determine an optimal threshold, e.g. https://ploomber.io/blog/threshold/
 
@@ -121,7 +123,7 @@ def evaluate_species_performance(detection_labels, species, plot):
             ax3.legend(loc='lower right')
 
     if plot:
-        fig.suptitle(species, x=0.0, y=1.0, horizontalalignment='left', verticalalignment='top', fontsize=12)
+        # fig.suptitle(species, x=0.0, y=1.0, horizontalalignment='left', verticalalignment='top', fontsize=12)
         plt.tight_layout()
         plots.append((fig, (ax1, ax2)))
     
