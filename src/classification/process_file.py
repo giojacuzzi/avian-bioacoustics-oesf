@@ -88,13 +88,15 @@ def process_file(
         ascending      = True,
         save_to_file   = True
 ):
+    in_filepath = os.path.normpath(in_filepath)
+    root_dir = os.path.normpath(root_dir)
     # Save directly to output directory
-    if root_dir is None:
+    if root_dir is None or len(root_dir) == 0:
         file_out = os.path.basename(os.path.splitext(in_filepath)[0]) + '.csv'
     # Save to the output directory, preserving the original directory structure relative to the root
     else:
         if not root_dir in in_filepath:
-            print_error('Root directory must contain input file path')
+            print_error(f'Root directory {root_dir} must contain input file path {in_filepath}')
             return
         file_out = os.path.splitext(in_filepath[len(root_dir):])[0] + '.csv'
     path_out = os.path.normpath(out_dir + '/' + file_out)
@@ -171,7 +173,7 @@ def process_file(
         if save_to_file:
             if not os.path.exists(os.path.dirname(path_out)):
                 os.makedirs(os.path.dirname(path_out))
-            pd.DataFrame.to_csv(result, path_out, index=False) 
+            pd.DataFrame.to_csv(result, path_out, index=False)
 
         end_time_file = time.time()
         print_success(f'Finished processing file {in_filepath}\n({(end_time_file - start_time_file):.2f} sec)')

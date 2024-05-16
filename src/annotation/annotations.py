@@ -43,13 +43,13 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
 
     evaluated_detections = pd.DataFrame({
         'file': evaluated_detection_files,
-        'species_predicted': species,
+        'label_predicted': species,
         'confidence': confidences,
         'date': dates,
         'time': times,
         'serialno': serialnos
     })
-    evaluated_detections['species_predicted'] = evaluated_detections['species_predicted'].str.lower()
+    evaluated_detections['label_predicted'] = evaluated_detections['label_predicted'].str.lower()
 
     # Declare 'raw_annotations' - Load, aggregate, and clean all annotation labels (selection tables), which is a subset of 'evaluated_detections'
     # Load selection table files and combine into a single 'raw_annotations' dataframe
@@ -75,13 +75,13 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
         species, confidences, serialnos, dates, times = zip(*file_metadata)
 
         table.rename(columns={'species': 'label_truth'}, inplace=True) # Rename 'species' to 'label_truth'
-        table.insert(0, 'species_predicted', species) # Add column for species predicted by the classifier
+        table.insert(0, 'label_predicted', species) # Add column for species predicted by the classifier
         table.insert(2, 'confidence', confidences) # Add column for confidence values
         # table['serialno'] = serialnos
 
         # Clean up species names
-        table['species_predicted'] = table['species_predicted'].str.lower()
-        table['species_predicted'] = table['species_predicted'].str.replace('_', "'")
+        table['label_predicted'] = table['label_predicted'].str.lower()
+        table['label_predicted'] = table['label_predicted'].str.replace('_', "'")
         table['label_truth'] = table['label_truth'].str.replace('_', "'")
 
         table.rename(columns={'begin file': 'file'}, inplace=True) # Rename 'begin file' to 'file'
@@ -103,17 +103,17 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
     # print(raw_annotations)
 
     # Include any evaluated detections for the species without annotations (which should all be FP)
-    empty_annotations = evaluated_detections.merge(raw_annotations.drop(columns='species_predicted'), on=['file', 'confidence'], how='outer', indicator=True)
+    empty_annotations = evaluated_detections.merge(raw_annotations.drop(columns='label_predicted'), on=['file', 'confidence'], how='outer', indicator=True)
     empty_annotations = empty_annotations[empty_annotations['_merge'] != 'both'] # Filter out the rows where the indicator value is 'both'
     empty_annotations = empty_annotations.drop(columns='_merge')
     if not empty_annotations.empty:
         print_warning(f'Interpreting {len(empty_annotations)} detections without annotations as species absences')
         if print_annotations:
             print_warning(empty_annotations.to_string())
-        raw_annotations = pd.concat([raw_annotations, empty_annotations[['species_predicted', 'label_truth', 'confidence', 'file']]], ignore_index=True)
+        raw_annotations = pd.concat([raw_annotations, empty_annotations[['label_predicted', 'label_truth', 'confidence', 'file']]], ignore_index=True)
         raw_annotations['label_truth'] = raw_annotations['label_truth'].fillna(0)
 
-    raw_annotations = raw_annotations.sort_values(by=['species_predicted'])
+    raw_annotations = raw_annotations.sort_values(by=['label_predicted'])
 
     # Get metadata for each annotation
     annotations_metadata = list(map(lambda f: files.parse_metadata_from_annotation_file(f), raw_annotations['file']))
@@ -122,9 +122,9 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
     raw_annotations['time'] = times
     raw_annotations['serialno'] = serialnos
 
-    # Warn if missing annotations for any species in species_predicted
-    evaluated_species = sorted(evaluated_detections['species_predicted'].astype(str).unique())
-    annotated_species = sorted(raw_annotations['species_predicted'].astype(str).unique())
+    # Warn if missing annotations for any species in label_predicted
+    evaluated_species = sorted(evaluated_detections['label_predicted'].astype(str).unique())
+    annotated_species = sorted(raw_annotations['label_predicted'].astype(str).unique())
     missing_species = [species for species in evaluated_species if species not in annotated_species]
     if (len(missing_species) > 0):
         print_warning(f'Missing annotations for the following species:\n{missing_species}')
@@ -159,12 +159,12 @@ def collate_annotations_as_detections(raw_annotations, species_to_collate, only_
         # Get all annotations for the species
         if True:
             # For now, only include detections (TP and FP).
-            detection_labels = raw_annotations[raw_annotations['species_predicted'] == species]
+            detection_labels = raw_annotations[raw_annotations['label_predicted'] == species]
         else:
             # TODO: Include not only detections (TP and FP), but also non-detections (FN).
-            detection_labels = raw_annotations[(raw_annotations['species_predicted'] == species) | (raw_annotations['label_truth'] == species_to_evaluate)]
-            # NOTE: The resulting confidence scores are incorrect where species_predicted != species_name
-            detection_labels.loc[detection_labels['species_predicted'] != species, 'confidence'] = np.nan # Set confidence to NaN for the identified rows
+            detection_labels = raw_annotations[(raw_annotations['label_predicted'] == species) | (raw_annotations['label_truth'] == species_to_evaluate)]
+            # NOTE: The resulting confidence scores are incorrect where label_predicted != species_name
+            detection_labels.loc[detection_labels['label_predicted'] != species, 'confidence'] = np.nan # Set confidence to NaN for the identified rows
             # TODO: Instead of getting confidence score from the detection file for TP and FP, get ALL confidence scores from the raw data (TP, FP, and FN). Use this to overwrite 'confidence'?
         detection_labels = detection_labels.sort_values(by='file')
 
@@ -203,7 +203,7 @@ def collate_annotations_as_detections(raw_annotations, species_to_collate, only_
         # Group by the 'file' column and apply the function to compute label_presence,
         # then merge the new column back to the original DataFrame
         detection_labels = pd.merge(
-            detection_labels.drop(columns=['label_truth', 'file offset (s)', 'delta time (s)']), # drop selection-specific fields that no longer apply
+            detection_labels.drop(columns=[col for col in ['label_truth', 'file offset (s)', 'delta time (s)'] if col in detection_labels.columns]),# drop selection-specific fields that no longer apply
             detection_labels.groupby('file').apply(compute_label_presence, include_groups=False, label=species).reset_index(name='label_truth'), # label_truth here will replace the previous label_truth
             on='file'
         )
@@ -259,7 +259,7 @@ def collate_macaulay_references(species_to_collate, print_detections=False):
             max_confidence = file_detections['confidence'].max()
 
             detection_labels = pd.DataFrame({
-                'species_predicted': [species],
+                'label_predicted': [species],
                 'confidence':        [max_confidence],
                 'file':              [file],
                 'label_truth':       [species]

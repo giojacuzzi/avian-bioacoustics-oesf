@@ -23,7 +23,7 @@ species_wadnr_priority = ["pileated woodpecker", "pacific-slope flycatcher", "hu
 # # OTHER TARGETS
 # species_to_evaluate += ["great horned owl", "band-tailed pigeon", "white-crowned sparrow"]
 # # INDIVIDUAL
-# species_to_evaluate = ["red-breasted nuthatch"]
+species_to_evaluate = ["pacific-slope flycatcher"]
 
 plot = True              # Plot the results
 print_detections = True # Print detections
@@ -51,7 +51,7 @@ raw_annotations = get_raw_annotations(dirs = dirs, overwrite = True)
 species = labels.get_species_classes()
 if species_to_evaluate == 'all':
     species_to_evaluate = sorted(species)
-    # Warn if missing annotations for any species in species_predicted
+    # Warn if missing annotations for any species in label_predicted
     species_annotated = [label for label in sorted(raw_annotations['label_truth'].astype(str).unique()) if label in species]
     print(f'Retrieved {len(raw_annotations)} total annotations for {len(species_annotated)}/{len(species)} species classes')
     if len(species_annotated) < len(species):
@@ -87,18 +87,18 @@ for i, species in enumerate(species_to_evaluate):
 
     print(f'Calculating performance metrics for "{species}"...')
 
-    detection_labels = collated_detection_labels[collated_detection_labels['species_predicted'] == species]
+    detection_labels = collated_detection_labels[collated_detection_labels['label_predicted'] == species]
     species_performance_metrics = evaluate_species_performance(detection_labels, species, plot)
     performance_metrics = pd.concat([performance_metrics, species_performance_metrics], ignore_index=True)
 
-    macaulay_references = collated_macaulay_references[collated_macaulay_references['species_predicted'] == species]
+    macaulay_references = collated_macaulay_references[collated_macaulay_references['label_predicted'] == species]
     macaulay_performance_metrics = evaluate_species_performance(macaulay_references, species, plot=False)
     macaulay_reference_performance_metrics = pd.concat([macaulay_reference_performance_metrics, macaulay_performance_metrics], ignore_index=True)
 
 # Sort and print the performance metrics
 performance_metrics = performance_metrics.sort_values(by='p_mean', ascending=False).reset_index(drop=True)
 
-max_confidence_per_species = raw_annotations.rename(columns={'species_predicted': 'species'}).groupby('species')['confidence'].max()
+max_confidence_per_species = raw_annotations.rename(columns={'label_predicted': 'species'}).groupby('species')['confidence'].max()
 performance_metrics = pd.merge(performance_metrics, max_confidence_per_species, on='species', how='left')
 performance_metrics = performance_metrics.rename(columns={'confidence': 'max_conf'})
 potential_species = pd.read_csv(files.species_list_filepath, index_col=None, usecols=['common_name', 'rarity'])
@@ -146,7 +146,7 @@ if plot:
 # Print "confused" or simultaneously present classes
 for i, species in enumerate(species_to_evaluate):
     print(f'CONFUSED CLASSES FOR {species}:')
-    species_labels = (raw_annotations[raw_annotations['species_predicted'] == species])
+    species_labels = (raw_annotations[raw_annotations['label_predicted'] == species])
     species_labels = species_labels[(species_labels['label_truth'] != '0') & (species_labels['label_truth'] != species)]
     print(species_labels['label_truth'].value_counts())
 

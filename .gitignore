@@ -10,6 +10,7 @@
 
 # Model and training files
 /data/training/*
+/data/validation/*
 /data/models/*
 
 # (Exceptions)

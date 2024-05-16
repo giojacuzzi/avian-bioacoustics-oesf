@@ -1,6 +1,6 @@
 # Analyze directories of files in parallel
 
-from classification import process_dir
+from classification import process_files
 import os
 
 # Input and output config
@@ -26,7 +26,7 @@ root_dir = os.path.normpath(root_dir)
 out_dir  = os.path.normpath(out_dir)
 
 if __name__ == '__main__':
-    process_dir.process_dir_parallel(
+    process_files.process_dir_parallel(
         in_dir         = in_dir,
         out_dir        = out_dir,
         root_dir       = root_dir,

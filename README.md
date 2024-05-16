@@ -35,9 +35,14 @@ gsutil -m cp -r gs://gresearch/sound_separation/bird_mixit_model_checkpoints dat
 - `classification` – run classifier on audio/directory, evaluate performance
 - `data` – data associated with the study area and project
 
-## Training
+## Training and performance evaluation pipeline
+1. Manually annotate training examples with Raven Pro
+2. Run `training_extract_audio_examples.py` to extract audio examples for training
+    - Manually add any additonal class examples (e.g. "Background")
+3. Train a custom analyzer (ensure you have training data located in the input directory)
 ```
 cd src/submodules/BirdNET-Analyzer/
-# Ensure you have training data located in the input directory and a valid output directory
-python3 train.py --i /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/2020_05_10 --o /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/models/Custom/Custom_Classifier.tflite
+python3 train.py --i /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/Custom/audio --o /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/models/Custom/Custom_Classifier.tflite
 ```
+4. Return to top directory with `cd ../../../`, then run `test_compare_validation_performance.py`
+

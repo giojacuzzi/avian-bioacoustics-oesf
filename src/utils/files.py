@@ -72,7 +72,7 @@ def parse_metadata_from_filename(path):
     filename = os.path.basename(path)
     substrs = filename.split('.')[0].split('_')
     if len(substrs) != 3:
-        print_warning('Could not get metadata from filename')
+        # print_warning('Could not get metadata from filename')
         return
     date = substrs[1]
     time = substrs[2]

@@ -11,6 +11,48 @@ from utils.log import *
 from utils.files import *
 
 # Run the analyzer on a directory of files in parallel, creating a csv for each file
+def process_files_parallel(
+        in_files,
+        out_dir,
+        root_dirs      = [],
+        in_filetype    = '.wav',
+        analyzer_filepath = None,
+        labels_filepath = 'src/classification/species_list/species_list_OESF.txt',
+        n_processes    = 8, # cores per batch
+        min_confidence = 0.0,
+        apply_sigmoid  = True,
+        num_separation = 1,
+        cleanup        = True,
+        sort_by        = 'start_date',
+        ascending      = True,
+        save_to_file   = True
+):
+    print('process_files_parallel')
+    if len(root_dirs) != 0 and len(root_dirs) != len(in_files):
+        print_error('Number of root directories must match input directories')
+        return
+
+    start_time_dir = time.time()
+    with Pool(min(len(in_files), n_processes)) as pool: # start process pool for all files in directory
+        pool.starmap(process_file, zip(
+            in_files,                  # in_filepath
+            repeat(out_dir),        # out_dir
+            root_dirs,       # root_dir
+            repeat(analyzer_filepath),
+            repeat(labels_filepath),
+            repeat(min_confidence), # min_confidence
+            repeat(apply_sigmoid),  # apply_sigmoid
+            repeat(num_separation), # num_separation
+            repeat(cleanup),        # cleanup
+            repeat(sort_by),        # sort_by
+            repeat(ascending),      # ascending
+            repeat(save_to_file)    # save_to_file
+        ))
+    end_time_dir = time.time()
+    print(f'Finished processing files\n({end_time_dir - start_time_dir} sec)')
+
+
+# Run the analyzer on a directory of files in parallel, creating a csv for each file
 def process_dir_parallel(
         in_dir,
         out_dir,

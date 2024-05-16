@@ -4,8 +4,8 @@ import pandas as pd
 import os
 import sys
 
-label_truth = "northern pygmy-owl" # i.e. label_truth
-species_predicted = "northern pygmy-owl" # or another, e.g. "wilson's warbler" vs "pacific wren"
+label_truth = "varied thrush" # i.e. label_truth
+label_predicted = "varied thrush" # or another, e.g. "wilson's warbler" vs "pacific wren"
 
 # output_path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/training_data'
 output_path = '/Users/giojacuzzi/Downloads'
@@ -14,14 +14,14 @@ output_path = '/Users/giojacuzzi/Downloads'
 raw_annotations = get_raw_annotations()
 
 # Collate raw annotation data into species detection labels per species
-if label_truth == species_predicted:
+if label_truth == label_predicted:
     print("Finding correct detection annotation examples for the species alone...")
     collated_detection_labels = collate_annotations_as_detections(raw_annotations, [label_truth], only_annotated=True)
     print(collated_detection_labels.to_string())
     collated_detection_labels = collated_detection_labels[(collated_detection_labels['label_truth'] == label_truth)] 
 else:
     print("Finding both annotation examples for any detections among any species...")
-    collated_detection_labels = raw_annotations[(raw_annotations['label_truth'] == label_truth) & (raw_annotations['species_predicted'] == species_predicted)]
+    collated_detection_labels = raw_annotations[(raw_annotations['label_truth'] == label_truth) & (raw_annotations['label_predicted'] == label_predicted)]
 
 print(collated_detection_labels.to_string())
 
@@ -38,7 +38,7 @@ raw_metadata['time']     = pd.to_timedelta(raw_metadata['time'].astype(str).str.
 
 for index, detection in collated_detection_labels.iterrows():
     print(detection)
-    species_predicted = detection['species_predicted']
+    label_predicted = detection['label_predicted']
     conf = detection['confidence']
 
     # Find the raw audio file that contains the detection
@@ -75,7 +75,7 @@ for index, detection in collated_detection_labels.iterrows():
     print(os.path.basename(merged_df["filepath"]))
 
     file = f'{os.path.splitext(os.path.basename(merged_df["filepath"]))[0]}.Table.1.selections.txt'
-    path = f'{output_path}/{label_truth}/{species_predicted}/{conf}'
+    path = f'{output_path}/{label_truth}/{label_predicted}/{conf}'
     if not os.path.exists(path):
         os.makedirs(path)
 
