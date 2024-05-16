@@ -101,61 +101,64 @@ if __name__ == '__main__':
         print(f'Finished analyzing all files!')
     
     # TODO: Load results per classifier and calculate performance stats ---------------------------------------------------------------
-    todo = out_dir_custom
+    for model in [out_dir_pretrained, out_dir_custom]:
+        print(f'Evaluating model {model}...')
+        todo = model
 
-    def remove_extension(f):
-        return os.path.splitext(f)[0]
+        def remove_extension(f):
+            return os.path.splitext(f)[0]
 
-    # Load analyzer detection scores
-    print('Loading analyzer detection scores for validation examples...')
-    score_files = []
-    score_files.extend(files.find_files(todo, '.csv')) 
-    scores = pd.DataFrame()
-    for file in score_files:
-        score = pd.read_csv(file)
-        score.drop(columns=['start_date'], inplace=True)
-        score['file_audio'] = os.path.basename(file)
-        scores = pd.concat([scores, score], ignore_index=True)
-    scores['file_audio'] = scores['file_audio'].apply(remove_extension)
-    scores.rename(columns={'common_name': 'label_predicted'}, inplace=True)
-    scores['label_predicted'] = scores['label_predicted'].str.lower()
-    print(scores.to_string())
+        # Load analyzer detection scores
+        print('Loading analyzer detection scores for validation examples...')
+        score_files = []
+        score_files.extend(files.find_files(todo, '.csv')) 
+        scores = pd.DataFrame()
+        for file in score_files:
+            score = pd.read_csv(file)
+            score.drop(columns=['start_date'], inplace=True)
+            score['file_audio'] = os.path.basename(file)
+            scores = pd.concat([scores, score], ignore_index=True)
+        scores['file_audio'] = scores['file_audio'].apply(remove_extension)
+        scores.rename(columns={'common_name': 'label_predicted'}, inplace=True)
+        scores['label_predicted'] = scores['label_predicted'].str.lower()
+        # print(scores.to_string())
 
-    # Load selection table files
-    print('Loading corresponding selection table files...')
-    selection_table_files = []
-    selection_table_files.extend(files.find_files(training_data_selections_dir, '.txt'))
-    annotations = pd.DataFrame()
-    for file in selection_table_files:
-        selections = files.load_raven_selection_table(file, cols_needed = ['class', 'file_audio']) # true labels
-        annotations = pd.concat([annotations, selections], ignore_index=True)
-    annotations['file_audio'] = annotations['file_audio'].apply(remove_extension)
-    annotations.rename(columns={'class': 'label_truth'}, inplace=True)
-    annotations['label_truth'] = annotations['label_truth'].str.lower()
-    print(annotations.to_string())
+        # Load selection table files
+        print('Loading corresponding selection table files...')
+        selection_table_files = []
+        selection_table_files.extend(files.find_files(training_data_selections_dir, '.txt'))
+        annotations = pd.DataFrame()
+        for file in selection_table_files:
+            selections = files.load_raven_selection_table(file, cols_needed = ['class', 'file_audio']) # true labels
+            annotations = pd.concat([annotations, selections], ignore_index=True)
+        annotations['file_audio'] = annotations['file_audio'].apply(remove_extension)
+        annotations.rename(columns={'class': 'label_truth'}, inplace=True)
+        annotations['label_truth'] = annotations['label_truth'].str.lower()
+        # print(annotations.to_string())
 
-    # Merge, discarding annotations for non-validation files that were used in training
-    detections = pd.merge(scores, annotations, on=['file_audio'], how='left')
-    detections.sort_values(by='file_audio', inplace=True)
-    detections.rename(columns={'file_audio': 'file'}, inplace=True)
-    detections['label_truth'] = detections['label_truth'].fillna('0') # interpret missing annotations as absence
-    detections['label_truth'] = detections['label_truth'].apply(labels.clean_label)
-    print(f'MERGED DETECTIONS:\n{detections.to_string()}')
+        # Merge, discarding annotations for non-validation files that were used in training
+        print('Merging...')
+        detections = pd.merge(scores, annotations, on=['file_audio'], how='left')
+        detections.sort_values(by='file_audio', inplace=True)
+        detections.rename(columns={'file_audio': 'file'}, inplace=True)
+        detections['label_truth'] = detections['label_truth'].fillna('0') # interpret missing annotations as absence
+        detections['label_truth'] = detections['label_truth'].apply(labels.clean_label)
 
-    # Collate raw annotation data into species detection labels per species
-    collated_detection_labels = collate_annotations_as_detections(detections, classes_to_evaluate, only_annotated=False)
-    print_success(collated_detection_labels.to_string())
+        # Collate raw annotation data into species detection labels per species
+        print('Collating annotations per label...')
+        collated_detection_labels = collate_annotations_as_detections(detections, classes_to_evaluate, only_annotated=False)
+        # print_success(collated_detection_labels.to_string())
 
-    # Containers for performance metrics of all labels
-    performance_metrics = pd.DataFrame()
+        # Containers for performance metrics of all labels
+        performance_metrics = pd.DataFrame()
 
-    for class_under_evaluation in classes_to_evaluate:
-        print(f'Calculating performance metrics for class {class_under_evaluation}...')
+        for class_under_evaluation in classes_to_evaluate:
+            print(f'Calculating performance metrics for class {class_under_evaluation}...')
 
-        detection_labels = collated_detection_labels[collated_detection_labels['label_predicted'] == class_under_evaluation]
-        species_performance_metrics = evaluate_species_performance(detection_labels, class_under_evaluation, True)
-        performance_metrics = pd.concat([performance_metrics, species_performance_metrics], ignore_index=True)
-    
-    print(performance_metrics.to_string())
+            detection_labels = collated_detection_labels[collated_detection_labels['label_predicted'] == class_under_evaluation]
+            species_performance_metrics = evaluate_species_performance(detection_labels, class_under_evaluation, True)
+            performance_metrics = pd.concat([performance_metrics, species_performance_metrics], ignore_index=True)
+        
+        print(performance_metrics.to_string())
 
     plt.show()

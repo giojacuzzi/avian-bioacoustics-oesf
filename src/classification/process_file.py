@@ -89,12 +89,12 @@ def process_file(
         save_to_file   = True
 ):
     in_filepath = os.path.normpath(in_filepath)
-    root_dir = os.path.normpath(root_dir)
     # Save directly to output directory
     if root_dir is None or len(root_dir) == 0:
         file_out = os.path.basename(os.path.splitext(in_filepath)[0]) + '.csv'
     # Save to the output directory, preserving the original directory structure relative to the root
     else:
+        root_dir = os.path.normpath(root_dir)
         if not root_dir in in_filepath:
             print_error(f'Root directory {root_dir} must contain input file path {in_filepath}')
             return

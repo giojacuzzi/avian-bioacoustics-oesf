@@ -49,8 +49,8 @@ def evaluate_species_performance(detection_labels, species, plot):
     if plot:
         fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
         # Plot precision and recall as a function of threshold
-        ax1.plot(thresholds, precision[:-1], label='Precision') #, marker='.' 
-        ax1.plot(thresholds, recall[:-1], label='Recall') # , marker='.'
+        ax1.plot(thresholds, precision[:-1], label='Precision', marker='.') #, marker='.' 
+        ax1.plot(thresholds, recall[:-1], label='Recall', marker='.') # , marker='.'
         ax1.set_xlabel('Threshold') 
         ax1.set_ylabel('Performance')
         ax1.set_title(f'{species}\nThreshold performance', fontsize=font_size)
