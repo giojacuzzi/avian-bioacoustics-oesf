@@ -15,7 +15,7 @@ dir_training_output_data = '/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data
 data_dir = '/Volumes/gioj_b1/OESF'
 
 # Given a list of classes to train...
-species_classes = ['red-breasted nuthatch', 'pacific-slope flycatcher', 'varied thrush'] # species classes
+species_classes = ['red-breasted nuthatch', 'pacific-slope flycatcher', 'varied thrush', 'marbled murrelet'] # species classes
 classes_to_train = species_classes + [] # e.g. 'background' or others
 
 species_list = pd.read_csv(species_list_filepath, index_col=None, usecols=['common_name', 'scientific_name'])
@@ -85,8 +85,8 @@ for common_name in classes_to_train:
             midpoint = annotation_start_time + (annotation_end_time - annotation_start_time)/2.0
 
             # Create a 3-second window centered at the midpoint of the annotation
-            data_start_time = midpoint - 3.0/2.0
-            data_end_time = data_start_time + 3.0
+            data_start_time = max(midpoint - 3.0/2.0, 0.0)
+            data_end_time = max(data_start_time + 3.0, annotation_end_time) # annotation_end_time is guaranteed to be <= the end of the raw audio data
 
             file_stub = f"{metadata['serial_no']}_{metadata['date']}_{metadata['time']}_{data_start_time}"
             file_out_audio = f"{file_stub}.wav"
@@ -100,6 +100,7 @@ for common_name in classes_to_train:
                 (table['selection_end_time']   > annotation_start_time)
             )
             overlapping_selections = table[overlap_condition]
+            overlapping_selections = overlapping_selections.copy()
             overlapping_selections.loc[:, 'file offset (s)'] = 0.0
             overlapping_selections.loc[:, 'delta time (s)'] = 3.0
             overlapping_selections.loc[:, 'file_audio'] = file_out_audio

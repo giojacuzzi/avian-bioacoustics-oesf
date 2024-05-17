@@ -16,7 +16,7 @@ import sys
 
 # Input config
 validation_samples_filepath = 'data/models/Custom/Custom_Classifier_ValidationSamples.csv'
-classes_to_evaluate = ["red-breasted nuthatch", "pacific-slope flycatcher", "varied thrush"]
+classes_to_evaluate = ["red-breasted nuthatch", "pacific-slope flycatcher", "varied thrush", "marbled murrelet"]
 
 # Output config
 sort_by      = 'confidence' # Column to sort dataframe by
