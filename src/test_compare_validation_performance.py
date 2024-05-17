@@ -16,7 +16,7 @@ import sys
 
 # Input config
 validation_samples_filepath = 'data/models/Custom/Custom_Classifier_ValidationSamples.csv'
-classes_to_evaluate = ["red-breasted nuthatch"]
+classes_to_evaluate = ["red-breasted nuthatch", "pacific-slope flycatcher", "varied thrush"]
 
 # Output config
 sort_by      = 'confidence' # Column to sort dataframe by
@@ -65,6 +65,7 @@ if __name__ == '__main__':
         in_rootdirs = np.vectorize(get_second_to_last_directory)(in_filepaths)
 
         # Pre-trained classifier
+        print(f"Processing validation set with classifier {pretrained_analyzer_filepath}")
         process_files.process_files_parallel(
             in_files          = in_filepaths,
             out_dir           = out_dir_pretrained,
@@ -82,6 +83,7 @@ if __name__ == '__main__':
         )
 
         # Pre-trained classifier
+        print(f"Processing validation set with classifier {custom_analyzer_filepath}")
         process_files.process_files_parallel(
             in_files          = in_filepaths,
             out_dir           = out_dir_custom,
@@ -100,10 +102,9 @@ if __name__ == '__main__':
 
         print(f'Finished analyzing all files!')
     
-    # TODO: Load results per classifier and calculate performance stats ---------------------------------------------------------------
+    # Load results per classifier and calculate performance stats ---------------------------------------------------------------
     for model in [out_dir_pretrained, out_dir_custom]:
         print(f'Evaluating model {model}...')
-        todo = model
 
         def remove_extension(f):
             return os.path.splitext(f)[0]
@@ -111,7 +112,7 @@ if __name__ == '__main__':
         # Load analyzer detection scores
         print('Loading analyzer detection scores for validation examples...')
         score_files = []
-        score_files.extend(files.find_files(todo, '.csv')) 
+        score_files.extend(files.find_files(model, '.csv')) 
         scores = pd.DataFrame()
         for file in score_files:
             score = pd.read_csv(file)
@@ -156,7 +157,7 @@ if __name__ == '__main__':
             print(f'Calculating performance metrics for class {class_under_evaluation}...')
 
             detection_labels = collated_detection_labels[collated_detection_labels['label_predicted'] == class_under_evaluation]
-            species_performance_metrics = evaluate_species_performance(detection_labels, class_under_evaluation, True)
+            species_performance_metrics = evaluate_species_performance(detection_labels, class_under_evaluation, True, title_label=model)
             performance_metrics = pd.concat([performance_metrics, species_performance_metrics], ignore_index=True)
         
         print(performance_metrics.to_string())

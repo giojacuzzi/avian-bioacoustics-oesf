@@ -4,6 +4,7 @@ from utils.files import *
 from utils.audio import *
 import string
 import os
+import shutil
 from pydub import AudioSegment
 
 # Path to directory that contains the annotated Raven Pro selection tables
@@ -14,12 +15,15 @@ dir_training_output_data = '/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data
 data_dir = '/Volumes/gioj_b1/OESF'
 
 # Given a list of classes to train...
-species_classes = ['red-breasted nuthatch'] # species classes
+species_classes = ['red-breasted nuthatch', 'pacific-slope flycatcher', 'varied thrush'] # species classes
 classes_to_train = species_classes + [] # e.g. 'background' or others
 
 species_list = pd.read_csv(species_list_filepath, index_col=None, usecols=['common_name', 'scientific_name'])
 species_list['common_name']     = species_list['common_name'].str.lower()
 species_list['scientific_name'] = species_list['scientific_name'].str.lower()
+
+if os.path.exists(dir_training_output_data):
+    shutil.rmtree(dir_training_output_data)
 
 training_examples = pd.DataFrame()
 
@@ -66,7 +70,6 @@ for common_name in classes_to_train:
 
         table['selection_start_time'] = table['file offset (s)']
         table['selection_end_time']   = table['file offset (s)'] + table['delta time (s)']
-        print_warning(f'\n{table}')
 
         # Extract the raw audio data to the training data directory
         # print(dir_training_output_data)
@@ -90,7 +93,7 @@ for common_name in classes_to_train:
             file_out_selections = f"{file_stub}.Table.1.selections.txt"
 
             # Find all other annotations within this window and save to a raven pro selection table txt
-            print_warning(f'{annotation_start_time}:{annotation_end_time}\m{row}')
+
             # Filter the selections that overlap with the annotation period
             overlap_condition = (
                 (table['selection_start_time'] < annotation_end_time) &
@@ -99,8 +102,7 @@ for common_name in classes_to_train:
             overlapping_selections = table[overlap_condition]
             overlapping_selections.loc[:, 'file offset (s)'] = 0.0
             overlapping_selections.loc[:, 'delta time (s)'] = 3.0
-            overlapping_selections['file_audio'] = file_out_audio
-            print_success(overlapping_selections)
+            overlapping_selections.loc[:, 'file_audio'] = file_out_audio
             path_out = f'{dir_training_output_data}/selections/{class_label}'
             full_out = f'{path_out}/{file_out_selections}'
             if not os.path.exists(path_out):

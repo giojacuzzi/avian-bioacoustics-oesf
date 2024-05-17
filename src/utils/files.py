@@ -182,8 +182,8 @@ def load_raven_selection_table(table_file, cols_needed = ['species', 'begin file
     if table.empty:
         print_warning(f'{os.path.basename(table_file)} has no selections.')
     
-    if table.isna().any().any():
-        print_warning(f'{os.path.basename(table_file)} contains NaN values')
+    # if table.isna().any().any():
+    #     print_warning(f'{os.path.basename(table_file)} contains NaN values')
     
     table = table[cols_needed] # Discard unnecessary data
     return table

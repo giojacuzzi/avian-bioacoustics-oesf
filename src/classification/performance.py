@@ -8,7 +8,7 @@ from utils.log import *
 
 # detection_labels - a dataframe of detections with columns 'label_truth' (where a positive presence is represented by the species class label) and 'confidence'
 # species - the species class label, e.g. "american crow"
-def evaluate_species_performance(detection_labels, species, plot):
+def evaluate_species_performance(detection_labels, species, plot, title_label=''):
     
     plots = []
 
@@ -53,7 +53,7 @@ def evaluate_species_performance(detection_labels, species, plot):
         ax1.plot(thresholds, recall[:-1], label='Recall', marker='.') # , marker='.'
         ax1.set_xlabel('Threshold') 
         ax1.set_ylabel('Performance')
-        ax1.set_title(f'{species}\nThreshold performance', fontsize=font_size)
+        ax1.set_title(f'{title_label}\n{species}\nThreshold performance', fontsize=font_size)
         ax1.set_xlim(0.0-padding, 1.0+padding)
         ax1.set_ylim(0.0-padding, 1.0+padding)
         ax1.set_box_aspect(1)
@@ -83,7 +83,7 @@ def evaluate_species_performance(detection_labels, species, plot):
         ax2.plot(recall, precision, label='Classifier') #  marker='.',
         ax2.set_xlabel('Recall')
         ax2.set_ylabel('Precision')
-        ax2.set_title(f'{species}\nPrecision-Recall (AUC {pr_auc:.2f}, AP {pr_ap:.2f})', fontsize=font_size)
+        ax2.set_title(f'{title_label}\n{species}\nPrecision-Recall (AUC {pr_auc:.2f}, AP {pr_ap:.2f})', fontsize=font_size)
         ax2.set_xlim([0.0-padding, 1.0+padding])
         ax2.set_ylim([0.0-padding, 1.0+padding])
         ax2.legend(loc='lower left')
