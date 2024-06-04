@@ -23,7 +23,7 @@ species_wadnr_priority = ["pileated woodpecker", "pacific-slope flycatcher", "hu
 # # OTHER TARGETS
 # species_to_evaluate += ["great horned owl", "band-tailed pigeon", "white-crowned sparrow"]
 # # INDIVIDUAL
-species_to_evaluate = ["pacific-slope flycatcher"]
+# species_to_evaluate = ["barred owl"]
 
 plot = True              # Plot the results
 print_detections = True # Print detections
@@ -34,7 +34,6 @@ only_annotated = False # DEBUG: skip files that do not have annotations (selecti
 
 # Annotation directories to use as evaluation data
 dirs = [
-    # '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020/Deployment2/COMBO_SMA00380_SMA00309_SMA00349',
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020',
 ]
 

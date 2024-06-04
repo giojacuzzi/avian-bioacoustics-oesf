@@ -12,11 +12,25 @@ from utils import labels
 from annotation.annotations import *
 from classification.performance import *
 import matplotlib.pyplot as plt
+import shutil
 import sys
 
 # Input config
 validation_samples_filepath = 'data/models/Custom/Custom_Classifier_ValidationSamples.csv'
-classes_to_evaluate = ["red-breasted nuthatch", "pacific-slope flycatcher", "varied thrush", "marbled murrelet"]
+preexisting_labels_to_evaluate = [
+    "pacific-slope flycatcher",
+    "varied thrush",
+    "wilson's warbler",
+    "marbled murrelet",
+    "hammond's flycatcher",
+    "red-breasted nuthatch",
+    "northern saw-whet owl",
+    "northern pygmy-owl",
+]
+novel_labels_to_evaluate = [
+    "abiotic vehicle"
+]
+labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
 
 # Output config
 sort_by      = 'confidence' # Column to sort dataframe by
@@ -29,13 +43,15 @@ min_confidence = 0.0   # Minimum confidence score to retain a detection (only us
 apply_sigmoid  = True # Sigmoid transformation or raw logit score
 num_separation = 1     # Number of sounds to separate for analysis. Leave as 1 for original file alone.
 cleanup        = True  # Keep or remove any temporary files created through analysis
-n_processes = 8
+n_processes = 1
 
 pretrained_analyzer_filepath = None
 pretrained_labels_filepath   = 'src/classification/species_list/species_list_OESF.txt'
 custom_analyzer_filepath     = 'data/models/Custom/Custom_Classifier.tflite'
 custom_labels_filepath       = 'data/models/Custom/Custom_Classifier_Labels.txt'
 training_data_selections_dir = 'data/training/Custom/selections'
+
+overwrite = False
 
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
@@ -48,6 +64,9 @@ if __name__ == '__main__':
     # Normalize file paths to support both mac and windows
     in_filepaths = np.vectorize(os.path.normpath)(in_filepaths)
     out_dir      = os.path.normpath(out_dir)
+
+    if overwrite and os.path.exists(out_dir):
+        shutil.rmtree(out_dir)
 
     if os.path.exists(out_dir):
         print_warning('Data already processed, loading previous results...')
@@ -63,6 +82,24 @@ if __name__ == '__main__':
                 return None  # Handle cases where the path doesn't contain enough components
 
         in_rootdirs = np.vectorize(get_second_to_last_directory)(in_filepaths)
+
+        # Custom classifier
+        print(f"Processing validation set with classifier {custom_analyzer_filepath}")
+        process_files.process_files_parallel(
+            in_files          = in_filepaths,
+            out_dir           = out_dir_custom,
+            root_dirs         = in_rootdirs,
+            in_filetype       = '.wav',
+            analyzer_filepath = custom_analyzer_filepath,
+            labels_filepath   = custom_labels_filepath,
+            n_processes       = n_processes,
+            min_confidence    = min_confidence,
+            apply_sigmoid     = apply_sigmoid,
+            num_separation    = num_separation,
+            cleanup           = cleanup,
+            sort_by           = sort_by,
+            ascending         = ascending
+        )
 
         # Pre-trained classifier
         print(f"Processing validation set with classifier {pretrained_analyzer_filepath}")
@@ -82,25 +119,9 @@ if __name__ == '__main__':
             ascending         = ascending
         )
 
-        # Pre-trained classifier
-        print(f"Processing validation set with classifier {custom_analyzer_filepath}")
-        process_files.process_files_parallel(
-            in_files          = in_filepaths,
-            out_dir           = out_dir_custom,
-            root_dirs         = in_rootdirs,
-            in_filetype       = '.wav',
-            analyzer_filepath = custom_analyzer_filepath,
-            labels_filepath   = custom_labels_filepath,
-            n_processes       = n_processes,
-            min_confidence    = min_confidence,
-            apply_sigmoid     = apply_sigmoid,
-            num_separation    = num_separation,
-            cleanup           = cleanup,
-            sort_by           = sort_by,
-            ascending         = ascending
-        )
-
         print(f'Finished analyzing all files!')
+    
+    performance_metrics = pd.DataFrame()
     
     # Load results per classifier and calculate performance stats ---------------------------------------------------------------
     for model in [out_dir_pretrained, out_dir_custom]:
@@ -130,10 +151,10 @@ if __name__ == '__main__':
         selection_table_files.extend(files.find_files(training_data_selections_dir, '.txt'))
         annotations = pd.DataFrame()
         for file in selection_table_files:
-            selections = files.load_raven_selection_table(file, cols_needed = ['class', 'file_audio']) # true labels
+            selections = files.load_raven_selection_table(file, cols_needed = ['label', 'file_audio']) # true labels
             annotations = pd.concat([annotations, selections], ignore_index=True)
         annotations['file_audio'] = annotations['file_audio'].apply(remove_extension)
-        annotations.rename(columns={'class': 'label_truth'}, inplace=True)
+        annotations.rename(columns={'label': 'label_truth'}, inplace=True)
         annotations['label_truth'] = annotations['label_truth'].str.lower()
         # print(annotations.to_string())
 
@@ -147,19 +168,29 @@ if __name__ == '__main__':
 
         # Collate raw annotation data into species detection labels per species
         print('Collating annotations per label...')
-        collated_detection_labels = collate_annotations_as_detections(detections, classes_to_evaluate, only_annotated=False)
+        collated_detection_labels = collate_annotations_as_detections(detections, labels_to_evaluate, only_annotated=False)
         # print_success(collated_detection_labels.to_string())
 
         # Containers for performance metrics of all labels
-        performance_metrics = pd.DataFrame()
+        model_performance_metrics = pd.DataFrame()
 
-        for class_under_evaluation in classes_to_evaluate:
-            print(f'Calculating performance metrics for class {class_under_evaluation}...')
+        for label_under_evaluation in labels_to_evaluate:
+            print(f'Calculating performance metrics for label {label_under_evaluation}...')
 
-            detection_labels = collated_detection_labels[collated_detection_labels['label_predicted'] == class_under_evaluation]
-            species_performance_metrics = evaluate_species_performance(detection_labels, class_under_evaluation, True, title_label=model)
-            performance_metrics = pd.concat([performance_metrics, species_performance_metrics], ignore_index=True)
+            if model == out_dir_pretrained and label_under_evaluation in novel_labels_to_evaluate:
+                print_warning(f"Skipping evaluation of invalid label {label_under_evaluation} for pretrained model...")
+                continue
+
+            detection_labels = collated_detection_labels[collated_detection_labels['label_predicted'] == label_under_evaluation]
+            species_performance_metrics = evaluate_species_performance(detection_labels, label_under_evaluation, True, title_label=model, save_to_dir=f'/Users/giojacuzzi/Downloads/perf/{model}')
+            model_performance_metrics = pd.concat([model_performance_metrics, species_performance_metrics], ignore_index=True)
         
-        print(performance_metrics.to_string())
+        model_performance_metrics['model'] = model
+        print(model_performance_metrics.to_string())
 
+        performance_metrics = pd.concat([performance_metrics, model_performance_metrics], ignore_index=True)
+
+    print('FINAL RESULTS')
+    performance_metrics.sort_values(by='species', inplace=True)
+    print(performance_metrics.to_string())
     plt.show()

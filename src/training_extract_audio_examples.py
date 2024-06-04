@@ -2,10 +2,12 @@
 
 from utils.files import *
 from utils.audio import *
+from utils import labels
 import string
 import os
 import shutil
 from pydub import AudioSegment
+import sys
 
 # Path to directory that contains the annotated Raven Pro selection tables
 dir_training_input_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/training_data'
@@ -14,38 +16,55 @@ dir_training_output_data = '/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data
 # Path to directory with raw audio data
 data_dir = '/Volumes/gioj_b1/OESF'
 
-# Given a list of classes to train...
-species_classes = ['red-breasted nuthatch', 'pacific-slope flycatcher', 'varied thrush', 'marbled murrelet'] # species classes
-classes_to_train = species_classes + [] # e.g. 'background' or others
+overwrite = True
+
+# Given a list of labels to train...
+species_labels = [
+    "pacific-slope flycatcher",
+    "varied thrush",
+    "wilson's warbler",
+    "marbled murrelet",
+    "hammond's flycatcher",
+    "red-breasted nuthatch",
+    "northern saw-whet owl",
+    "northern pygmy-owl" 
+]
+labels_to_train = species_labels + [
+    "abiotic vehicle"
+] # e.g. 'abiotic vehicle' or others. Note that "Background" class is unique and automatically searched for.
 
 species_list = pd.read_csv(species_list_filepath, index_col=None, usecols=['common_name', 'scientific_name'])
 species_list['common_name']     = species_list['common_name'].str.lower()
 species_list['scientific_name'] = species_list['scientific_name'].str.lower()
+print(f'common names: {species_list["common_name"].to_string()}')
 
-if os.path.exists(dir_training_output_data):
+if overwrite and os.path.exists(dir_training_output_data):
     shutil.rmtree(dir_training_output_data)
 
 training_examples = pd.DataFrame()
 
-# For each class...
-for common_name in classes_to_train:
+# For each label...
+for label in labels_to_train:
 
-    # Format the class name to match BirdNET
-    print(f'Processing class "{common_name}"')
-    row = species_list.loc[species_list['common_name'] == common_name]
-    if not row.empty:
-        scientific_name = row.iloc[0]['scientific_name']
-        class_label = f"{scientific_name.capitalize()}_{string.capwords(common_name)}"
-        print(class_label)
-    else:
-        print_error(f"Scientific name for {common_name} not found.")
-        continue
+    print(f'Processing label "{label}"')
 
-    # Get the associated annotations for the class
-    dir_class_input_annotations = dir_training_input_annotations + '/' + common_name
-    annotation_files = find_files(dir_class_input_annotations, 'selections.txt')
+    # Format the label name to match BirdNET
+    if label in species_list['common_name'].values: # Biotic label
+        row = species_list.loc[species_list['common_name'] == label]
+        if not row.empty:
+            scientific_name = row.iloc[0]['scientific_name']
+            label_label = f"{scientific_name.capitalize()}_{string.capwords(label)}" # required BirdNET format
+        else:
+            print_error(f"Scientific name for {label} not found.")
+            continue
+    else: # Abiotic label
+        label_label = f"Abiotic_{string.capwords(label)}"
+
+    # Get the associated annotations for the label
+    dir_label_input_annotations = dir_training_input_annotations + '/' + label
+    annotation_files = find_files(dir_label_input_annotations, 'selections.txt')
     if len(annotation_files) == 0:
-        print_error(f'No files found for class "{common_name}"')
+        print_error(f'No files found for label "{label}"')
         continue
 
     # Use the annotations to extract examples from the raw audio data
@@ -58,12 +77,16 @@ for common_name in classes_to_train:
         print(metadata)
         
         # Load the annotations
-        table = load_raven_selection_table(file, cols_needed=['selection', 'class', 'type', 'begin file', 'file offset (s)', 'delta time (s)', 'low freq (hz)', 'high freq (hz)'])
+        table = load_raven_selection_table(file, cols_needed=['selection', 'label', 'type', 'begin file', 'file offset (s)', 'delta time (s)', 'low freq (hz)', 'high freq (hz)'])
 
         # Remove annotation references (these are used in the test dataset)
         table = table[(table['low freq (hz)'] != 0.0) & (table['high freq (hz)'] != 16000.0)]
 
         # Further validate the annotations
+        if (table['label'] == 'nan').any() or table['label'].isnull().any():
+            print_warning(f'{os.path.basename(file)} contains annotations with missing labels')
+        table['label'] = table['label'].str.lower()
+        table['label'] = table['label'].apply(labels.clean_label)
         table_errors = table[table['delta time (s)'] > 3.0]
         for index, row in table_errors.iterrows():
             print_error(f"Selection {row['selection']} extends beyond 3 seconds in {file}")
@@ -74,10 +97,10 @@ for common_name in classes_to_train:
         # Extract the raw audio data to the training data directory
         # print(dir_training_output_data)
         for index, row in table.iterrows():
-            print(f'Extracting audio data for row {row}')
+            print(f"Extracting audio data for row {index} ({row['label']})...")
 
-            if row['class'] != common_name:
-                print('Skipping non-class annotation...')
+            if row['label'] != label:
+                print('Skipping non-label annotation...')
                 continue
 
             annotation_start_time = row['file offset (s)']
@@ -104,7 +127,7 @@ for common_name in classes_to_train:
             overlapping_selections.loc[:, 'file offset (s)'] = 0.0
             overlapping_selections.loc[:, 'delta time (s)'] = 3.0
             overlapping_selections.loc[:, 'file_audio'] = file_out_audio
-            path_out = f'{dir_training_output_data}/selections/{class_label}'
+            path_out = f'{dir_training_output_data}/selections/{label_label}'
             full_out = f'{path_out}/{file_out_selections}'
             if not os.path.exists(path_out):
                 os.makedirs(path_out)
@@ -114,7 +137,7 @@ for common_name in classes_to_train:
             # Find the original audio file matching 'file' under 'root_dir'
             audio_file = find_file_full_path(data_dir, row['begin file'])
             if audio_file is None:
-                print_error("Could note find corresponding .wav file")
+                print_error("Could not find corresponding .wav file")
                 continue
 
             # Load the entire audio file
@@ -123,7 +146,7 @@ for common_name in classes_to_train:
 
             # Extract the audio data and save to file
             extracted_data = audio_data[(data_start_time * 1000):(data_end_time * 1000)]
-            path_out = f'{dir_training_output_data}/audio/{class_label}'
+            path_out = f'{dir_training_output_data}/audio/{label_label}'
             full_out = f'{path_out}/{file_out_audio}'
             if not os.path.exists(path_out):
                 os.makedirs(path_out)
@@ -134,4 +157,4 @@ for common_name in classes_to_train:
         training_examples = pd.concat([training_examples, table], ignore_index=True) # Store the table
 
 print_success('Finished extracting training examples:')
-print(training_examples['class'].value_counts())
+print(training_examples['label'].value_counts())

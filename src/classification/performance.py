@@ -5,10 +5,11 @@ import matplotlib.pyplot as plt # Plotting
 import sklearn.metrics          # Classifier evaluation
 import numpy as np              # Mathematics
 from utils.log import *
+import os
 
 # detection_labels - a dataframe of detections with columns 'label_truth' (where a positive presence is represented by the species class label) and 'confidence'
 # species - the species class label, e.g. "american crow"
-def evaluate_species_performance(detection_labels, species, plot, title_label=''):
+def evaluate_species_performance(detection_labels, species, plot, title_label='', save_to_dir=''):
     
     plots = []
 
@@ -42,6 +43,15 @@ def evaluate_species_performance(detection_labels, species, plot, title_label=''
     # This means is that a large number of negative instances won’t skew our understanding of how well our model
     # performs on the positive species class.
     precision, recall, thresholds = sklearn.metrics.precision_recall_curve(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species)
+
+    if save_to_dir != '':
+        os.makedirs(save_to_dir, exist_ok=True)
+        stats = pd.DataFrame({
+            'threshold': thresholds,
+            'precision': precision[:-1],
+            'recall': recall[:-1]
+        })
+        stats.to_csv(f'{save_to_dir}/{species}.csv', index=False)
 
     padding = 0.01
     font_size = 9

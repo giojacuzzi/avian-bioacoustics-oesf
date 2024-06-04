@@ -3,6 +3,7 @@ import os
 import re
 import pandas as pd
 from utils.log import *
+import sys
 
 # File with table containing ID and ecological data for monitored species
 species_list_filepath = 'data/species/species_list - complete.csv'
@@ -162,6 +163,14 @@ def get_raw_metadata(dirs=[], overwrite=False):
     print_success(f'Saved annotations to {metadata_filepath}')
     return file_metadata
 
+# Returns a dataframe of site deployment metadata from a .csv downloaded from google drive
+def get_site_deployment_metadata(year):
+    if year != 2020:
+        print_error('Only 2020 currently supported')
+    site_deployment_metadata_path = 'data/metadata/OESF Deployments (Total) - 2020.csv'
+    site_deployment_metadata = pd.read_csv(site_deployment_metadata_path, parse_dates=['SurveyDate'], date_parser=lambda x: pd.to_datetime(x, format='%m/%d/%y'))
+    return site_deployment_metadata
+
 # Load a Raven selection table (tab-separated .txt) as a pandas dataframe and validate contents
 def load_raven_selection_table(table_file, cols_needed = ['species', 'begin file', 'file offset (s)', 'delta time (s)']):
     table = pd.read_csv(table_file, sep='\t') # Load the file as a dataframe
@@ -176,7 +185,7 @@ def load_raven_selection_table(table_file, cols_needed = ['species', 'begin file
     # Check the validity of the table
     if not all(col in table.columns for col in cols_needed):
         missing_columns = [col for col in cols_needed if col not in table.columns]
-        print_error(f"Missing columns {missing_columns} in {os.path.basename(table_file)}.")
+        print_error(f"Missing columns {missing_columns} in {table_file}.")
         return
 
     if table.empty:

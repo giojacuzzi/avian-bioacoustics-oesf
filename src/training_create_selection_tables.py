@@ -4,13 +4,14 @@ import pandas as pd
 import os
 import sys
 
-label_truth = "varied thrush" # i.e. label_truth
-label_predicted = "varied thrush" # or another, e.g. "wilson's warbler" vs "pacific wren"
+label_truth = "northern saw-whet owl" # i.e. label_truth
+label_predicted = "northern saw-whet owl" # or another, e.g. "wilson's warbler" vs "pacific wren"
 
 # output_path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/training_data'
 output_path = '/Users/giojacuzzi/Downloads'
 
 # Get raw annotation data
+print("Getting raw annotation data...")
 raw_annotations = get_raw_annotations()
 
 # Collate raw annotation data into species detection labels per species
@@ -68,7 +69,7 @@ for index, detection in collated_detection_labels.iterrows():
         'End Time (s)':   [time_delta.total_seconds() + 3.0],
         'Low Freq (Hz)':  [0.0],
         'High Freq (Hz)': [16000.0],
-        'Species':        [label_truth],
+        'Label':          [label_truth],
         'Type':           ['']
     })
     print(selection_table)
