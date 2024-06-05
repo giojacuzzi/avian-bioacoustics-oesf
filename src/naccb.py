@@ -29,80 +29,108 @@ detections = pd.merge(
     right_on=['serialno', 'date'],
     how='inner'
 )
-print(detections)
 all_sites = detections["StationName"].unique()
 ntotal_sites = len(all_sites)
 print(f'{ntotal_sites} unique sites annotated')
 if (ntotal_sites != 16):
-    print_error('Missing sites?')
+    print_error('Missing sites')
     sys.exit()
 
-## 1. "Arbitrary" confidence thresholds (0.5, 0.9) versus an "informed" threshold to maximize precision ######################################
-# > For each species:
-#   - Number of sites detected / number of sites truly present
-#   - Focus on focal species (Marbled Murrelet)
-# > Estimated species richness delta across sites (versus "true" species richness)
-
-# def get_site_level_confusion_matrix(species, detections, threshold):
-
-
-# TODO: CHECK GREAT-HORNED OWL
-for species in species_list:
-    print(f'{species}')
-
+# Returns a dataframe containing a confusion matrix (TP, FP, FN, TN) and number of truly present/absent sites for a given species from a detection history
+def get_site_level_confusion_matrix(species, detections, threshold):
     # Filter for species detections, excluding unknown examples
     detections_species = detections[(detections['label_predicted'] == species) & (detections['label_truth'] != 'unknown')]
 
-    # print(detections_species.to_string())
+    # Sites truly present (based on TP detections)
+    sites_present  = detections_species[(detections_species['label_truth'] == species)]["StationName"].unique()
+    # print(f'Sites present ({len(sites_present)}): {sites_present}')
 
-    # Number of sites truly present (based on TP detections)
-    sites_truly_present  = detections_species[(detections_species['label_truth'] == species)]["StationName"].unique()
-    print(f'Sites truly present ({len(sites_truly_present)}): {sites_truly_present}')
-    # print(detections_species[(detections_species['label_truth'] == species)])
+    # Sites truly absent
+    sites_absent = np.setdiff1d(all_sites, sites_present)
+    # print(f'Sites absent  ({ len(sites_absent)}): {sites_absent}')
 
-    sites_truly_absent = np.setdiff1d(all_sites, sites_truly_present)
-    print(f'Sites truly absent  ({ len(sites_truly_absent)}): {sites_truly_absent}')
+    if len(sites_present) + len(sites_absent) != ntotal_sites:
+        print_error(f'Number of sites present ({len(sites_present)}) and absent ({len(sites_absent)}) does not equal total number of sites ({ntotal_sites})')
 
-    if len(sites_truly_present) + len(sites_truly_absent) != ntotal_sites:
-        print_error(f'Number of sites truly present ({len(sites_truly_present)}) and absent ({len(sites_truly_absent)}) does not equal total number of sites ({ntotal_sites})')
+    # Sites detected using the threshold
+    detections_thresholded = detections_species[(detections_species['confidence'] >= 0.5)]
+    sites_detected = detections_thresholded["StationName"].unique()
+    # print(f'Sites detected with threshold {threshold}  ({len(sites_detected)}): {sites_detected}')
 
-    detections_0_5 = detections_species[(detections_species['confidence'] >= 0.5)]
-    sites_detected_0_5 = detections_0_5["StationName"].unique()
-    print(f'Sites detected 0.5  ({len(sites_detected_0_5)}): {sites_detected_0_5}')
-    # print(detections_0_5)
+    # Sites not detected using the threshold
+    sites_notdetected = np.setdiff1d(all_sites, sites_detected)
+    # print(f'Sites not detected with threshold {threshold}  ({len(sites_notdetected)}): {sites_notdetected}')
 
-    sites_not_detected_0_5 = np.setdiff1d(all_sites, sites_detected_0_5)
-    print(f'Sites not detected 0.5  ({len(sites_not_detected_0_5)}): {sites_not_detected_0_5}')
-
-    if len(sites_detected_0_5) + len(sites_not_detected_0_5) != ntotal_sites:
-        print_error(f'Number of sites detected ({len(sites_detected_0_5)}) and not detected ({len(sites_not_detected_0_5)}) does not equal total number of sites ({ntotal_sites})')
+    if len(sites_detected) + len(sites_notdetected) != ntotal_sites:
+        print_error(f'Number of sites detected ({len(sites_detected)}) and not detected ({len(sites_notdetected)}) does not equal total number of sites ({ntotal_sites})')
 
     # TP - Number of sites correctly detected (at least once)
-    tp_0_5 = np.intersect1d(sites_truly_present, sites_detected_0_5)
-    nsites_tp_0_5 = len(tp_0_5)
-    print(f'  TP 0.5 - {nsites_tp_0_5}')
+    tp_sites = np.intersect1d(sites_present, sites_detected)
+    nsites_tp = len(tp_sites)
 
     # FP - Number of sites incorrectly detected (i.e. not correctly detected at least once)
-    fp_0_5 = np.setdiff1d(np.intersect1d(sites_truly_absent, sites_detected_0_5), tp_0_5) # remove sites where the species was otherwise correctly detected at least once
-    nsites_fp_0_5 = len(fp_0_5)
-    print(f'  FP 0.5 - {nsites_fp_0_5}')
+    fp_sites = np.setdiff1d(np.intersect1d(sites_absent, sites_detected), tp_sites) # remove sites where the species was otherwise correctly detected at least once
+    nsites_fp = len(fp_sites)
 
     # TN - Number of sites correctly not detected
-    nsites_tn_0_5 = len(np.intersect1d(sites_not_detected_0_5, sites_truly_absent))
-    print(f'  TN 0.5 - {nsites_tn_0_5}')
+    nsites_tn = len(np.intersect1d(sites_notdetected, sites_absent))
 
     # FN - Number of sites incorrectly not detected
-    nsites_fn_0_5 = len(np.intersect1d(sites_not_detected_0_5, sites_truly_present))
-    print(f'  FN 0.5 - {nsites_fn_0_5}')
+    nsites_fn = len(np.intersect1d(sites_notdetected, sites_present))
 
-    nsites_accounted_for = nsites_tp_0_5 + nsites_fp_0_5 + nsites_tn_0_5 + nsites_fn_0_5
+    nsites_accounted_for = nsites_tp + nsites_fp + nsites_tn + nsites_fn
     if nsites_accounted_for != ntotal_sites:
         print_error(f'Only {nsites_accounted_for} sites accounted for of {ntotal_sites} total')
     
-    if nsites_tp_0_5 + nsites_fn_0_5 != len(sites_truly_present):
-        print_error(f'Incorrect true presences TP {nsites_tp_0_5} + FN {nsites_fn_0_5} != {len(sites_truly_present)}')
-    if nsites_fp_0_5 + nsites_tn_0_5 != len(sites_truly_absent):
-        print_error(f'Incorrect true absences FP {nsites_fp_0_5} + TN {nsites_tn_0_5} != {len(sites_truly_absent)}')
+    if nsites_tp + nsites_fn != len(sites_present):
+        print_error(f'Incorrect true presences TP {nsites_tp} + FN {nsites_fn} != {len(sites_present)}')
+    if nsites_fp + nsites_tn != len(sites_absent):
+        print_error(f'Incorrect true absences FP {nsites_fp} + TN {nsites_tn} != {len(sites_absent)}')
+    
+    try:
+        precision = nsites_tp / (nsites_tp + nsites_fp)
+    except ZeroDivisionError:
+        precision = np.nan
+    try:
+        recall = nsites_tp / (nsites_tp + nsites_fn)
+    except ZeroDivisionError:
+        recall = np.nan
+    
+    result = {
+        'species':        [species],
+        'present':        [len(sites_present)],
+        'absent':         [len(sites_absent)],
+        'threshold':      [threshold],
+        'detected':       [len(sites_detected)],
+        'notdetected':    [len(sites_notdetected)],
+        'incorrect':      [nsites_fp + nsites_fn],
+        'FP': [nsites_fp],
+        'FN': [nsites_fn],
+        'TP': [nsites_tp],
+        'TN': [nsites_tn],
+        'precision': [precision],
+        'recall':    [recall]
+    }
+    return(pd.DataFrame(result, index=None))
+
+## 1. "Arbitrary" confidence thresholds (0.5, 0.9) versus an "informed" threshold to maximize precision ######################################
+
+# > For each species:
+#   - Number of sites detected / number of sites truly present
+#   - Focus on focal species (Marbled Murrelet)
+perf = pd.DataFrame()
+for species in species_list:
+    print(f'Processing species {species}...')
+
+    species_perf_0_5 = get_site_level_confusion_matrix(species, detections, 0.5)
+    perf = pd.concat([perf, species_perf_0_5], ignore_index=True)
+
+    species_perf_0_9 = get_site_level_confusion_matrix(species, detections, 0.9)
+    perf = pd.concat([perf, species_perf_0_9], ignore_index=True)
+
+print(perf.sort_values(by='incorrect', ascending=False).to_string())
+
+# > Estimated species richness delta across sites (versus "true" species richness)
 
 ## 2. "Informed" threshold side effects ######################################################################################################
 # > For each species:

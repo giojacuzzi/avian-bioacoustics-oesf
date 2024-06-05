@@ -4,6 +4,7 @@ library(dplyr)
 library(tools)
 library(ggplot2)
 library(cowplot)
+library(patchwork)
 
 path_pretrained = '/Users/giojacuzzi/Downloads/perf/data/validation/Custom/pre-trained'
 path_custom = '/Users/giojacuzzi/Downloads/perf/data/validation/Custom/custom'
