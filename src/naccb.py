@@ -194,8 +194,28 @@ print(f'Mean FN 0.9 -> {round(fn_09.mean(),2)} ({round(fn_09.mean()/ntotal_sites
 # plt.tight_layout()
 # plt.show()
 
-# > Estimated species richness delta across sites (versus "true" species richness)
-# TODO
+# > Estimated species richness delta across sites versus "true" species richness (0.5 and 0.9)
+site_species_richness = detections.groupby('StationName_AGG')['label_truth'].nunique().reset_index()
+site_species_richness.columns = ['StationName_AGG', 'richness_truth']
+
+site_species_richness_05 = detections[(detections['confidence'] >= 0.5)].groupby('StationName_AGG')['label_predicted'].nunique().reset_index()
+site_species_richness_05.columns = ['StationName_AGG', 'richness_predicted_05']
+site_species_richness = pd.merge(site_species_richness, site_species_richness_05, on='StationName_AGG', how='outer')
+site_species_richness['richness_percent_05'] = site_species_richness['richness_predicted_05'] / site_species_richness['richness_truth']
+
+site_species_richness_09 = detections[(detections['confidence'] >= 0.9)].groupby('StationName_AGG')['label_predicted'].nunique().reset_index()
+site_species_richness_09.columns = ['StationName_AGG', 'richness_predicted_09']
+site_species_richness = pd.merge(site_species_richness, site_species_richness_09, on='StationName_AGG', how='outer')
+site_species_richness['richness_percent_09'] = site_species_richness['richness_predicted_09'] / site_species_richness['richness_truth']
+
+print(site_species_richness.to_string())
+print('Species richness predictions:')
+print(f"truth -> mean {site_species_richness['richness_truth'].mean()}, std {site_species_richness['richness_truth'].std()}")
+print(f"0.5 -> mean {site_species_richness['richness_predicted_05'].mean()}, std {site_species_richness['richness_predicted_05'].std()}")
+print(f"0.9 -> mean {site_species_richness['richness_predicted_09'].mean()}, std {site_species_richness['richness_predicted_09'].std()}")
+print('Species richness predictions (percent of truth):')
+print(f"0.5 -> mean {site_species_richness['richness_percent_05'].mean()}, std {site_species_richness['richness_percent_05'].std()}")
+print(f"0.9 -> mean {site_species_richness['richness_percent_09'].mean()}, std {site_species_richness['richness_percent_09'].std()}")
 
 ## 2. "Optimal" threshold side effects ######################################################################################################
 # > For each species:
@@ -258,8 +278,51 @@ print(f'Mean recall maxr -> {round(recall_maxr.mean(),2)}')
 print(f'Mean FP maxr -> {round(fp_maxr.mean(),2)} ({round(fp_maxr.mean()/ntotal_sites * 100, 1)}% of sites)')
 print(f'Mean FN maxr -> {round(fn_maxr.mean(),2)} ({round(fn_maxr.mean()/ntotal_sites * 100, 1)}% of sites)')
 
-# List species-level performance
-print_success(f'\n{species_level_perf[(species_level_perf["N_P"] > 1)].sort_values(by=["AUC-PR"], ascending=True).to_string()}')
+## DEBUG DEBUG DEBUG !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# > Estimated species richness delta across sites versus "true" species richness (using optimal thresholds for precision/recall)
+# TODO:
+print(detections)
+thresholds = pd.DataFrame()
+detections_optimizedp = pd.DataFrame()
+
+filtered_detections = detections[detections['label_predicted'].isin(site_level_perf[(site_level_perf['present'] > 1)]['species'])]
+
+for species in species_list:
+    print(f'Assembling estimated species richness for precision optimization theshold, {species}...')
+
+    if species not in filtered_detections['label_predicted'].unique():
+        print_warning(f'Skipping species with no detections {species}...')
+        continue
+
+    threshold_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['species'] == species)]['threshold'].iloc[0]
+    print_warning(f'threhold {threshold_maxp} species {species}')
+    detections_maxp = filtered_detections[(filtered_detections['confidence'] >= threshold_maxp) & (filtered_detections['label_predicted'] == species)]
+    detections_optimizedp = pd.concat([detections_optimizedp, detections_maxp], ignore_index=True)
+
+    species_threshold = pd.DataFrame({
+        'species': [species],
+        'threshold': [threshold_maxp]
+    })
+
+    thresholds = pd.concat([thresholds, species_threshold], ignore_index=True)
+print(detections_optimizedp)
+
+print(thresholds.to_string())
+
+site_species_richness = detections.groupby('StationName_AGG')['label_truth'].nunique().reset_index()
+site_species_richness.columns = ['StationName_AGG', 'richness_truth']
+
+site_species_richness_maxp = detections_optimizedp.groupby('StationName_AGG')['label_predicted'].nunique().reset_index()
+site_species_richness_maxp.columns = ['StationName_AGG', 'richness_predicted_maxp']
+site_species_richness = pd.merge(site_species_richness, site_species_richness_maxp, on='StationName_AGG', how='outer')
+site_species_richness['richness_percent_maxp'] = site_species_richness['richness_predicted_maxp'] / site_species_richness['richness_truth']
+print(site_species_richness)
+
+print(f"maxp -> mean {site_species_richness['richness_percent_maxp'].mean()}, std {site_species_richness['richness_percent_maxp'].std()}")
+
+# DEBUG: List species-level performance
+# print_success(f'\n{species_level_perf[(species_level_perf["N_P"] > 6)].sort_values(by=["AUC-PR"], ascending=True).to_string()}')
 
 ## 3. Pre-trained classifier with "optimal" threshold versus custom classifier with "optimal" threshold ####################################
 #     - Number of sites detected / number of sites truly present
