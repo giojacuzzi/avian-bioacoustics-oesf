@@ -148,9 +148,12 @@ def evaluate_species_performance(detection_labels, species, plot, title_label=''
         'AUC-PR':    [round(pr_auc, 2)],                                # Precision-Recall AUC
         'AP':        [round(pr_ap, 2)],                                 # Average precision
         'p_mean':    [round(precision.mean(),2)],                       # Average precision across all thresholds
-        'p_max':     [round(precision[np.argmax(precision[:-1])],2)],   # Maximum precision across all thresholds
-        'p_max_th':  [round(thresholds[np.argmax(precision[:-1])],2)],  # Score threshold to maximize precision
-        'p_max_r':   [round(recall[np.argmax(precision[:-1])],2)],      # Recall at maximum precision using threshold
+        'p_max':     [round(precision[np.argmax(precision[:-1])],  5)], # Maximum precision across all thresholds
+        'p_max_th':  [round(thresholds[np.argmax(precision[:-1])], 5)], # Score threshold to maximize precision
+        'p_max_r':   [round(recall[np.argmax(precision[:-1])],     5)], # Recall at maximum precision using threshold
+        'r_max':     [round(recall[np.argmax(precision[:-1])],  5)],    # Maximum recall across all thresholds (should be 1.0)
+        'r_max_th':  [round(thresholds[len(recall) - 1 - np.argmax(recall[::-1])], 5)],    # Score threshold to maximize recall (last value to also secondarily max precision)
+        'r_max_p':   [round( precision[len(recall) - 1 - np.argmax(recall[::-1])],     5)],# Precision at maximum precision using threshold (last value to also secondarily max precision)
         'N':         [n_examples],                                      # Total number of examples (not including "unknown" examples)
         'N_P':       [n_P],                                             # Total number of positive examples
         'N_N':       [n_N],                                             # Total number of negative examples

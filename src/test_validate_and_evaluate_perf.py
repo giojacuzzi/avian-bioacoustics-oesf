@@ -23,7 +23,7 @@ species_wadnr_priority = ["pileated woodpecker", "pacific-slope flycatcher", "hu
 # # OTHER TARGETS
 # species_to_evaluate += ["great horned owl", "band-tailed pigeon", "white-crowned sparrow"]
 # # INDIVIDUAL
-# species_to_evaluate = ["barred owl"]
+species_to_evaluate = ["marbled murrelet"]
 
 plot = True              # Plot the results
 print_detections = True # Print detections

@@ -1,0 +1,1 @@
+This folder contains temporary cache files to speed up development iteration

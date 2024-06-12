@@ -41,12 +41,22 @@ lines = ggplot(perf, aes(x = threshold)) +
   theme_minimal()
 lines
 
+lines = ggplot(perf, aes(x = recall, y = precision, color = model)) +
+  geom_line() +
+  geom_line(aes(color = model)) +
+  facet_wrap(~ label, scales = "free_y") +
+  scale_color_manual(values = c("custom" = "royalblue", "pretrained" = "salmon")) +
+  labs(x = "Recall", y = "Precision") +
+  theme_minimal()
+lines
+
 histograms = ggplot(perf, aes(x = threshold)) +
   geom_histogram(data = subset(perf, model == "pretrained"), fill = "red", alpha = 0.55, bins = 12) +
   geom_histogram(data = subset(perf, model == "custom"), fill = "blue", alpha = 0.55, bins = 12) +
   facet_wrap(~ label, scales = "free_y") +
-  coord_cartesian(ylim = c(0, 10))+
-  labs(x = "Threshold", y = "Value") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
+  coord_cartesian(ylim = c(0, 10)) +
+  labs(x = "Score Threshold", y = "Number of Detections") +
   theme_minimal()
 histograms
 
@@ -96,3 +106,4 @@ combined_plots <- wrap_plots(plots_list)
 
 # Print combined plots
 print(combined_plots)
+
