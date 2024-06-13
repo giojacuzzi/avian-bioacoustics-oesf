@@ -9,7 +9,7 @@ import os
 
 # detection_labels - a dataframe of detections with columns 'label_truth' (where a positive presence is represented by the species class label) and 'confidence'
 # species - the species class label, e.g. "american crow"
-def evaluate_species_performance(detection_labels, species, plot, title_label='', save_to_dir=''):
+def evaluate_species_performance(detection_labels, species, plot, digits=3, title_label='', save_to_dir=''):
     
     plots = []
 
@@ -145,15 +145,15 @@ def evaluate_species_performance(detection_labels, species, plot, title_label=''
     # Return the performance metrics
     return pd.DataFrame({
         'species':   [species],
-        'AUC-PR':    [round(pr_auc, 2)],                                # Precision-Recall AUC
-        'AP':        [round(pr_ap, 2)],                                 # Average precision
-        'p_mean':    [round(precision.mean(),2)],                       # Average precision across all thresholds
-        'p_max':     [round(precision[np.argmax(precision[:-1])],  5)], # Maximum precision across all thresholds
-        'p_max_th':  [round(thresholds[np.argmax(precision[:-1])], 5)], # Score threshold to maximize precision
-        'p_max_r':   [round(recall[np.argmax(precision[:-1])],     5)], # Recall at maximum precision using threshold
-        'r_max':     [round(recall[np.argmax(precision[:-1])],  5)],    # Maximum recall across all thresholds (should be 1.0)
-        'r_max_th':  [round(thresholds[len(recall) - 1 - np.argmax(recall[::-1])], 5)],    # Score threshold to maximize recall (last value to also secondarily max precision)
-        'r_max_p':   [round( precision[len(recall) - 1 - np.argmax(recall[::-1])],     5)],# Precision at maximum precision using threshold (last value to also secondarily max precision)
+        'AUC-PR':    [round(pr_auc, digits)],                                # Precision-Recall AUC
+        'AP':        [round(pr_ap, digits)],                                 # Average precision
+        'p_mean':    [round(precision.mean(), digits)],                       # Average precision across all thresholds
+        'p_max':     [round(precision[np.argmax(precision[:-1])],  digits)], # Maximum precision across all thresholds
+        'p_max_th':  [round(thresholds[np.argmax(precision[:-1])], digits)], # Score threshold to maximize precision
+        'p_max_r':   [round(recall[np.argmax(precision[:-1])],     digits)], # Recall at maximum precision using threshold
+        'r_max':     [round(recall[np.argmax(precision[:-1])],     digits)], # Maximum recall across all thresholds (should be 1.0)
+        'r_max_th':  [round(thresholds[len(recall) - 1 - np.argmax(recall[::-1])], digits)], # Score threshold to maximize recall (last value to also secondarily max precision)
+        'r_max_p':   [round( precision[len(recall) - 1 - np.argmax(recall[::-1])], digits)], # Precision at maximum precision using threshold (last value to also secondarily max precision)
         'N':         [n_examples],                                      # Total number of examples (not including "unknown" examples)
         'N_P':       [n_P],                                             # Total number of positive examples
         'N_N':       [n_N],                                             # Total number of negative examples

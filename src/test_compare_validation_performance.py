@@ -4,6 +4,7 @@
 
 from classification import process_files
 from utils.log import *
+from utils.files import *
 import os
 import numpy as np
 import pandas as pd
@@ -193,4 +194,22 @@ if __name__ == '__main__':
     print('FINAL RESULTS')
     performance_metrics.sort_values(by='species', inplace=True)
     print(performance_metrics.to_string())
-    plt.show()
+    # plt.show()
+
+    # Calculate metric deltas between custom and pre-trained
+    print('Deltas between custom and pre-trained:')
+    metrics_custom = performance_metrics[performance_metrics['model'] == 'data/validation/Custom/custom'][['species', 'AUC-PR', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'p_max_r': 'p_max_r_custom'})
+    metrics_pre_trained = performance_metrics[performance_metrics['model'] == 'data/validation/Custom/pre-trained'][['species', 'AUC-PR', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
+    delta_metrics = pd.merge(metrics_custom, metrics_pre_trained, on='species')
+    delta_metrics['AUC-PR_diff'] = delta_metrics['AUC-PR_custom'] - delta_metrics['AUC-PR_pre_trained']
+    delta_metrics['p_max_r_diff'] = delta_metrics['p_max_r_custom'] - delta_metrics['p_max_r_pre_trained']
+    print(delta_metrics)
+
+    # Site-level performance ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #     - Number of sites detected / number of sites truly present
+    #     - Number of sites not detected / number of sites truly present
+    #     - Number of sites detected / number of sites truly absent
+
+    # TODO
+
+    site_deployment_metadata = get_site_deployment_metadata(2020)

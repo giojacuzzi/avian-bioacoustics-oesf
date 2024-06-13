@@ -310,8 +310,8 @@ for species in species_list:
 
     thresholds_maxp = pd.concat([thresholds, species_threshold_maxp], ignore_index=True)
     thresholds_maxr = pd.concat([thresholds, species_threshold_maxr], ignore_index=True)
-print(detections_optimizedp.to_string())
-print(detections_optimizedr.to_string())
+# print(detections_optimizedp.to_string())
+# print(detections_optimizedr.to_string())
 
 site_species_richness = detections.groupby('StationName_AGG')['label_truth'].nunique().reset_index()
 site_species_richness.columns = ['StationName_AGG', 'richness_truth']
@@ -336,11 +336,21 @@ print(f"maxp -> mean {site_species_richness['richness_percent_maxp'].mean()}, st
 print(f"maxr -> mean {site_species_richness['richness_percent_maxr'].mean()}, std {site_species_richness['richness_percent_maxr'].std()}")
 
 # List species-level performance to identify labels for improvement
-print_success(f'\n{species_level_perf[(species_level_perf["N_P"] > 6)].sort_values(by=["AUC-PR"], ascending=True).to_string()}')
+print_warning(f'\n{species_level_perf[(species_level_perf["N_P"] > 6)].sort_values(by=["AUC-PR"], ascending=True).to_string()}')
 
 # TODO: Multi-label confusion matrix using sklearn.metrics confusion_matrix and ConfusionMatrixDisplay
 
 ## 3. Pre-trained classifier with "optimal" threshold versus custom classifier with "optimal" threshold ####################################
+# NOTE: These results for now rely exclusively on the validation dataset. Final results should be run with the test dataset after model selection is finished.
+#
+# > Detection-level performance:
+#     - Delta PR-AUC
+#     - Delta recall at max precision
+#     - Delta unimodality
+
+# NOTE: Run test_compare_validation_performance.py
+
+# > Site-level performance:
 #     - Number of sites detected / number of sites truly present
 #     - Number of sites not detected / number of sites truly present
 #     - Number of sites detected / number of sites truly absent
