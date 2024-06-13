@@ -6,6 +6,9 @@ dirs = [
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020',
 ]
 
+# Minimum number of true examples to consider a species for evaluation
+min_true_examples_for_consideration = 1
+
 import numpy as np
 from annotation.annotations import *
 from classification.performance import *
@@ -158,17 +161,17 @@ if True:
     print(site_level_perf.sort_values(by='error', ascending=False).to_string())
 
 # Histogram of FP count for different naive thresholds (exclude sites with no likely presence)
-precision_05 = site_level_perf[(site_level_perf['threshold'] == 0.5) & (site_level_perf['present'] > 1)]['precision']
-recall_05 = site_level_perf[(site_level_perf['threshold'] == 0.5) & (site_level_perf['present'] > 1)]['recall']
-fp_05 = site_level_perf[(site_level_perf['threshold'] == 0.5) & (site_level_perf['present'] > 1)]['FP']
-fn_05 = site_level_perf[(site_level_perf['threshold'] == 0.5) & (site_level_perf['present'] > 1)]['FN']
-precision_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_perf['present'] > 1)]['precision']
-recall_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_perf['present'] > 1)]['recall']
-fp_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_perf['present'] > 1)]['FP']
-fn_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_perf['present'] > 1)]['FN']
+precision_05 = site_level_perf[(site_level_perf['threshold'] == 0.5) & (site_level_perf['present'] > min_true_examples_for_consideration)]['precision']
+recall_05 = site_level_perf[(site_level_perf['threshold'] == 0.5) & (site_level_perf['present'] > min_true_examples_for_consideration)]['recall']
+fp_05 = site_level_perf[(site_level_perf['threshold'] == 0.5) & (site_level_perf['present'] > min_true_examples_for_consideration)]['FP']
+fn_05 = site_level_perf[(site_level_perf['threshold'] == 0.5) & (site_level_perf['present'] > min_true_examples_for_consideration)]['FN']
+precision_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_perf['present'] > min_true_examples_for_consideration)]['precision']
+recall_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_perf['present'] > min_true_examples_for_consideration)]['recall']
+fp_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_perf['present'] > min_true_examples_for_consideration)]['FP']
+fn_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_perf['present'] > min_true_examples_for_consideration)]['FN']
 
-print(f'Across {site_level_perf[(site_level_perf["present"] > 1)]["species"].nunique()} unique species...')
-# print_warning(site_level_perf[(site_level_perf["threshold"] == 0.9) & (site_level_perf["present"] > 1)])
+print(f'Across {site_level_perf[(site_level_perf["present"] > min_true_examples_for_consideration)]["species"].nunique()} unique species...')
+# print_warning(site_level_perf[(site_level_perf["threshold"] == 0.9) & (site_level_perf["present"] > min_true_examples_for_consideration)])
 print(f'Mean precision 0.5 -> {round(precision_05.mean(),2)}')
 print(f'Mean recall 0.5 -> {round(recall_05.mean(),2)}')
 print(f'Mean FP 0.5 -> {round(fp_05.mean(),2)} ({round(fp_05.mean()/ntotal_sites * 100, 1)}% of sites)')
@@ -256,19 +259,19 @@ if True:
         site_level_perf = pd.concat([site_level_perf, species_perf_maxr], ignore_index=True)
     
     print(site_level_perf.sort_values(by=['species', 'threshold'], ascending=True).to_string())
-    print_success(site_level_perf[(site_level_perf['present'] > 1)].sort_values(by=['species', 'threshold'], ascending=True).to_string())
+    print_success(site_level_perf[(site_level_perf['present'] > min_true_examples_for_consideration)].sort_values(by=['species', 'threshold'], ascending=True).to_string())
 
 # Also calculate mean FP/FN across all species when using their respective optimal thresholds for precision/recall
-precision_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['present'] > 1)]['precision']
-recall_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['present'] > 1)]['recall']
-fp_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['present'] > 1)]['FP']
-fn_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['present'] > 1)]['FN']
-precision_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['present'] > 1)]['precision']
-recall_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['present'] > 1)]['recall']
-fp_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['present'] > 1)]['FP']
-fn_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['present'] > 1)]['FN']
+precision_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['present'] > min_true_examples_for_consideration)]['precision']
+recall_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['present'] > min_true_examples_for_consideration)]['recall']
+fp_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['present'] > min_true_examples_for_consideration)]['FP']
+fn_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['present'] > min_true_examples_for_consideration)]['FN']
+precision_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['present'] > min_true_examples_for_consideration)]['precision']
+recall_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['present'] > min_true_examples_for_consideration)]['recall']
+fp_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['present'] > min_true_examples_for_consideration)]['FP']
+fn_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['present'] > min_true_examples_for_consideration)]['FN']
 
-print(f'Across {site_level_perf[(site_level_perf["present"] > 1)]["species"].nunique()} unique species...')
+print(f'Across {site_level_perf[(site_level_perf["present"] > min_true_examples_for_consideration)]["species"].nunique()} unique species...')
 print(f'Mean precision maxp -> {round(precision_maxp.mean(),2)}')
 print(f'Mean recall maxp -> {round(recall_maxp.mean(),2)}')
 print(f'Mean FP maxp -> {round(fp_maxp.mean(),2)} ({round(fp_maxp.mean()/ntotal_sites * 100, 1)}% of sites)')
@@ -278,15 +281,12 @@ print(f'Mean recall maxr -> {round(recall_maxr.mean(),2)}')
 print(f'Mean FP maxr -> {round(fp_maxr.mean(),2)} ({round(fp_maxr.mean()/ntotal_sites * 100, 1)}% of sites)')
 print(f'Mean FN maxr -> {round(fn_maxr.mean(),2)} ({round(fn_maxr.mean()/ntotal_sites * 100, 1)}% of sites)')
 
-## DEBUG DEBUG DEBUG !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 # > Estimated species richness delta across sites versus "true" species richness (using optimal thresholds for precision/recall)
-# TODO:
-print(detections)
 thresholds = pd.DataFrame()
 detections_optimizedp = pd.DataFrame()
+detections_optimizedr = pd.DataFrame()
 
-filtered_detections = detections[detections['label_predicted'].isin(site_level_perf[(site_level_perf['present'] > 1)]['species'])]
+filtered_detections = detections[detections['label_predicted'].isin(site_level_perf[(site_level_perf['present'] > min_true_examples_for_consideration)]['species'])]
 
 for species in species_list:
     print(f'Assembling estimated species richness for precision optimization theshold, {species}...')
@@ -296,19 +296,22 @@ for species in species_list:
         continue
 
     threshold_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['species'] == species)]['threshold'].iloc[0]
-    print_warning(f'threhold {threshold_maxp} species {species}')
+    # print_warning(f'threshold {threshold_maxp} species {species}')
     detections_maxp = filtered_detections[(filtered_detections['confidence'] >= threshold_maxp) & (filtered_detections['label_predicted'] == species)]
     detections_optimizedp = pd.concat([detections_optimizedp, detections_maxp], ignore_index=True)
 
-    species_threshold = pd.DataFrame({
-        'species': [species],
-        'threshold': [threshold_maxp]
-    })
+    threshold_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['species'] == species)]['threshold'].iloc[0]
+    # print_warning(f'threshold {threshold_maxp} species {species}')
+    detections_maxr = filtered_detections[(filtered_detections['confidence'] >= threshold_maxr) & (filtered_detections['label_predicted'] == species)]
+    detections_optimizedr = pd.concat([detections_optimizedr, detections_maxr], ignore_index=True)
 
-    thresholds = pd.concat([thresholds, species_threshold], ignore_index=True)
-print(detections_optimizedp)
+    species_threshold_maxp = pd.DataFrame({ 'species': [species], 'threshold': [threshold_maxp] })
+    species_threshold_maxr = pd.DataFrame({ 'species': [species], 'threshold': [threshold_maxr] })
 
-print(thresholds.to_string())
+    thresholds_maxp = pd.concat([thresholds, species_threshold_maxp], ignore_index=True)
+    thresholds_maxr = pd.concat([thresholds, species_threshold_maxr], ignore_index=True)
+print(detections_optimizedp.to_string())
+print(detections_optimizedr.to_string())
 
 site_species_richness = detections.groupby('StationName_AGG')['label_truth'].nunique().reset_index()
 site_species_richness.columns = ['StationName_AGG', 'richness_truth']
@@ -319,10 +322,23 @@ site_species_richness = pd.merge(site_species_richness, site_species_richness_ma
 site_species_richness['richness_percent_maxp'] = site_species_richness['richness_predicted_maxp'] / site_species_richness['richness_truth']
 print(site_species_richness)
 
-print(f"maxp -> mean {site_species_richness['richness_percent_maxp'].mean()}, std {site_species_richness['richness_percent_maxp'].std()}")
+site_species_richness_maxr = detections_optimizedr.groupby('StationName_AGG')['label_predicted'].nunique().reset_index()
+site_species_richness_maxr.columns = ['StationName_AGG', 'richness_predicted_maxr']
+site_species_richness = pd.merge(site_species_richness, site_species_richness_maxr, on='StationName_AGG', how='outer')
+site_species_richness['richness_percent_maxr'] = site_species_richness['richness_predicted_maxr'] / site_species_richness['richness_truth']
+print(site_species_richness)
 
-# DEBUG: List species-level performance
-# print_success(f'\n{species_level_perf[(species_level_perf["N_P"] > 6)].sort_values(by=["AUC-PR"], ascending=True).to_string()}')
+print('Species richness predictions:')
+print(f"maxp -> mean {site_species_richness['richness_predicted_maxp'].mean()}, std {site_species_richness['richness_predicted_maxp'].std()}")
+print(f"maxr -> mean {site_species_richness['richness_predicted_maxr'].mean()}, std {site_species_richness['richness_predicted_maxr'].std()}")
+print('Species richness predictions (percent of truth):')
+print(f"maxp -> mean {site_species_richness['richness_percent_maxp'].mean()}, std {site_species_richness['richness_percent_maxp'].std()}")
+print(f"maxr -> mean {site_species_richness['richness_percent_maxr'].mean()}, std {site_species_richness['richness_percent_maxr'].std()}")
+
+# List species-level performance to identify labels for improvement
+print_success(f'\n{species_level_perf[(species_level_perf["N_P"] > 6)].sort_values(by=["AUC-PR"], ascending=True).to_string()}')
+
+# TODO: Multi-label confusion matrix using sklearn.metrics confusion_matrix and ConfusionMatrixDisplay
 
 ## 3. Pre-trained classifier with "optimal" threshold versus custom classifier with "optimal" threshold ####################################
 #     - Number of sites detected / number of sites truly present
