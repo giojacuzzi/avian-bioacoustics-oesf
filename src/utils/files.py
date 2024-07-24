@@ -2,6 +2,7 @@ from .log import *
 import os
 import re
 import pandas as pd
+import numpy as np
 from utils.log import *
 import sys
 
@@ -33,6 +34,21 @@ def parse_metadata_from_annotation_file(filename):
     else:
         print_warning("Unable to parse info from filename:", filename)
 
+# Function to parse serial number, date, and time from a raw detection audio filename,
+# e.g. "SMA00556_20200526_050022_3400.8122" or "_SMA00309_20200424_031413"
+def parse_metadata_from_detection_audio_filename(filename):
+    pattern = r'^_?(SMA\d+)_([0-9]{8})_([0-9]{6})'
+    match = re.match(pattern, filename)
+    if match:
+        serial_no = match.group(1)
+        date = match.group(2)
+        time = match.group(3)
+        return serial_no, date, time
+    else:
+        print_error(f'Unable to parse info from filename: {filename}')
+        return None
+ 
+
 # Function to parse species name, confidence, serial number, date, and time from raw audio filepath,
 # e.g. ".../Deployment6/SMA00399_20200619/SMA00399_20200619_040001.wav"
 def parse_metadata_from_raw_audio_filepath(filepath):
@@ -40,8 +56,8 @@ def parse_metadata_from_raw_audio_filepath(filepath):
     # Regular expression pattern to match the deployment number
     deployment = re.findall(".Deployment([\d.]+)", filepath)
     if (len(deployment) != 1):
-        print_error(f'Could not parse Deployment token from {filepath}')
-        return
+        print_warning(f'Could not parse Deployment token from {filepath}')
+        deployment = np.nan
     else:
         deployment = deployment[0]
 

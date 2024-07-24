@@ -51,6 +51,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
             'precision': precision[:-1],
             'recall': recall[:-1]
         })
+        stats = stats.sort_values(by=['threshold', 'precision', 'recall'])
         stats.to_csv(f'{save_to_dir}/{species}.csv', index=False)
 
     padding = 0.01
@@ -144,7 +145,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     
     # Return the performance metrics
     return pd.DataFrame({
-        'species':   [species],
+        'label':   [species],
         'AUC-PR':    [round(pr_auc, digits)],                                # Precision-Recall AUC
         'AP':        [round(pr_ap, digits)],                                 # Average precision
         'p_mean':    [round(precision.mean(), digits)],                       # Average precision across all thresholds
@@ -159,3 +160,93 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         'N_N':       [n_N],                                             # Total number of negative examples
         'N_unknown': [n_unknown]                                        # Total number of unknown examples excluded from evaluation
     })
+
+# Returns a dataframe containing a confusion matrix (TP, FP, FN, TN) and number of truly present/absent sites for a given species from a detection history
+def get_site_level_confusion_matrix(species, detections, threshold, all_sites):
+    # Filter for species detections, excluding unknown examples
+    detections_species = detections[(detections['label_predicted'] == species) & (detections['label_truth'] != 'unknown')]
+
+    # Sites truly present (based on TP detections)
+    sites_present  = detections_species[(detections_species['label_truth'] == species)]["StationName"].unique()
+    # print(f'Sites present ({len(sites_present)}): {sites_present}')
+
+    # Sites truly absent
+    sites_absent = np.setdiff1d(all_sites, sites_present)
+    # print(f'Sites absent  ({ len(sites_absent)}): {sites_absent}')
+
+    if len(sites_present) + len(sites_absent) != len(all_sites):
+        print_error(f'Number of sites present ({len(sites_present)}) and absent ({len(sites_absent)}) does not equal total number of sites ({len(all_sites)})')
+
+    # Sites detected using the threshold
+    detections_thresholded = detections_species[(detections_species['confidence'] >= threshold)]
+    sites_detected = detections_thresholded["StationName"].unique()
+    # print(f'Sites detected with threshold {threshold}  ({len(sites_detected)}): {sites_detected}')
+
+    # Sites not detected using the threshold
+    sites_notdetected = np.setdiff1d(all_sites, sites_detected)
+    # print(f'Sites not detected with threshold {threshold}  ({len(sites_notdetected)}): {sites_notdetected}')
+
+    if len(sites_detected) + len(sites_notdetected) != len(all_sites):
+        print_error(f'Number of sites detected ({len(sites_detected)}) and not detected ({len(sites_notdetected)}) does not equal total number of sites ({len(all_sites)})')
+
+    # TP - Number of sites correctly detected (at least once)
+    tp_sites = np.intersect1d(sites_present, sites_detected)
+    nsites_tp = len(tp_sites)
+
+    # FP - Number of sites incorrectly detected (i.e. not correctly detected at least once)
+    fp_sites = np.setdiff1d(np.intersect1d(sites_absent, sites_detected), tp_sites) # remove sites where the species was otherwise correctly detected at least once
+    nsites_fp = len(fp_sites)
+
+    # TN - Number of sites correctly not detected
+    nsites_tn = len(np.intersect1d(sites_notdetected, sites_absent))
+
+    # FN - Number of sites incorrectly not detected
+    nsites_fn = len(np.intersect1d(sites_notdetected, sites_present))
+
+    nsites_accounted_for = nsites_tp + nsites_fp + nsites_tn + nsites_fn
+    if nsites_accounted_for != len(all_sites):
+        print_error(f'Only {nsites_accounted_for} sites accounted for of {len(all_sites)} total')
+    
+    if nsites_tp + nsites_fn != len(sites_present):
+        print_error(f'Incorrect true presences TP {nsites_tp} + FN {nsites_fn} != {len(sites_present)}')
+    if nsites_fp + nsites_tn != len(sites_absent):
+        print_error(f'Incorrect true absences FP {nsites_fp} + TN {nsites_tn} != {len(sites_absent)}')
+    
+    try:
+        precision = nsites_tp / (nsites_tp + nsites_fp)
+    except ZeroDivisionError:
+        precision = np.nan
+    try:
+        recall = nsites_tp / (nsites_tp + nsites_fn)
+    except ZeroDivisionError:
+        recall = np.nan
+    # try:
+    #     tp_pcnt = round(nsites_tp / len(sites_present), 2)
+    # except ZeroDivisionError:
+    #     tp_pcnt = np.nan
+    # try:
+    #     tn_pcnt = round(nsites_tn / len(sites_absent), 2)
+    # except ZeroDivisionError:
+    #     tn_pcnt = np.nan
+    
+    result = {
+        'label':          [species],
+        'present':        [len(sites_present)],
+        'absent':         [len(sites_absent)],
+        'threshold':      [threshold],
+        'detected':       [len(sites_detected)],
+        'notdetected':    [len(sites_notdetected)],
+        'correct':        [nsites_tp + nsites_tn],
+        'correct_pcnt':   [round((nsites_tp + nsites_tn) / (len(sites_present) + len(sites_absent)), 2)],
+        'error':          [nsites_fp + nsites_fn],
+        'error_pcnt':     [round((nsites_fp + nsites_fn) / (len(sites_present) + len(sites_absent)), 2)],
+        'FP': [nsites_fp],
+        'FN': [nsites_fn],
+        'TP': [nsites_tp],
+        'TN': [nsites_tn],
+        # 'TP_pcnt': [tp_pcnt],
+        # 'TN_pcnt': [tn_pcnt],
+        'precision': [round(precision,3)],
+        'recall':    [round(recall,3)]
+    }
+    return(pd.DataFrame(result, index=None))

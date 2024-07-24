@@ -123,6 +123,9 @@ if __name__ == '__main__':
         print(f'Finished analyzing all files!')
     
     performance_metrics = pd.DataFrame()
+
+    collated_detection_labels_pretrained = pd.DataFrame()
+    collated_detection_labels_custom = pd.DataFrame()
     
     # Load results per classifier and calculate performance stats ---------------------------------------------------------------
     for model in [out_dir_pretrained, out_dir_custom]:
@@ -170,7 +173,11 @@ if __name__ == '__main__':
         # Collate raw annotation data into species detection labels per species
         print('Collating annotations per label...')
         collated_detection_labels = collate_annotations_as_detections(detections, labels_to_evaluate, only_annotated=False)
-        # print_success(collated_detection_labels.to_string())
+        # print(collated_detection_labels)
+
+        # Get detection serialno, date, and time
+        collated_detection_labels[['serialno', 'date', 'time']] = collated_detection_labels['file'].apply(lambda f: pd.Series(parse_metadata_from_detection_audio_filename(f)))
+        # print(collated_detection_labels)
 
         # Containers for performance metrics of all labels
         model_performance_metrics = pd.DataFrame()
@@ -191,16 +198,22 @@ if __name__ == '__main__':
 
         performance_metrics = pd.concat([performance_metrics, model_performance_metrics], ignore_index=True)
 
+        collated_detection_labels['date'] = pd.to_datetime(collated_detection_labels['date'], format='%Y%m%d')
+        if model == out_dir_pretrained:
+            collated_detection_labels_pretrained = collated_detection_labels
+        elif model == out_dir_custom:
+            collated_detection_labels_custom = collated_detection_labels
+
     print('FINAL RESULTS')
-    performance_metrics.sort_values(by='species', inplace=True)
+    performance_metrics.sort_values(by='label', inplace=True)
     print(performance_metrics.to_string())
     # plt.show()
 
     # Calculate metric deltas between custom and pre-trained
     print('Deltas between custom and pre-trained:')
-    metrics_custom = performance_metrics[performance_metrics['model'] == 'data/validation/Custom/custom'][['species', 'AUC-PR', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'p_max_r': 'p_max_r_custom'})
-    metrics_pre_trained = performance_metrics[performance_metrics['model'] == 'data/validation/Custom/pre-trained'][['species', 'AUC-PR', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
-    delta_metrics = pd.merge(metrics_custom, metrics_pre_trained, on='species')
+    metrics_custom = performance_metrics[performance_metrics['model'] == 'data/validation/Custom/custom'][['label', 'AUC-PR', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'p_max_r': 'p_max_r_custom'})
+    metrics_pre_trained = performance_metrics[performance_metrics['model'] == 'data/validation/Custom/pre-trained'][['label', 'AUC-PR', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
+    delta_metrics = pd.merge(metrics_custom, metrics_pre_trained, on='label')
     delta_metrics['AUC-PR_diff'] = delta_metrics['AUC-PR_custom'] - delta_metrics['AUC-PR_pre_trained']
     delta_metrics['p_max_r_diff'] = delta_metrics['p_max_r_custom'] - delta_metrics['p_max_r_pre_trained']
     print(delta_metrics)
@@ -213,3 +226,45 @@ if __name__ == '__main__':
     # TODO
 
     site_deployment_metadata = get_site_deployment_metadata(2020)
+
+    detections_custom = pd.merge(
+        site_deployment_metadata, 
+        collated_detection_labels_custom, 
+        left_on=['SerialNo', 'SurveyDate'], 
+        right_on=['serialno', 'date'],
+        how='inner'
+    )
+    detections_pretrained = pd.merge(
+        site_deployment_metadata, 
+        collated_detection_labels_pretrained, 
+        left_on=['SerialNo', 'SurveyDate'], 
+        right_on=['serialno', 'date'],
+        how='inner'
+    )
+
+    all_sites = detections_custom["StationName"].unique()
+    ntotal_sites = len(all_sites)
+    print(f'{ntotal_sites} unique sites evaluated')
+    if (ntotal_sites != 16):
+        print_warning('Missing sites')
+
+    if True:
+        site_level_perf = pd.DataFrame()
+        for label in labels_to_evaluate:
+            print(f'Calculating site-level performance metrics for species {label} with custom vs pretrained classifier ...')
+
+            pmax_th_custom = performance_metrics[(performance_metrics['label'] == label) & (performance_metrics['model'] == out_dir_custom)]['p_max_th'].iloc[0]
+            species_perf_custom = get_site_level_confusion_matrix(label, detections_custom, pmax_th_custom, all_sites)
+            species_perf_custom['model'] = 'custom'
+            site_level_perf = pd.concat([site_level_perf, species_perf_custom], ignore_index=True)
+
+            if label in preexisting_labels_to_evaluate:
+                pmax_th_pretrained = performance_metrics[(performance_metrics['label'] == label) & (performance_metrics['model'] == out_dir_pretrained)]['p_max_th'].iloc[0]
+                species_perf_pretrained = get_site_level_confusion_matrix(label, detections_pretrained, pmax_th_pretrained, all_sites)
+                species_perf_pretrained['model'] = 'pretrained'
+                site_level_perf = pd.concat([site_level_perf, species_perf_pretrained], ignore_index=True)
+            else:
+                print_warning(f'Skipping pretrained species level perfomance for irrelevant label {label}')
+
+        print('Site-level performance metrics:')
+        print_success(site_level_perf[(site_level_perf['present'] > 2)].sort_values(by=['label', 'threshold'], ascending=True).to_string())

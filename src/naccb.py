@@ -19,16 +19,18 @@ site_deployment_metadata = get_site_deployment_metadata(2020)
 print(site_deployment_metadata)
 
 species_list = sorted(labels.get_species_classes())
-# species_list = [
-#     "marbled murrelet",
-#     "red-breasted nuthatch",
-#     "pacific-slope flycatcher",
-#     "pacific wren",
-#     "great horned owl",
-#     "northern saw-whet owl",
-#     "northern pygmy-owl",
-#     "varied thrush"
-# ] # DEBUG
+species_list = [
+    # "red-breasted nuthatch",
+    # "wilson's warbler",
+    # "marbled murrelet",
+    # "pacific-slope flycatcher",
+    # "pacific wren",
+    # "great horned owl",
+    # "northern saw-whet owl",
+    # "northern pygmy-owl",
+    "hammond's flycatcher",
+    # "varied thrush"
+] # DEBUG
 
 # Retrieve and validate raw annotation data, then collate raw annotation data into species detection labels per species
 raw_annotations = get_raw_annotations(dirs = dirs, overwrite = False)
@@ -48,97 +50,7 @@ ntotal_sites = len(all_sites)
 print(f'{ntotal_sites} unique sites annotated')
 if (ntotal_sites != 16):
     print_error('Missing sites')
-    sys.exit()
-
-# Returns a dataframe containing a confusion matrix (TP, FP, FN, TN) and number of truly present/absent sites for a given species from a detection history
-def get_site_level_confusion_matrix(species, detections, threshold):
-    # Filter for species detections, excluding unknown examples
-    detections_species = detections[(detections['label_predicted'] == species) & (detections['label_truth'] != 'unknown')]
-
-    # Sites truly present (based on TP detections)
-    sites_present  = detections_species[(detections_species['label_truth'] == species)]["StationName"].unique()
-    # print(f'Sites present ({len(sites_present)}): {sites_present}')
-
-    # Sites truly absent
-    sites_absent = np.setdiff1d(all_sites, sites_present)
-    # print(f'Sites absent  ({ len(sites_absent)}): {sites_absent}')
-
-    if len(sites_present) + len(sites_absent) != ntotal_sites:
-        print_error(f'Number of sites present ({len(sites_present)}) and absent ({len(sites_absent)}) does not equal total number of sites ({ntotal_sites})')
-
-    # Sites detected using the threshold
-    detections_thresholded = detections_species[(detections_species['confidence'] >= threshold)]
-    sites_detected = detections_thresholded["StationName"].unique()
-    # print(f'Sites detected with threshold {threshold}  ({len(sites_detected)}): {sites_detected}')
-
-    # Sites not detected using the threshold
-    sites_notdetected = np.setdiff1d(all_sites, sites_detected)
-    # print(f'Sites not detected with threshold {threshold}  ({len(sites_notdetected)}): {sites_notdetected}')
-
-    if len(sites_detected) + len(sites_notdetected) != ntotal_sites:
-        print_error(f'Number of sites detected ({len(sites_detected)}) and not detected ({len(sites_notdetected)}) does not equal total number of sites ({ntotal_sites})')
-
-    # TP - Number of sites correctly detected (at least once)
-    tp_sites = np.intersect1d(sites_present, sites_detected)
-    nsites_tp = len(tp_sites)
-
-    # FP - Number of sites incorrectly detected (i.e. not correctly detected at least once)
-    fp_sites = np.setdiff1d(np.intersect1d(sites_absent, sites_detected), tp_sites) # remove sites where the species was otherwise correctly detected at least once
-    nsites_fp = len(fp_sites)
-
-    # TN - Number of sites correctly not detected
-    nsites_tn = len(np.intersect1d(sites_notdetected, sites_absent))
-
-    # FN - Number of sites incorrectly not detected
-    nsites_fn = len(np.intersect1d(sites_notdetected, sites_present))
-
-    nsites_accounted_for = nsites_tp + nsites_fp + nsites_tn + nsites_fn
-    if nsites_accounted_for != ntotal_sites:
-        print_error(f'Only {nsites_accounted_for} sites accounted for of {ntotal_sites} total')
-    
-    if nsites_tp + nsites_fn != len(sites_present):
-        print_error(f'Incorrect true presences TP {nsites_tp} + FN {nsites_fn} != {len(sites_present)}')
-    if nsites_fp + nsites_tn != len(sites_absent):
-        print_error(f'Incorrect true absences FP {nsites_fp} + TN {nsites_tn} != {len(sites_absent)}')
-    
-    try:
-        precision = nsites_tp / (nsites_tp + nsites_fp)
-    except ZeroDivisionError:
-        precision = np.nan
-    try:
-        recall = nsites_tp / (nsites_tp + nsites_fn)
-    except ZeroDivisionError:
-        recall = np.nan
-    # try:
-    #     tp_pcnt = round(nsites_tp / len(sites_present), 2)
-    # except ZeroDivisionError:
-    #     tp_pcnt = np.nan
-    # try:
-    #     tn_pcnt = round(nsites_tn / len(sites_absent), 2)
-    # except ZeroDivisionError:
-    #     tn_pcnt = np.nan
-    
-    result = {
-        'species':        [species],
-        'present':        [len(sites_present)],
-        'absent':         [len(sites_absent)],
-        'threshold':      [threshold],
-        'detected':       [len(sites_detected)],
-        'notdetected':    [len(sites_notdetected)],
-        'correct':        [nsites_tp + nsites_tn],
-        'correct_pcnt':   [round((nsites_tp + nsites_tn) / (len(sites_present) + len(sites_absent)), 2)],
-        'error':          [nsites_fp + nsites_fn],
-        'error_pcnt':     [round((nsites_fp + nsites_fn) / (len(sites_present) + len(sites_absent)), 2)],
-        'FP': [nsites_fp],
-        'FN': [nsites_fn],
-        'TP': [nsites_tp],
-        'TN': [nsites_tn],
-        # 'TP_pcnt': [tp_pcnt],
-        # 'TN_pcnt': [tn_pcnt],
-        'precision': [round(precision,3)],
-        'recall':    [round(recall,3)]
-    }
-    return(pd.DataFrame(result, index=None))
+    # sys.exit()
 
 site_level_perf = pd.DataFrame()
 
@@ -151,10 +63,10 @@ if True:
     for species in species_list:
         print(f'Calculating site-level performance metrics for species {species} with thresholds 0.5 and 0.9 ...')
 
-        species_perf_0_5 = get_site_level_confusion_matrix(species, detections, 0.5)
+        species_perf_0_5 = get_site_level_confusion_matrix(species, detections, 0.5, all_sites)
         site_level_perf = pd.concat([site_level_perf, species_perf_0_5], ignore_index=True)
 
-        species_perf_0_9 = get_site_level_confusion_matrix(species, detections, 0.9)
+        species_perf_0_9 = get_site_level_confusion_matrix(species, detections, 0.9, all_sites)
         site_level_perf = pd.concat([site_level_perf, species_perf_0_9], ignore_index=True)
 
     site_level_perf['optimization'] = np.nan
@@ -170,7 +82,7 @@ recall_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_
 fp_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_perf['present'] > min_true_examples_for_consideration)]['FP']
 fn_09 = site_level_perf[(site_level_perf['threshold'] == 0.9) & (site_level_perf['present'] > min_true_examples_for_consideration)]['FN']
 
-print(f'Across {site_level_perf[(site_level_perf["present"] > min_true_examples_for_consideration)]["species"].nunique()} unique species...')
+print(f'Across {site_level_perf[(site_level_perf["present"] > min_true_examples_for_consideration)]["label"].nunique()} unique species...')
 # print_warning(site_level_perf[(site_level_perf["threshold"] == 0.9) & (site_level_perf["present"] > min_true_examples_for_consideration)])
 print(f'Mean precision 0.5 -> {round(precision_05.mean(),2)}')
 print(f'Mean recall 0.5 -> {round(recall_05.mean(),2)}')
@@ -238,28 +150,31 @@ if True:
             species_level_perf = pd.concat([species_level_perf, species_performance_metrics], ignore_index=True)
         species_level_perf = species_level_perf.sort_values(by='p_max_th', ascending=False)
         species_level_perf.to_csv(species_thresholds_cache_path, index=False)
-        print(species_level_perf.sort_values(by=['species'], ascending=True).to_string())
+        print(species_level_perf.sort_values(by=['label'], ascending=True).to_string())
     species_level_perf = pd.read_csv(species_thresholds_cache_path)
 
     for species in species_list:
         print(f'Calculating site-level performance metrics for species {species} with threshold to maximize precision/recall...')
 
-        if species not in species_level_perf['species'].values:
+        if species not in species_level_perf['label'].values:
             print_warning(f'Skipping species with missing threshold {species}...')
             continue
 
-        threshold_maxp = species_level_perf[species_level_perf['species'] == species]['p_max_th'].values[0]
-        species_perf_maxp = get_site_level_confusion_matrix(species, detections, threshold_maxp)
+        threshold_maxp = species_level_perf[species_level_perf['label'] == species]['p_max_th'].values[0]
+        species_perf_maxp = get_site_level_confusion_matrix(species, detections, threshold_maxp, all_sites)
         species_perf_maxp['optimization'] = 'precision'
         site_level_perf = pd.concat([site_level_perf, species_perf_maxp], ignore_index=True)
 
-        threshold_maxr = species_level_perf[species_level_perf['species'] == species]['r_max_th'].values[0]
-        species_perf_maxr = get_site_level_confusion_matrix(species, detections, threshold_maxr)
+        threshold_maxr = species_level_perf[species_level_perf['label'] == species]['r_max_th'].values[0]
+        species_perf_maxr = get_site_level_confusion_matrix(species, detections, threshold_maxr, all_sites)
         species_perf_maxr['optimization'] = 'recall'
         site_level_perf = pd.concat([site_level_perf, species_perf_maxr], ignore_index=True)
     
-    print(site_level_perf.sort_values(by=['species', 'threshold'], ascending=True).to_string())
-    print_success(site_level_perf[(site_level_perf['present'] > min_true_examples_for_consideration)].sort_values(by=['species', 'threshold'], ascending=True).to_string())
+    # print(site_level_perf.sort_values(by=['label', 'threshold'], ascending=True).to_string())
+    print_success(site_level_perf[(site_level_perf['present'] > min_true_examples_for_consideration)].sort_values(by=['label', 'threshold'], ascending=True).to_string())
+
+print(f'Species sorted by site error rate using precision-optimized threshold...')
+print(site_level_perf[(site_level_perf['present'] > min_true_examples_for_consideration) & (site_level_perf['optimization'] == 'precision')].sort_values(by=['error_pcnt'], ascending=False).to_string())
 
 # Also calculate mean FP/FN across all species when using their respective optimal thresholds for precision/recall
 precision_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['present'] > min_true_examples_for_consideration)]['precision']
@@ -271,7 +186,7 @@ recall_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (s
 fp_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['present'] > min_true_examples_for_consideration)]['FP']
 fn_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['present'] > min_true_examples_for_consideration)]['FN']
 
-print(f'Across {site_level_perf[(site_level_perf["present"] > min_true_examples_for_consideration)]["species"].nunique()} unique species...')
+print(f'Across {site_level_perf[(site_level_perf["present"] > min_true_examples_for_consideration)]["label"].nunique()} unique species...')
 print(f'Mean precision maxp -> {round(precision_maxp.mean(),2)}')
 print(f'Mean recall maxp -> {round(recall_maxp.mean(),2)}')
 print(f'Mean FP maxp -> {round(fp_maxp.mean(),2)} ({round(fp_maxp.mean()/ntotal_sites * 100, 1)}% of sites)')
@@ -286,7 +201,7 @@ thresholds = pd.DataFrame()
 detections_optimizedp = pd.DataFrame()
 detections_optimizedr = pd.DataFrame()
 
-filtered_detections = detections[detections['label_predicted'].isin(site_level_perf[(site_level_perf['present'] > min_true_examples_for_consideration)]['species'])]
+filtered_detections = detections[detections['label_predicted'].isin(site_level_perf[(site_level_perf['present'] > min_true_examples_for_consideration)]['label'])]
 
 for species in species_list:
     print(f'Assembling estimated species richness for precision optimization theshold, {species}...')
@@ -295,23 +210,21 @@ for species in species_list:
         print_warning(f'Skipping species with no detections {species}...')
         continue
 
-    threshold_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['species'] == species)]['threshold'].iloc[0]
+    threshold_maxp = site_level_perf[(site_level_perf['optimization'] == 'precision') & (site_level_perf['label'] == species)]['threshold'].iloc[0]
     # print_warning(f'threshold {threshold_maxp} species {species}')
     detections_maxp = filtered_detections[(filtered_detections['confidence'] >= threshold_maxp) & (filtered_detections['label_predicted'] == species)]
     detections_optimizedp = pd.concat([detections_optimizedp, detections_maxp], ignore_index=True)
 
-    threshold_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['species'] == species)]['threshold'].iloc[0]
+    threshold_maxr = site_level_perf[(site_level_perf['optimization'] == 'recall') & (site_level_perf['label'] == species)]['threshold'].iloc[0]
     # print_warning(f'threshold {threshold_maxp} species {species}')
     detections_maxr = filtered_detections[(filtered_detections['confidence'] >= threshold_maxr) & (filtered_detections['label_predicted'] == species)]
     detections_optimizedr = pd.concat([detections_optimizedr, detections_maxr], ignore_index=True)
 
-    species_threshold_maxp = pd.DataFrame({ 'species': [species], 'threshold': [threshold_maxp] })
-    species_threshold_maxr = pd.DataFrame({ 'species': [species], 'threshold': [threshold_maxr] })
+    species_threshold_maxp = pd.DataFrame({ 'label': [species], 'threshold': [threshold_maxp] })
+    species_threshold_maxr = pd.DataFrame({ 'label': [species], 'threshold': [threshold_maxr] })
 
     thresholds_maxp = pd.concat([thresholds, species_threshold_maxp], ignore_index=True)
     thresholds_maxr = pd.concat([thresholds, species_threshold_maxr], ignore_index=True)
-# print(detections_optimizedp.to_string())
-# print(detections_optimizedr.to_string())
 
 site_species_richness = detections.groupby('StationName_AGG')['label_truth'].nunique().reset_index()
 site_species_richness.columns = ['StationName_AGG', 'richness_truth']
@@ -320,15 +233,14 @@ site_species_richness_maxp = detections_optimizedp.groupby('StationName_AGG')['l
 site_species_richness_maxp.columns = ['StationName_AGG', 'richness_predicted_maxp']
 site_species_richness = pd.merge(site_species_richness, site_species_richness_maxp, on='StationName_AGG', how='outer')
 site_species_richness['richness_percent_maxp'] = site_species_richness['richness_predicted_maxp'] / site_species_richness['richness_truth']
-print(site_species_richness)
 
 site_species_richness_maxr = detections_optimizedr.groupby('StationName_AGG')['label_predicted'].nunique().reset_index()
 site_species_richness_maxr.columns = ['StationName_AGG', 'richness_predicted_maxr']
 site_species_richness = pd.merge(site_species_richness, site_species_richness_maxr, on='StationName_AGG', how='outer')
 site_species_richness['richness_percent_maxr'] = site_species_richness['richness_predicted_maxr'] / site_species_richness['richness_truth']
-print(site_species_richness)
 
 print('Species richness predictions:')
+print(site_species_richness)
 print(f"maxp -> mean {site_species_richness['richness_predicted_maxp'].mean()}, std {site_species_richness['richness_predicted_maxp'].std()}")
 print(f"maxr -> mean {site_species_richness['richness_predicted_maxr'].mean()}, std {site_species_richness['richness_predicted_maxr'].std()}")
 print('Species richness predictions (percent of truth):')
@@ -356,3 +268,4 @@ print_warning(f'\n{species_level_perf[(species_level_perf["N_P"] > 6)].sort_valu
 #     - Number of sites detected / number of sites truly absent
 
 # TODO
+# NOTE: Run test_compare_validation_performance.py

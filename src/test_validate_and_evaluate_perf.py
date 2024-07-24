@@ -23,10 +23,10 @@ species_wadnr_priority = ["pileated woodpecker", "pacific-slope flycatcher", "hu
 # # OTHER TARGETS
 # species_to_evaluate += ["great horned owl", "band-tailed pigeon", "white-crowned sparrow"]
 # # INDIVIDUAL
-species_to_evaluate = ["marbled murrelet"]
+# species_to_evaluate = ["wilson's warbler","pacific-slope flycatcher","marbled murrelet", "varied thrush", "northern saw-whet owl", "northern pygmy-owl", "white-crowned sparrow"]
 
-plot = True              # Plot the results
-print_detections = True # Print detections
+plot = False              # Plot the results
+print_detections = False # Print detections
 sort_by = 'confidence' # Detection sort, if printing, e.g. 'confidence' or 'label_truth'
 
 # TODO: Once all annotations are complete and every detection has been evaluated, set this to False
@@ -75,11 +75,11 @@ if print_detections:
     print(collated_detection_labels[collated_detection_labels['label_truth'] == '0']['file'].to_string(index=False))
 
 # Collate Macaulay reference detections per species
-collated_macaulay_references = collate_macaulay_references(species_to_collate=species_to_evaluate, print_detections=False)
+# collated_macaulay_references = collate_macaulay_references(species_to_collate=species_to_evaluate, print_detections=False)
 
 # Containers for performance metrics of all species
 performance_metrics = pd.DataFrame()
-macaulay_reference_performance_metrics = pd.DataFrame()
+# macaulay_reference_performance_metrics = pd.DataFrame()
 
 # Calculate performance metrics for each species
 for i, species in enumerate(species_to_evaluate):
@@ -87,37 +87,37 @@ for i, species in enumerate(species_to_evaluate):
     print(f'Calculating performance metrics for "{species}"...')
 
     detection_labels = collated_detection_labels[collated_detection_labels['label_predicted'] == species]
-    species_performance_metrics = evaluate_species_performance(detection_labels, species, plot)
+    species_performance_metrics = evaluate_species_performance(detection_labels, species, plot, save_to_dir='data/cache/test_validate_and_evaluate_perf')
     performance_metrics = pd.concat([performance_metrics, species_performance_metrics], ignore_index=True)
 
-    macaulay_references = collated_macaulay_references[collated_macaulay_references['label_predicted'] == species]
-    macaulay_performance_metrics = evaluate_species_performance(macaulay_references, species, plot=False)
-    macaulay_reference_performance_metrics = pd.concat([macaulay_reference_performance_metrics, macaulay_performance_metrics], ignore_index=True)
+    # macaulay_references = collated_macaulay_references[collated_macaulay_references['label_predicted'] == species]
+    # macaulay_performance_metrics = evaluate_species_performance(macaulay_references, species, plot=False)
+    # macaulay_reference_performance_metrics = pd.concat([macaulay_reference_performance_metrics, macaulay_performance_metrics], ignore_index=True)
 
 # Sort and print the performance metrics
 performance_metrics = performance_metrics.sort_values(by='p_mean', ascending=False).reset_index(drop=True)
 
-max_confidence_per_species = raw_annotations.rename(columns={'label_predicted': 'species'}).groupby('species')['confidence'].max()
-performance_metrics = pd.merge(performance_metrics, max_confidence_per_species, on='species', how='left')
+max_confidence_per_species = raw_annotations.rename(columns={'label_predicted': 'label'}).groupby('label')['confidence'].max()
+performance_metrics = pd.merge(performance_metrics, max_confidence_per_species, on='label', how='left')
 performance_metrics = performance_metrics.rename(columns={'confidence': 'max_conf'})
 potential_species = pd.read_csv(files.species_list_filepath, index_col=None, usecols=['common_name', 'rarity'])
-potential_species = potential_species.rename(columns={'common_name': 'species'})
-potential_species['species'] = potential_species['species'].str.lower()
-performance_metrics = pd.merge(potential_species, performance_metrics, on='species', how='left')
+potential_species = potential_species.rename(columns={'common_name': 'label'})
+potential_species['label'] = potential_species['label'].str.lower()
+performance_metrics = pd.merge(potential_species, performance_metrics, on='label', how='left')
 
 cols_as_ints = ['N','N_P','N_N','N_unknown']
 performance_metrics[cols_as_ints] = performance_metrics[cols_as_ints].fillna(0)
 performance_metrics[cols_as_ints] = performance_metrics[cols_as_ints].astype(int)
 
 if species_to_evaluate != 'all':
-    performance_metrics = performance_metrics[performance_metrics['species'].isin(species_to_evaluate)]
+    performance_metrics = performance_metrics[performance_metrics['label'].isin(species_to_evaluate)]
 
 print('SPECIES CLASS PERFORMANCE =============================================================================================')
-performance_metrics = performance_metrics.sort_values(by=['p_max_th', 'AUC-PR'], ascending=[False, True])
+performance_metrics = performance_metrics.sort_values(by=['AUC-PR', 'p_max_r'], ascending=[True, True])
 print(performance_metrics.to_string(index=False))
 
 print('WADNR PRIORITY SPECIES =======================================================================================================')
-wadnr_species = performance_metrics[performance_metrics['species'].isin(species_wadnr_priority)]
+wadnr_species = performance_metrics[performance_metrics['label'].isin(species_wadnr_priority)]
 print(wadnr_species.to_string(index=False))
 
 print('COMMON SPECIES ========================================================================================================')
@@ -135,20 +135,20 @@ min_N_P = 7 + 1
 missing_species = performance_metrics.loc[performance_metrics['N_P']<min_N_P]
 print_warning(f'{len(missing_species)} species with less than {min_N_P} positive examples:\n{missing_species.to_string(index=False)}')
 
-print('MACAULAY REFERENCE PERFORMANCE ========================================================================================')
-macaulay_reference_performance_metrics = macaulay_reference_performance_metrics.sort_values(by=['p_max_th'], ascending=[False])
-print(macaulay_reference_performance_metrics.to_string(index=False))
+# print('MACAULAY REFERENCE PERFORMANCE ========================================================================================')
+# macaulay_reference_performance_metrics = macaulay_reference_performance_metrics.sort_values(by=['p_max_th'], ascending=[False])
+# print(macaulay_reference_performance_metrics.to_string(index=False))
 
 if plot:
     plt.show()
 
-# Print "confused" or simultaneously present classes
-for i, species in enumerate(species_to_evaluate):
-    print(f'CONFUSED CLASSES FOR {species}:')
-    species_labels = (raw_annotations[raw_annotations['label_predicted'] == species])
-    species_labels = species_labels[(species_labels['label_truth'] != '0') & (species_labels['label_truth'] != species)]
-    print(species_labels['label_truth'].value_counts())
+# # Print "confused" or simultaneously present classes
+# for i, species in enumerate(species_to_evaluate):
+#     print(f'CONFUSED CLASSES FOR {species}:')
+#     species_labels = (raw_annotations[raw_annotations['label_predicted'] == species])
+#     species_labels = species_labels[(species_labels['label_truth'] != '0') & (species_labels['label_truth'] != species)]
+#     print(species_labels['label_truth'].value_counts())
 
-output_filepath = 'data/classification/performance_metrics.csv'
-performance_metrics.to_csv(output_filepath, index=False)
-print_success(f'Saved performance metrics to {output_filepath}')
+# output_filepath = 'data/classification/performance_metrics.csv'
+# performance_metrics.to_csv(output_filepath, index=False)
+# print_success(f'Saved performance metrics to {output_filepath}')

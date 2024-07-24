@@ -7,6 +7,8 @@ import os                       # File navigation
 import pandas as pd             # Data manipulation
 from utils import files, labels
 from utils.log import *
+import re
+import sys
 
 # Load and validate all annotations from the given directories
 # Directories must contain both .txt Raven Pro selection tables and their corresponding .wav detection files
