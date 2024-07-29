@@ -12,9 +12,9 @@ save_to_file = False        # Save output to a file
 out_dir      = ''           # Output directory (e.g. '/Users/giojacuzzi/Downloads'), if saving output to file
 
 # Analyzer config
-min_confidence = 0.3   # Minimum confidence score to retain a detection (only used if apply_sigmoid is True)
+min_confidence = 0.1   # Minimum confidence score to retain a detection (only used if apply_sigmoid is True)
 apply_sigmoid  = True # Sigmoid transformation or raw logit score
-num_separation = 4     # Number of sounds to separate for analysis. Leave as 1 for original file alone.
+num_separation = 1     # Number of sounds to separate for analysis. Leave as 1 for original file alone.
 cleanup        = True  # Keep or remove any temporary files created through analysis
 
 # DEFAULT PRE-TRAINED

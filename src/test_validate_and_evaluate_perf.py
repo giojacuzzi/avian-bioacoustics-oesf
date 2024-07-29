@@ -21,12 +21,12 @@ species_wadnr_priority = ["pileated woodpecker", "pacific-slope flycatcher", "hu
 # # WADNR TARGET SPECIES
 # species_to_evaluate += species_wadnr_priority
 # # OTHER TARGETS
-# species_to_evaluate += ["great horned owl", "band-tailed pigeon", "white-crowned sparrow"]
+# species_to_evaluate += ["hermit warbler"]
 # # INDIVIDUAL
 # species_to_evaluate = ["wilson's warbler","pacific-slope flycatcher","marbled murrelet", "varied thrush", "northern saw-whet owl", "northern pygmy-owl", "white-crowned sparrow"]
 
-plot = False              # Plot the results
-print_detections = False # Print detections
+plot = True              # Plot the results
+print_detections = True # Print detections
 sort_by = 'confidence' # Detection sort, if printing, e.g. 'confidence' or 'label_truth'
 
 # TODO: Once all annotations are complete and every detection has been evaluated, set this to False
@@ -112,13 +112,19 @@ performance_metrics[cols_as_ints] = performance_metrics[cols_as_ints].astype(int
 if species_to_evaluate != 'all':
     performance_metrics = performance_metrics[performance_metrics['label'].isin(species_to_evaluate)]
 
-print('SPECIES CLASS PERFORMANCE =============================================================================================')
 performance_metrics = performance_metrics.sort_values(by=['AUC-PR', 'p_max_r'], ascending=[True, True])
-print(performance_metrics.to_string(index=False))
 
 print('WADNR PRIORITY SPECIES =======================================================================================================')
 wadnr_species = performance_metrics[performance_metrics['label'].isin(species_wadnr_priority)]
 print(wadnr_species.to_string(index=False))
+
+print('SPECIES CLASS PERFORMANCE =============================================================================================')
+min_N_P = 1
+missing_species = performance_metrics.loc[performance_metrics['N_P']<min_N_P]
+
+performance_metrics = performance_metrics.loc[performance_metrics['N_P']>0]
+
+print(performance_metrics.to_string(index=False))
 
 print('COMMON SPECIES ========================================================================================================')
 common_species = performance_metrics.loc[performance_metrics['rarity']=='C']
@@ -131,8 +137,6 @@ rare_species = rare_species.sort_values(by=['N_P', 'N_unknown', 'max_conf'], asc
 print(rare_species.to_string(index=False))
 
 print('MISSING SPECIES =======================================================================================================')
-min_N_P = 7 + 1
-missing_species = performance_metrics.loc[performance_metrics['N_P']<min_N_P]
 print_warning(f'{len(missing_species)} species with less than {min_N_P} positive examples:\n{missing_species.to_string(index=False)}')
 
 # print('MACAULAY REFERENCE PERFORMANCE ========================================================================================')
