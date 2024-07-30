@@ -44,6 +44,10 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     # performs on the positive species class.
     precision, recall, thresholds = sklearn.metrics.precision_recall_curve(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species)
 
+    f1_scores = 2*recall*precision/(recall+precision)
+    f1_optimal_threshold = thresholds[np.argmax(f1_scores)]
+    f1_max = np.max(f1_scores)
+
     if save_to_dir != '':
         os.makedirs(save_to_dir, exist_ok=True)
         stats = pd.DataFrame({
@@ -62,6 +66,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         # Plot precision and recall as a function of threshold
         ax1.plot(thresholds, precision[:-1], label='Precision', marker='.') #, marker='.' 
         ax1.plot(thresholds, recall[:-1], label='Recall', marker='.') # , marker='.'
+        ax1.plot(thresholds, f1_scores[:-1], label='F1 Score') # , marker='.'
         ax1.set_xlabel('Threshold') 
         ax1.set_ylabel('Performance')
         ax1.set_title(f'{title_label}\n{species}\nThreshold performance', fontsize=font_size)
@@ -99,8 +104,6 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         ax2.set_ylim([0.0-padding, 1.0+padding])
         ax2.legend(loc='lower left')
         ax2.set_box_aspect(1)
-
-    # TODO: Use F1-score to determine an optimal threshold, e.g. https://ploomber.io/blog/threshold/
 
     # Plot ROC
     if False:
@@ -155,6 +158,8 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         'r_max':     [round(recall[np.argmax(precision[:-1])],     digits)], # Maximum recall across all thresholds (should be 1.0)
         'r_max_th':  [round(thresholds[len(recall) - 1 - np.argmax(recall[::-1])], digits)], # Score threshold to maximize recall (last value to also secondarily max precision)
         'r_max_p':   [round( precision[len(recall) - 1 - np.argmax(recall[::-1])], digits)], # Precision at maximum precision using threshold (last value to also secondarily max precision)
+        'f1_max':    [f1_max],                                          # Maximum F1 score across all thresholds
+        'f1_max_th': [f1_optimal_threshold],                            # Score threshold to maximize F1 score
         'N':         [n_examples],                                      # Total number of examples (not including "unknown" examples)
         'N_P':       [n_P],                                             # Total number of positive examples
         'N_N':       [n_N],                                             # Total number of negative examples
