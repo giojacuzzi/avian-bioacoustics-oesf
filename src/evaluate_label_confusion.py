@@ -17,21 +17,20 @@ threshold = 0.9
 species = sorted(labels.get_species_classes())
 
 # Retrieve raw annotation data
-raw_annotations = get_raw_annotations(dirs = dirs, overwrite = False)
+raw_annotations = get_raw_annotations(dirs = dirs, overwrite = True)
 # print(raw_annotations)
 
-# Threshold detections, removing unknowns and any additional annotations for correct detections
+# Threshold detections
 detections = raw_annotations[raw_annotations['confidence'] >= threshold].copy()
-detections = detections[detections['label_truth'] != 'unknown']
 
 # Create a column index for unique detections
 def concatenate_row(row):
     return ''.join(str(row[col]) for col in ['date', 'time', 'serialno'])
 detections['detection_id'] = detections.apply(concatenate_row, axis=1)
 
-# # DEBUG
-# detections = detections.head(50)
-# # DEBUG
+# Remove detections with unknowns and any additional annotations for correct detections
+detections = detections[~detections['detection_id'].isin(detections[detections['label_truth'] == 'unknown']['detection_id'].values)]
+detections = detections[detections['label_truth'] != 'unknown']
 
 # Determine which detections are correct
 def check_correct_detection(group):
@@ -76,12 +75,12 @@ disp = ConfusionMatrixDisplay(confusion_matrix=confusion_mtx, display_labels=cla
 # disp.plot()
 # plt.show()
 
-import seaborn as sn
-sn.set_theme(font_scale=0.5)
-cm = sn.heatmap(confusion_mtx, annot=True, vmin=0, vmax=5, cmap="Reds", xticklabels=class_labels, yticklabels=class_labels)
-cm.set_xlabel("Predicted label")
-cm.set_ylabel("True label")
-plt.show()
+# import seaborn as sn
+# sn.set_theme(font_scale=0.5)
+# cm = sn.heatmap(confusion_mtx, annot=True, vmin=0, vmax=5, cmap="Reds", xticklabels=class_labels, yticklabels=class_labels)
+# cm.set_xlabel("Predicted label")
+# cm.set_ylabel("True label")
+# plt.show()
 
 
 ################################################################################

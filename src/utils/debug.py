@@ -1,6 +1,3 @@
-import pandas as pd
-import Levenshtein
-
 consolidated_labels = {
         # Abiotic
         "abiotic_aircraft": ["aircraft", "airplane", "airplanes", "loud thing (plane?)", "plane", "helicopter"],
@@ -19,49 +16,12 @@ consolidated_labels = {
         "insect": ["bee"],
         "biotic_other": ["animal","wingbeats","bird flapping"],
         "unknown": ["unknown sparrow"],
-        "not_target": [
-            "0","not_target", "not-bird", "not bird", "not'species",
+        "0": [
+            "not_target", "not-bird", "not bird", "not'species",
             "golden-crowned sparrow","sparrow","sparriw","sparrw","common loon","finch","grouse","hummingbird","kinglet","warbler","woodpecker"
             ], # 0 indicates a predicted species is NOT present
         # Other
         "truncation": ["truncated"],
-    }
+}
 
-def get_species_classes():
-    species_classes = pd.read_csv('/Users/giojacuzzi/repos/avian-bioacoustics-oesf/src/classification/species_list/species_list_OESF.txt', header=None) # Get list of all species
-    species_classes = [name.split('_')[1].lower() for name in species_classes[0]]
-    return species_classes
-
-def correct_typo(word, min_distance=3):
-    closest_words = []
-    correct_labels = get_species_classes()
-    correct_labels.append(list(consolidated_labels.keys()))
-    correct_labels.append('unknown')
-    correct_labels.append('not_target')
-    for correct_word in correct_labels:
-        distance = Levenshtein.distance(word, correct_word)
-        if distance <= min_distance:
-            closest_words.append(correct_word)
-    if len(closest_words) == 0:
-        return word
-    else:
-        return closest_words[0]
-
-
-def clean_label(label):
-
-    # Manually consolidate any specific labels
-    for correction, typos in consolidated_labels.items():
-        if label in typos:
-            return correction
-
-    # Correct any typos
-    label = correct_typo(label)
-
-    return label
-
-# TEST
-# print(clean_label('pacifi-slope flycather'))
-# print(clean_label('unknoen'))
-# print(clean_label('nonexistant label'))
-# print(clean_label("macgillvary's warbler"))
+print(consolidated_labels.keys())

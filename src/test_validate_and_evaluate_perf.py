@@ -21,7 +21,7 @@ species_wadnr_priority = ["pileated woodpecker", "pacific-slope flycatcher", "hu
 # # WADNR TARGET SPECIES
 # species_to_evaluate += species_wadnr_priority
 # # OTHER TARGETS
-# species_to_evaluate += ["hermit warbler"]
+# species_to_evaluate += ["black-throated gray warbler"]
 # # INDIVIDUAL
 # species_to_evaluate = ["wilson's warbler","pacific-slope flycatcher","marbled murrelet", "varied thrush", "northern saw-whet owl", "northern pygmy-owl", "white-crowned sparrow"]
 
@@ -71,8 +71,8 @@ if print_detections:
     print(collated_detection_labels[collated_detection_labels['label_truth'].isin(species_to_evaluate)]['file'].to_string(index=False))
     print('Unknown presence/absence ("unknown"):')
     print(collated_detection_labels[collated_detection_labels['label_truth'] == 'unknown']['file'].to_string(index=False))
-    print('Confirmed absence ("0"):')
-    print(collated_detection_labels[collated_detection_labels['label_truth'] == '0']['file'].to_string(index=False))
+    print('Confirmed absence ("not_target"):')
+    print(collated_detection_labels[collated_detection_labels['label_truth'] == 'not_target']['file'].to_string(index=False))
 
 # Collate Macaulay reference detections per species
 # collated_macaulay_references = collate_macaulay_references(species_to_collate=species_to_evaluate, print_detections=False)
@@ -146,13 +146,3 @@ print_warning(f'{len(missing_species)} species with less than {min_N_P} positive
 if plot:
     plt.show()
 
-# # Print "confused" or simultaneously present classes
-# for i, species in enumerate(species_to_evaluate):
-#     print(f'CONFUSED CLASSES FOR {species}:')
-#     species_labels = (raw_annotations[raw_annotations['label_predicted'] == species])
-#     species_labels = species_labels[(species_labels['label_truth'] != '0') & (species_labels['label_truth'] != species)]
-#     print(species_labels['label_truth'].value_counts())
-
-# output_filepath = 'data/classification/performance_metrics.csv'
-# performance_metrics.to_csv(output_filepath, index=False)
-# print_success(f'Saved performance metrics to {output_filepath}')
