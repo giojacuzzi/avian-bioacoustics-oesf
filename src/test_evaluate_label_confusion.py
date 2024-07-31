@@ -63,38 +63,44 @@ detections = detections.sort_values(by='file').reset_index(drop=True)
 
 # Print label incorrect counts
 incorrect_detections = detections[detections['correct'] == False]
-print_warning(incorrect_detections.to_string())
+print_warning(incorrect_detections[incorrect_detections['confidence'] < 0.9].reset_index(drop=True).to_string())
 incorrect_detection_counts = incorrect_detections['label_truth'].value_counts()
 print(incorrect_detection_counts)
 
+# Remove any "not_target" labels
+detections = detections[detections['label_truth'] != 'not_target']
 
-class_labels = pd.unique(detections[['label_predicted', 'label_truth']].values.ravel())
+################################################################################
+# Construct a confusion matrix
+
+class_labels = sorted(pd.unique(detections[['label_predicted', 'label_truth']].values.ravel()))
 print(class_labels)
 confusion_mtx = confusion_matrix(detections["label_truth"], detections["label_predicted"], labels=class_labels)
 
+df_confusion_mtx = pd.DataFrame(confusion_mtx, class_labels, class_labels)
+
 print(confusion_mtx)
+print(confusion_mtx.shape)
+print(len(class_labels))
+print(df_confusion_mtx)
 
 disp = ConfusionMatrixDisplay(confusion_matrix=confusion_mtx, display_labels=class_labels)
 # disp.plot()
 # plt.show()
 
-# import seaborn as sn
-# sn.set_theme(font_scale=0.5)
-# cm = sn.heatmap(confusion_mtx, annot=True, vmin=0, vmax=5, cmap="Reds", xticklabels=class_labels, yticklabels=class_labels)
-# cm.set_xlabel("Predicted label")
-# cm.set_ylabel("True label")
-# plt.show()
-
-
-################################################################################
-# Construct a confusion matrix
-# TODO
-
+import seaborn as sn
+sn.set_theme(font_scale=0.5)
+cm = sn.heatmap(confusion_mtx, annot=True, vmin=0, vmax=5, cmap="Reds", xticklabels=class_labels, yticklabels=class_labels)
+cm.set_xlabel("Predicted label")
+cm.set_ylabel("True label")
+plt.show()
 
 ################################################################################
 # Export data for hierarchical edge bundling plot in R
-# TODO
 
+confusion_matrix_filepath = 'data/annotations/processed/confusion_matrix.csv'
+df_confusion_mtx.to_csv(confusion_matrix_filepath, index=True)
+print_success(f'Saved confusion matrix to {confusion_matrix_filepath}')
 
 ################################################################################
 # Identify labels for improvement

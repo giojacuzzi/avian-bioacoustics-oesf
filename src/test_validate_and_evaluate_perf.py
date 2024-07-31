@@ -25,8 +25,8 @@ species_wadnr_priority = ["pileated woodpecker", "pacific-slope flycatcher", "hu
 # # INDIVIDUAL
 # species_to_evaluate = ["wilson's warbler","pacific-slope flycatcher","marbled murrelet", "varied thrush", "northern saw-whet owl", "northern pygmy-owl", "white-crowned sparrow"]
 
-plot = True              # Plot the results
-print_detections = True # Print detections
+plot = False              # Plot the results
+print_detections = False # Print detections
 sort_by = 'confidence' # Detection sort, if printing, e.g. 'confidence' or 'label_truth'
 
 # TODO: Once all annotations are complete and every detection has been evaluated, set this to False
@@ -113,6 +113,11 @@ if species_to_evaluate != 'all':
     performance_metrics = performance_metrics[performance_metrics['label'].isin(species_to_evaluate)]
 
 performance_metrics = performance_metrics.sort_values(by=['AUC-PR', 'p_max_r'], ascending=[True, True])
+
+# Export performance data for hierarchical edge bundling plot in R
+label_perf_filepath = 'data/annotations/processed/label_perf_metrics.csv'
+performance_metrics.to_csv(label_perf_filepath, index=False)
+print_success(f'Saved label performance metrics to {label_perf_filepath}')
 
 print('WADNR PRIORITY SPECIES =======================================================================================================')
 wadnr_species = performance_metrics[performance_metrics['label'].isin(species_wadnr_priority)]
