@@ -93,10 +93,6 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
 
         raw_annotations = pd.concat([raw_annotations, table], ignore_index=True) # Store the table
 
-    # More clean up of typos
-    print('Cleaning annotation labels...')
-    raw_annotations['label_truth'] = raw_annotations['label_truth'].apply(labels.clean_label)
-
     # Warn if any annotations extend beyond the length of a single detection file
     for i, row in raw_annotations.iterrows():
         if (row['file offset (s)'] + row['delta time (s)']) > 3.0:
@@ -116,6 +112,10 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
         raw_annotations['label_truth'] = raw_annotations['label_truth'].fillna(0)
 
     raw_annotations = raw_annotations.sort_values(by=['label_predicted'])
+
+    # More clean up of typos
+    print('Cleaning annotation labels...')
+    raw_annotations['label_truth'] = raw_annotations['label_truth'].astype(str).apply(labels.clean_label)
 
     # Get metadata for each annotation
     annotations_metadata = list(map(lambda f: files.parse_metadata_from_annotation_file(f), raw_annotations['file']))
