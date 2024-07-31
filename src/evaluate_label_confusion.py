@@ -56,6 +56,9 @@ def remove_duplicates(group):
 detections = detections.reset_index(drop=True).groupby('detection_id').apply(lambda g: remove_duplicates(g), include_groups=False)
 detections = detections.sort_values(by='file').reset_index(drop=True)
 
+# TODO: Create a "biotic_concurrent" entry for all incorrect detections
+# TODO
+
 # print(detections.to_string())
 
 # Print label incorrect counts

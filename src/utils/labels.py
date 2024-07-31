@@ -22,7 +22,7 @@ consolidated_labels = {
         "not_target": [
             "0","not_target", "not-bird", "not bird", "not'species",
             "golden-crowned sparrow","sparrow","sparriw","sparrw","common loon","finch","grouse","hummingbird","kinglet","warbler","woodpecker"
-            ], # 0 indicates a predicted species is NOT present
+        ], # 0 indicates a predicted species is NOT present
         # Other
         "truncation": ["truncated"],
     }
@@ -32,7 +32,7 @@ def get_species_classes():
     species_classes = [name.split('_')[1].lower() for name in species_classes[0]]
     return species_classes
 
-def correct_typo(word, min_distance=3):
+def correct_typo(word, min_distance=2):
     closest_words = []
     correct_labels = get_species_classes()
     correct_labels.append(list(consolidated_labels.keys()))
@@ -65,3 +65,6 @@ def clean_label(label):
 # print(clean_label('unknoen'))
 # print(clean_label('nonexistant label'))
 # print(clean_label("macgillvary's warbler"))
+# print(clean_label("song sparrow"))
+# print(clean_label("Song sparrow"))
+# print(clean_label("Song Sparrow"))
