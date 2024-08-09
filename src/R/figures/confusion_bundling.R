@@ -110,7 +110,7 @@ my_from  <-  match( my_connect$from, my_vertices$name)
 my_to  <-  match( my_connect$to, my_vertices$name)
 
 ggraph(my_mygraph, layout = 'dendrogram', circular = TRUE) + 
-  geom_conn_bundle(data = get_con(from = my_from, to = my_to), alpha=0.3, width=0.9, aes(colour=..index..), tension = 0.9) +
+  geom_conn_bundle(data = get_con(from = my_from, to = my_to), alpha=0.35, width=0.4, aes(colour=..index..), tension = 0.9) +
   # scale_edge_colour_distiller(palette = "RdPu") +
   scale_edge_color_continuous(low="red", high="aliceblue") + # aliceblue, azure
   geom_node_text(aes(x = x*1.15, y=y*1.15, filter = leaf, label=name, angle = angle, hjust=hjust, colour=Group), size=2, alpha=1) +
@@ -119,7 +119,7 @@ ggraph(my_mygraph, layout = 'dendrogram', circular = TRUE) +
   scale_alpha(range=c(0.2,0.7)) +
   scale_colour_manual(values=c('dodgerblue','darkgray','purple','tomato'))+
   # scale_colour_manual(values= rep( brewer.pal(9,"Paired") , 30)) +
-  scale_size_continuous( range = c(8,1.5) ) +
+  scale_size_continuous( range = c(6,0.5) ) +
   
   theme_void() +
   theme(

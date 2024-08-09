@@ -4,8 +4,11 @@ import pandas as pd
 import os
 import sys
 
-label_truth = "northern saw-whet owl" # i.e. label_truth
-label_predicted = "northern saw-whet owl" # or another, e.g. "wilson's warbler" vs "pacific wren"
+# TODO: autoamtically merge selection tables that point to the same file
+
+only_confusing_examples = False
+label_truth = "american goldfinch" # i.e. label_truth
+label_predicted = "american goldfinch"
 
 # output_path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/training_data'
 output_path = '/Users/giojacuzzi/Downloads'
@@ -15,13 +18,16 @@ print("Getting raw annotation data...")
 raw_annotations = get_raw_annotations()
 
 # Collate raw annotation data into species detection labels per species
-if label_truth == label_predicted:
-    print("Finding correct detection annotation examples for the species alone...")
+if only_confusing_examples:
+    print(f"Finding all true {label_truth} examples for incorrect predictions...")
+    collated_detection_labels = raw_annotations[(raw_annotations['label_truth'] == label_truth) & (raw_annotations['label_predicted'] != label_truth)]
+elif label_truth == label_predicted:
+    print(f"Finding all true {label_truth} examples...")
     collated_detection_labels = collate_annotations_as_detections(raw_annotations, [label_truth], only_annotated=True)
     print(collated_detection_labels.to_string())
     collated_detection_labels = collated_detection_labels[(collated_detection_labels['label_truth'] == label_truth)] 
 else:
-    print("Finding both annotation examples for any detections among any species...")
+    print(f"Finding true {label_truth} examples for predicted label {label_predicted} ...")
     collated_detection_labels = raw_annotations[(raw_annotations['label_truth'] == label_truth) & (raw_annotations['label_predicted'] == label_predicted)]
 
 print(collated_detection_labels.to_string())
@@ -50,7 +56,7 @@ for index, detection in collated_detection_labels.iterrows():
                                             str(detection['time']).zfill(6)[2:4] + ':' +
                                             str(detection['time']).zfill(6)[4:])
 
-    # Merge, then filter rows where the detection time falls within  range of audio file start and end
+    # Merge, then filter rows where the detection time falls within range of audio file start and end
     merged_df = pd.merge(pd.DataFrame([detection]), raw_metadata, on=['serialno', 'date'], how='inner')
     merged_df = merged_df[(merged_df['time_x'] >= merged_df['time_y']) & # time_x is the start time of the detection, time_y of the hour-long file
                         (merged_df['time_x'] <= merged_df['time_y'] + pd.Timedelta(hours=1))]  # NOTE: 1 hour file duration

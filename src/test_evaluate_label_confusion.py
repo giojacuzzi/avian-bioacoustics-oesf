@@ -13,7 +13,7 @@ from sklearn.metrics import ConfusionMatrixDisplay
 dirs = [ # Annotation directories to use as evaluation data
     '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020',
 ]
-threshold = 0.9
+threshold = 0.5
 species = sorted(labels.get_species_classes())
 
 # Retrieve raw annotation data
