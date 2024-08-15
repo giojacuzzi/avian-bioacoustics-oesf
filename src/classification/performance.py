@@ -146,7 +146,10 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
             fig.show()
             plt.show(block=False)
 
-    N_sites = detection_labels[detection_labels['label_truth'] == species]['site'].nunique(dropna=True)
+    if 'sites' in detection_labels.columns:
+        N_sites = detection_labels[detection_labels['label_truth'] == species]['site'].nunique(dropna=True)
+    else:
+        N_sites = np.nan
     
     # Return the performance metrics
     return pd.DataFrame({

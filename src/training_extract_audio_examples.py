@@ -12,7 +12,7 @@ import sys
 # Path to directory that contains the annotated Raven Pro selection tables
 dir_training_input_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/training_data'
 # Path to directory that will be populated with training data
-dir_training_output_data = '/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/CustomAug15'
+dir_training_output_data = '/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/Custom'
 # Path to directory with raw audio data
 data_dir = '/Volumes/gioj_b1/OESF'
 

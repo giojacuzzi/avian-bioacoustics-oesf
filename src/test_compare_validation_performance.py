@@ -19,17 +19,52 @@ import sys
 # Input config
 validation_samples_filepath = 'data/models/Custom/Custom_Classifier_ValidationSamples.csv'
 preexisting_labels_to_evaluate = [
-    "pacific-slope flycatcher",
-    "varied thrush",
-    "wilson's warbler",
-    "marbled murrelet",
+    "american robin",
+    "band-tailed pigeon",
+    "barred owl",
+    "belted kingfisher",
+    "black-throated gray warbler",
+    "common raven",
+    "dark-eyed junco",
+    "golden-crowned kinglet",
+    "hairy woodpecker",
     "hammond's flycatcher",
-    "red-breasted nuthatch",
-    "northern saw-whet owl",
+    "hermit thrush",
+    "hutton's vireo",
+    "marbled murrelet",
+    "northern flicker",
     "northern pygmy-owl",
+    "northern saw-whet owl",
+    "olive-sided flycatcher",
+    "pacific wren",
+    "pacific-slope flycatcher",
+    "pileated woodpecker",
+    "purple finch",
+    "red crossbill",
+    "red-breasted nuthatch",
+    "ruby-crowned kinglet",
+    "rufous hummingbird",
+    "song sparrow",
+    "sooty grouse",
+    "spotted towhee",
+    "swainson's thrush",
+    "townsend's warbler",
+    "varied thrush",
+    "violet-green swallow",
+    "western screech-owl",
+    "western tanager",
+    "western wood-pewee",
+    "white-crowned sparrow",
+    "wilson's warbler"
 ]
 novel_labels_to_evaluate = [
-    "abiotic vehicle"
+    "abiotic_aircraft",
+    "abiotic_logging",
+    "abiotic_rain",
+    "abiotic_vehicle",
+    "abiotic_wind",
+    "biotic_anuran",
+    "biotic_insect"
 ]
 labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
 
@@ -165,7 +200,8 @@ if __name__ == '__main__':
         # Merge, discarding annotations for non-validation files that were used in training
         print('Merging...')
         detections = pd.merge(scores, annotations, on=['file_audio'], how='left')
-        detections.sort_values(by='file_audio', inplace=True)
+        # print('Sorting...')
+        # detections.sort_values(by='file_audio', inplace=True)
         detections.rename(columns={'file_audio': 'file'}, inplace=True)
         detections['label_truth'] = detections['label_truth'].fillna('0') # interpret missing annotations as absence
         detections['label_truth'] = detections['label_truth'].apply(labels.clean_label)
@@ -205,7 +241,7 @@ if __name__ == '__main__':
             collated_detection_labels_custom = collated_detection_labels
 
     print('FINAL RESULTS')
-    performance_metrics.sort_values(by='label', inplace=True)
+    performance_metrics.sort_values(by=['label', 'model'], inplace=True)
     print(performance_metrics.to_string())
     # plt.show()
 
@@ -250,21 +286,18 @@ if __name__ == '__main__':
 
     if True:
         site_level_perf = pd.DataFrame()
-        for label in labels_to_evaluate:
-            print(f'Calculating site-level performance metrics for species {label} with custom vs pretrained classifier ...')
+        for label in preexisting_labels_to_evaluate:
+            print(f'Calculating site-level performance metrics for label {label} with custom vs pretrained classifier ...')
 
             pmax_th_custom = performance_metrics[(performance_metrics['label'] == label) & (performance_metrics['model'] == out_dir_custom)]['p_max_th'].iloc[0]
             species_perf_custom = get_site_level_confusion_matrix(label, detections_custom, pmax_th_custom, all_sites)
             species_perf_custom['model'] = 'custom'
             site_level_perf = pd.concat([site_level_perf, species_perf_custom], ignore_index=True)
 
-            if label in preexisting_labels_to_evaluate:
-                pmax_th_pretrained = performance_metrics[(performance_metrics['label'] == label) & (performance_metrics['model'] == out_dir_pretrained)]['p_max_th'].iloc[0]
-                species_perf_pretrained = get_site_level_confusion_matrix(label, detections_pretrained, pmax_th_pretrained, all_sites)
-                species_perf_pretrained['model'] = 'pretrained'
-                site_level_perf = pd.concat([site_level_perf, species_perf_pretrained], ignore_index=True)
-            else:
-                print_warning(f'Skipping pretrained species level perfomance for irrelevant label {label}')
+            pmax_th_pretrained = performance_metrics[(performance_metrics['label'] == label) & (performance_metrics['model'] == out_dir_pretrained)]['p_max_th'].iloc[0]
+            species_perf_pretrained = get_site_level_confusion_matrix(label, detections_pretrained, pmax_th_pretrained, all_sites)
+            species_perf_pretrained['model'] = 'pretrained'
+            site_level_perf = pd.concat([site_level_perf, species_perf_pretrained], ignore_index=True)
 
         print('Site-level performance metrics:')
-        print_success(site_level_perf[(site_level_perf['present'] > 2)].sort_values(by=['label', 'threshold'], ascending=True).to_string())
+        print_success(site_level_perf[(site_level_perf['present'] > 2)].sort_values(by=['label', 'model'], ascending=True).to_string())
