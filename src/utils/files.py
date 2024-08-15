@@ -188,8 +188,11 @@ def get_site_deployment_metadata(year):
     return site_deployment_metadata
 
 # Load a Raven selection table (tab-separated .txt) as a pandas dataframe and validate contents
-def load_raven_selection_table(table_file, cols_needed = ['species', 'begin file', 'file offset (s)', 'delta time (s)']):
+def load_raven_selection_table(table_file, cols_needed = ['species', 'begin file', 'file offset (s)', 'delta time (s)'], rename_species_to_label = False):
     table = pd.read_csv(table_file, sep='\t') # Load the file as a dataframe
+
+    if table.empty:
+        print_warning(f'{os.path.basename(table_file)} has no selections.')
 
     # Clean up data by normalizing column names and species values to lowercase
     table.columns = table.columns.str.lower()
@@ -197,15 +200,15 @@ def load_raven_selection_table(table_file, cols_needed = ['species', 'begin file
         table['species'] = table['species'].astype(str).str.lower()
     if 'class' in table.columns:
         table['class'] = table['class'].astype(str).str.lower()
+    
+    if rename_species_to_label:
+        table.rename(columns=lambda x: 'label' if x.lower() == 'species' else x, inplace=True)
 
     # Check the validity of the table
     if not all(col in table.columns for col in cols_needed):
         missing_columns = [col for col in cols_needed if col not in table.columns]
-        print_error(f"Missing columns {missing_columns} in {table_file}.")
-        return
-
-    if table.empty:
-        print_warning(f'{os.path.basename(table_file)} has no selections.')
+        print_warning(f"Missing columns {missing_columns} in {table_file}.")
+        return table
     
     # if table.isna().any().any():
     #     print_warning(f'{os.path.basename(table_file)} contains NaN values')

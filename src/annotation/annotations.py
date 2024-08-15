@@ -104,6 +104,11 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
     empty_annotations = evaluated_detections.merge(raw_annotations.drop(columns='label_predicted'), on=['file', 'confidence'], how='outer', indicator=True)
     empty_annotations = empty_annotations[empty_annotations['_merge'] != 'both'] # Filter out the rows where the indicator value is 'both'
     empty_annotations = empty_annotations.drop(columns='_merge')
+
+    # Print and save empty annotations, if desired
+    # print_success(empty_annotations['file'].to_string())
+    # empty_annotations['file'].to_csv('empty_annotations.txt', index=False, header=False)
+
     if not empty_annotations.empty:
         print_warning(f'Interpreting {len(empty_annotations)} detections without annotations as species absences')
         if print_annotations:

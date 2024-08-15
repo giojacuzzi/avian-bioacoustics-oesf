@@ -6,9 +6,9 @@ import sys
 
 # TODO: autoamtically merge selection tables that point to the same file
 
-only_confusing_examples = False
-label_truth = "american goldfinch" # i.e. label_truth
-label_predicted = "american goldfinch"
+only_confusing_examples = True
+label_truth = "abiotic_logging" # i.e. label_truth
+label_predicted = "whatever"
 
 # output_path = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/training_data'
 output_path = '/Users/giojacuzzi/Downloads'
@@ -17,20 +17,23 @@ output_path = '/Users/giojacuzzi/Downloads'
 print("Getting raw annotation data...")
 raw_annotations = get_raw_annotations()
 
-# Collate raw annotation data into species detection labels per species
-if only_confusing_examples:
-    print(f"Finding all true {label_truth} examples for incorrect predictions...")
-    collated_detection_labels = raw_annotations[(raw_annotations['label_truth'] == label_truth) & (raw_annotations['label_predicted'] != label_truth)]
-elif label_truth == label_predicted:
-    print(f"Finding all true {label_truth} examples...")
-    collated_detection_labels = collate_annotations_as_detections(raw_annotations, [label_truth], only_annotated=True)
-    print(collated_detection_labels.to_string())
-    collated_detection_labels = collated_detection_labels[(collated_detection_labels['label_truth'] == label_truth)] 
+if False: #DEBUG
+    collated_detection_labels = raw_annotations[(raw_annotations['label_truth'] == label_truth)]
 else:
-    print(f"Finding true {label_truth} examples for predicted label {label_predicted} ...")
-    collated_detection_labels = raw_annotations[(raw_annotations['label_truth'] == label_truth) & (raw_annotations['label_predicted'] == label_predicted)]
+    # Collate raw annotation data into species detection labels per species
+    if only_confusing_examples:
+        print(f"Finding all true {label_truth} examples for incorrect predictions...")
+        collated_detection_labels = raw_annotations[(raw_annotations['label_truth'] == label_truth) & (raw_annotations['label_predicted'] != label_truth)]
+    elif label_truth == label_predicted:
+        print(f"Finding all true {label_truth} examples...")
+        collated_detection_labels = collate_annotations_as_detections(raw_annotations, [label_truth], only_annotated=True)
+        print(collated_detection_labels.to_string())
+        collated_detection_labels = collated_detection_labels[(collated_detection_labels['label_truth'] == label_truth)] 
+    else:
+        print(f"Finding true {label_truth} examples for predicted label {label_predicted} ...")
+        collated_detection_labels = raw_annotations[(raw_annotations['label_truth'] == label_truth) & (raw_annotations['label_predicted'] == label_predicted)]
 
-print(collated_detection_labels.to_string())
+    print(collated_detection_labels.to_string())
 
 # Extract data for annotation...
 raw_metadata = files.get_raw_metadata()

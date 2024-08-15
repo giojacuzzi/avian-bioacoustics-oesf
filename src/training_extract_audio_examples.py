@@ -12,7 +12,7 @@ import sys
 # Path to directory that contains the annotated Raven Pro selection tables
 dir_training_input_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/training_data'
 # Path to directory that will be populated with training data
-dir_training_output_data = '/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/Custom'
+dir_training_output_data = '/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/CustomAug15'
 # Path to directory with raw audio data
 data_dir = '/Volumes/gioj_b1/OESF'
 
@@ -20,18 +20,53 @@ overwrite = True
 
 # Given a list of labels to train...
 species_labels = [
-    "pacific-slope flycatcher",
-    "varied thrush",
-    "wilson's warbler",
-    "marbled murrelet",
+    "american robin",
+    "band-tailed pigeon",
+    "barred owl",
+    "belted kingfisher",
+    "black-throated gray warbler",
+    "common raven",
+    "dark-eyed junco",
+    "golden-crowned kinglet",
+    "hairy woodpecker",
     "hammond's flycatcher",
-    "red-breasted nuthatch",
+    "hermit thrush",
+    "hutton's vireo",
+    "marbled murrelet",
+    "northern flicker",
+    "northern pygmy-owl",
     "northern saw-whet owl",
-    "northern pygmy-owl" 
+    "olive-sided flycatcher",
+    "pacific wren",
+    "pacific-slope flycatcher",
+    "pileated woodpecker",
+    "purple finch",
+    "red crossbill",
+    "red-breasted nuthatch",
+    "ruby-crowned kinglet",
+    "rufous hummingbird",
+    "song sparrow",
+    "sooty grouse",
+    "spotted towhee",
+    "swainson's thrush",
+    "townsend's warbler",
+    "varied thrush",
+    "violet-green swallow",
+    "western screech-owl",
+    "western tanager",
+    "western wood-pewee",
+    "white-crowned sparrow",
+    "wilson's warbler"
 ]
 labels_to_train = species_labels + [
-    "abiotic vehicle"
-] # e.g. 'abiotic vehicle' or others. Note that "Background" class is unique and automatically searched for.
+    "abiotic_aircraft",
+    "abiotic_logging",
+    "abiotic_rain",
+    "abiotic_vehicle",
+    "abiotic_wind",
+    "biotic_anuran",
+    "biotic_insect"
+] # e.g. 'abiotic vehicle' or others. Note that "Background" class is unique and must be manually added.
 
 species_list = pd.read_csv(species_list_filepath, index_col=None, usecols=['common_name', 'scientific_name'])
 species_list['common_name']     = species_list['common_name'].str.lower()
@@ -77,10 +112,14 @@ for label in labels_to_train:
         print(metadata)
         
         # Load the annotations
-        table = load_raven_selection_table(file, cols_needed=['selection', 'label', 'type', 'begin file', 'file offset (s)', 'delta time (s)', 'low freq (hz)', 'high freq (hz)'])
+        table = load_raven_selection_table(file, cols_needed=['selection', 'label', 'type', 'begin file', 'file offset (s)', 'delta time (s)', 'low freq (hz)', 'high freq (hz)'], rename_species_to_label=True)
+
+        if len(table) <= 1:
+            print("Skipping empty annotation...")
+            continue
 
         # Remove annotation references (these are used in the test dataset)
-        table = table[(table['low freq (hz)'] != 0.0) & (table['high freq (hz)'] != 16000.0)]
+        table = table[~((table['low freq (hz)'] == 0.0) & (table['high freq (hz)'] == 16000.0))]
 
         # Further validate the annotations
         if (table['label'] == 'nan').any() or table['label'].isnull().any():

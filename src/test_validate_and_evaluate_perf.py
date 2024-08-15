@@ -21,7 +21,7 @@ species_wadnr_priority = ["pileated woodpecker", "pacific-slope flycatcher", "hu
 # # WADNR TARGET SPECIES
 # species_to_evaluate += species_wadnr_priority
 # # OTHER TARGETS
-# species_to_evaluate += ["black-throated gray warbler"]
+# species_to_evaluate += ["hermit thrush"]
 # # INDIVIDUAL
 # species_to_evaluate = ["wilson's warbler","pacific-slope flycatcher","marbled murrelet", "varied thrush", "northern saw-whet owl", "northern pygmy-owl", "white-crowned sparrow"]
 
@@ -42,6 +42,7 @@ import matplotlib.pyplot as plt
 from annotation.annotations import *
 from utils.log import *
 from classification.performance import *
+from utils.files import *
 
 # Retrieve and validate raw annotation data
 raw_annotations = get_raw_annotations(dirs = dirs, overwrite = True)
@@ -60,6 +61,20 @@ else:
 
 # Collate raw annotation data into species detection labels per species
 collated_detection_labels = collate_annotations_as_detections(raw_annotations, species_to_evaluate, only_annotated=only_annotated)
+collated_detection_labels['date'] = pd.to_datetime(collated_detection_labels['date'], format='%Y%m%d')
+
+# Merge site deployment metadata
+site_deployment_metadata = get_site_deployment_metadata(2020)
+merged_df = pd.merge(
+    collated_detection_labels, 
+    site_deployment_metadata[['SerialNo', 'SurveyDate', 'StationName_AGG', 'Stratum']],
+    left_on=['serialno', 'date'], 
+    right_on=['SerialNo', 'SurveyDate'],
+    how='left'
+)
+merged_df = merged_df.drop(columns=['SerialNo', 'SurveyDate']).drop_duplicates()
+collated_detection_labels = merged_df
+collated_detection_labels = collated_detection_labels.rename(columns={"StationName_AGG": "site", "Stratum": "stratum"})
 
 # Print detections sorted by descending confidence
 if print_detections:
@@ -71,8 +86,8 @@ if print_detections:
     print(collated_detection_labels[collated_detection_labels['label_truth'].isin(species_to_evaluate)]['file'].to_string(index=False))
     print('Unknown presence/absence ("unknown"):')
     print(collated_detection_labels[collated_detection_labels['label_truth'] == 'unknown']['file'].to_string(index=False))
-    print('Confirmed absence ("not_target"):')
-    print(collated_detection_labels[collated_detection_labels['label_truth'] == 'not_target']['file'].to_string(index=False))
+    print('Confirmed absence ("0"):')
+    print(collated_detection_labels[collated_detection_labels['label_truth'] == '0']['file'].to_string(index=False))
 
 # Collate Macaulay reference detections per species
 # collated_macaulay_references = collate_macaulay_references(species_to_collate=species_to_evaluate, print_detections=False)
