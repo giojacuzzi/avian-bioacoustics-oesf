@@ -7,6 +7,7 @@ import os                       # File navigation
 import pandas as pd             # Data manipulation
 from utils import files, labels
 from utils.log import *
+import numpy as np
 import re
 import sys
 
@@ -155,31 +156,32 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
 # present (1), unknown (?), or not (0).
 #
 # Returns a dataframe of collated annotations
-def collate_annotations_as_detections(raw_annotations, species_to_collate, only_annotated=False, print_detections=False):
+def collate_annotations_as_detections(raw_annotations, label_to_collate, only_annotated=False, print_detections=False, only_predicted=True):
 
     collated_detection_labels = pd.DataFrame()
 
-    for i, species in enumerate(species_to_collate):
+    for i, label in enumerate(label_to_collate):
 
-        print(f'Collating annotation data for "{species}"...')
+        print(f'Collating annotation data for "{label}"...')
 
         # Get all annotations for the species
-        if True:
-            # For now, only include detections (TP and FP).
-            detection_labels = raw_annotations[raw_annotations['label_predicted'] == species]
+        if only_predicted:
+            # Only include predicted detections (TP and FP).
+            detection_labels = raw_annotations[raw_annotations['label_predicted'] == label]
         else:
-            # TODO: Include not only detections (TP and FP), but also non-detections (FN).
-            detection_labels = raw_annotations[(raw_annotations['label_predicted'] == species) | (raw_annotations['label_truth'] == species_to_evaluate)]
-            # NOTE: The resulting confidence scores are incorrect where label_predicted != species_name
-            detection_labels.loc[detection_labels['label_predicted'] != species, 'confidence'] = np.nan # Set confidence to NaN for the identified rows
-            # TODO: Instead of getting confidence score from the detection file for TP and FP, get ALL confidence scores from the raw data (TP, FP, and FN). Use this to overwrite 'confidence'?
+            detection_labels = raw_annotations
+            # Include not only detections (TP and FP), but also non-detections (FN).
+            # detection_labels = raw_annotations[(raw_annotations['label_predicted'] == label) | (raw_annotations['label_truth'] == label)]
+            # TODO: Instead of getting confidence score from the detection file for TP and FP to evaluate test dataset, get ALL confidence scores from the raw data (TP, FP, and FN). Use this to overwrite 'confidence'?
         detection_labels = detection_labels.sort_values(by='file')
+
+        # print(f'YOYO: detection labels total {len(detection_labels)}')
 
         # print('All annotations:')
         # print(detection_labels)
 
         if detection_labels.empty:
-            print_warning(f'No samples for {species}. Skipping...')
+            print_warning(f'No samples for {label}. Skipping...')
             continue
 
         if detection_labels['label_truth'].isna().any():
@@ -187,7 +189,7 @@ def collate_annotations_as_detections(raw_annotations, species_to_collate, only_
             if only_annotated:
                 detection_labels.dropna(subset=['label_truth'], inplace=True)
                 if detection_labels.empty:
-                    print_warning(f'No remaining detections to evaluate for {species}. Skipping...')
+                    print_warning(f'No remaining detections to evaluate for {label}. Skipping...')
                     continue
             else:
                 detection_labels['label_truth'] = detection_labels['label_truth'].fillna(0)
@@ -211,7 +213,7 @@ def collate_annotations_as_detections(raw_annotations, species_to_collate, only_
         # then merge the new column back to the original DataFrame
         detection_labels = pd.merge(
             detection_labels.drop(columns=[col for col in ['label_truth', 'file offset (s)', 'delta time (s)'] if col in detection_labels.columns]),# drop selection-specific fields that no longer apply
-            detection_labels.groupby('file').apply(compute_label_presence, include_groups=False, label=species).reset_index(name='label_truth'), # label_truth here will replace the previous label_truth
+            detection_labels.groupby('file').apply(compute_label_presence, include_groups=False, label=label).reset_index(name='label_truth'), # label_truth here will replace the previous label_truth
             on='file'
         )
         # Drop duplicate rows based on the 'file' column

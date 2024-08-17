@@ -89,16 +89,23 @@ training_data_selections_dir = 'data/training/Custom/selections'
 
 overwrite = False
 
+def remove_extension(f):
+    return os.path.splitext(f)[0]
+
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
 
     out_dir_pretrained = out_dir + '/pre-trained'
     out_dir_custom     = out_dir + '/custom'
 
-    in_filepaths = np.genfromtxt(validation_samples_filepath, delimiter=',', dtype=str)
+    in_validation_filepaths = np.genfromtxt(validation_samples_filepath, delimiter=',', dtype=str)
+    in_validation_files = np.array([os.path.basename(x) for x in in_validation_filepaths])
+    in_validation_files = np.array([remove_extension(x) for x in in_validation_files])
+
+    print(f'Found {len(labels_to_evaluate)} labels to evaluate with {len(in_validation_filepaths)} validation files.')
 
     # Normalize file paths to support both mac and windows
-    in_filepaths = np.vectorize(os.path.normpath)(in_filepaths)
+    in_validation_filepaths = np.vectorize(os.path.normpath)(in_validation_filepaths)
     out_dir      = os.path.normpath(out_dir)
 
     if overwrite and os.path.exists(out_dir):
@@ -117,12 +124,12 @@ if __name__ == '__main__':
             else:
                 return None  # Handle cases where the path doesn't contain enough components
 
-        in_rootdirs = np.vectorize(get_second_to_last_directory)(in_filepaths)
+        in_rootdirs = np.vectorize(get_second_to_last_directory)(in_validation_filepaths)
 
         # Custom classifier
         print(f"Processing validation set with classifier {custom_analyzer_filepath}")
         process_files.process_files_parallel(
-            in_files          = in_filepaths,
+            in_files          = in_validation_filepaths,
             out_dir           = out_dir_custom,
             root_dirs         = in_rootdirs,
             in_filetype       = '.wav',
@@ -140,7 +147,7 @@ if __name__ == '__main__':
         # Pre-trained classifier
         print(f"Processing validation set with classifier {pretrained_analyzer_filepath}")
         process_files.process_files_parallel(
-            in_files          = in_filepaths,
+            in_files          = in_validation_filepaths,
             out_dir           = out_dir_pretrained,
             root_dirs         = in_rootdirs,
             in_filetype       = '.wav',
@@ -166,54 +173,131 @@ if __name__ == '__main__':
     for model in [out_dir_pretrained, out_dir_custom]:
         print(f'Evaluating model {model}...')
 
-        def remove_extension(f):
-            return os.path.splitext(f)[0]
+        if model == out_dir_pretrained:
+            model_labels_to_evaluate = preexisting_labels_to_evaluate
+        else:
+            model_labels_to_evaluate = labels_to_evaluate
 
-        # Load analyzer detection scores
+        # Load analyzer detection scores for each validation file example
         print('Loading analyzer detection scores for validation examples...')
         score_files = []
         score_files.extend(files.find_files(model, '.csv')) 
-        scores = pd.DataFrame()
+        predictions = pd.DataFrame()
         for file in score_files:
             score = pd.read_csv(file)
             score.drop(columns=['start_date'], inplace=True)
             score['file_audio'] = os.path.basename(file)
-            scores = pd.concat([scores, score], ignore_index=True)
-        scores['file_audio'] = scores['file_audio'].apply(remove_extension)
-        scores.rename(columns={'common_name': 'label_predicted'}, inplace=True)
-        scores['label_predicted'] = scores['label_predicted'].str.lower()
+            predictions = pd.concat([predictions, score], ignore_index=True)
+        predictions['file_audio'] = predictions['file_audio'].apply(remove_extension)
+        predictions.rename(columns={'file_audio': 'file'}, inplace=True)
+        predictions.rename(columns={'common_name': 'label_predicted'}, inplace=True)
+        predictions['label_predicted'] = predictions['label_predicted'].str.lower()
         # print(scores.to_string())
 
+        # Discard scores for labels not under evaluation and files used in training
+        # Note this is redundant, because the score .csvs are only generated for the validation files
+        predictions = predictions[predictions['file'].isin(set(in_validation_files))]
+        predictions = predictions[predictions['label_predicted'].isin(set(model_labels_to_evaluate))]
+
         # Load selection table files
-        print('Loading corresponding selection table files...')
+        print('Loading corresponding annotation selection table files...')
         selection_table_files = []
         selection_table_files.extend(files.find_files(training_data_selections_dir, '.txt'))
         annotations = pd.DataFrame()
         for file in selection_table_files:
             selections = files.load_raven_selection_table(file, cols_needed = ['label', 'file_audio']) # true labels
+            selections['label_source'] = os.path.basename(os.path.dirname(file))
             annotations = pd.concat([annotations, selections], ignore_index=True)
         annotations['file_audio'] = annotations['file_audio'].apply(remove_extension)
+        annotations.rename(columns={'file_audio': 'file'}, inplace=True)
         annotations.rename(columns={'label': 'label_truth'}, inplace=True)
         annotations['label_truth'] = annotations['label_truth'].str.lower()
         # print(annotations.to_string())
 
-        # Merge, discarding annotations for non-validation files that were used in training
-        print('Merging...')
-        detections = pd.merge(scores, annotations, on=['file_audio'], how='left')
-        # print('Sorting...')
-        # detections.sort_values(by='file_audio', inplace=True)
-        detections.rename(columns={'file_audio': 'file'}, inplace=True)
-        detections['label_truth'] = detections['label_truth'].fillna('0') # interpret missing annotations as absence
-        detections['label_truth'] = detections['label_truth'].apply(labels.clean_label)
+        # Clean annotation labels
+        annotations['label_truth'] = annotations['label_truth'].apply(labels.clean_label)
 
-        # Collate raw annotation data into species detection labels per species
-        print('Collating annotations per label...')
-        collated_detection_labels = collate_annotations_as_detections(detections, labels_to_evaluate, only_annotated=False)
-        # print(collated_detection_labels)
+        # Next, we discard annotations for files that were used in training
+        annotations = annotations[annotations['file'].isin(set(in_validation_files))]
 
-        # Get detection serialno, date, and time
-        collated_detection_labels[['serialno', 'date', 'time']] = collated_detection_labels['file'].apply(lambda f: pd.Series(parse_metadata_from_detection_audio_filename(f)))
-        # print(collated_detection_labels)
+        # AT THIS POINT...
+        # "predictions" contains the model confidence score for each validation example for each species
+        print(f'predictions len {len(predictions)}')
+        print(predictions.head())
+
+        predictions.sort_values(by=['file', 'label_predicted'], inplace=True)
+
+        # "annotations" contains the all annotations for each validation example
+        print(f'annotations len {len(annotations)}')
+        print(annotations.head())
+
+        # Next, for each label, collate annotation data into simple 1 or 0 true presence per label per file, then merge with scores and interpret missing labels as absences
+        # collated_annotations = collate_annotations_as_detections(annotations, model_labels_to_evaluate, only_annotated=False, only_predicted=False)
+
+        predictions['label_truth'] = ''
+        for index, row in predictions.iterrows():
+
+            # Does the file contain the label?
+            present = row['label_predicted'] in set(annotations[annotations['file'] == row['file']]['label_truth'])
+            if present:
+                predictions.at[index, 'label_truth'] = row['label_predicted']
+                # print(f"label_predicted: {row['label_predicted']}, file: {row['file']}")
+                # print(set(annotations[annotations['file'] == row['file']]['label_truth']))
+            else:
+                predictions.at[index, 'label_truth'] = '0'
+
+        print(f"Intepreting {predictions['label_truth'].isna().sum()} missing labels as absences...")
+        predictions['label_truth'] = predictions['label_truth'].fillna(0)
+        print(f"There are now {predictions['label_truth'].isna().sum()} missing labels")
+
+        # Get serialno, date, and time
+        predictions[['serialno', 'date', 'time']] = predictions['file'].apply(lambda f: pd.Series(parse_metadata_from_detection_audio_filename(f)))
+        print(predictions)
+        print(predictions['label_truth'].value_counts())        
+        print(f"{len(predictions['file'].unique())} unique files in predictions")
+        print(f"{len(predictions['label_truth'].unique())} unique labels in predictions")
+        print(f'{len(predictions)} predictions in total')
+
+        # print(f'collated len {len(collated_annotations)}')
+
+        # print(f"{len(collated_annotations['file'].unique())} unique files in collated_annotations")
+        # print(f"{len(predictions['file'].unique())} unique files in predictions")
+
+        # print('Merging collated annotations with scores...')
+        # label_data_per_example = pd.merge(predictions, collated_annotations, how='left', on=['file'])
+        # print(label_data_per_example)
+        # print(len(label_data_per_example))
+
+        # print(f"diff in unique files is pred - label {set(predictions['file'].unique()) - set(collated_annotations['file'].unique())}")
+        # print(f"{len(label_data_per_example['file'].unique())} unique files in label_data_per_example")
+
+        # DEBUG ########################################
+
+        # # Merge, discarding annotations for non-validation files that were used in training
+        # print('Merging...')
+        # detections = pd.merge(predictions, annotations, on=['file_audio'], how='left')
+
+        # print(f'YOYO detections len {len(predictions)}')
+        # print_success(detections)
+        # # print('Sorting...')
+        # # detections.sort_values(by='file_audio', inplace=True)
+        # detections.rename(columns={'file_audio': 'file'}, inplace=True)
+        # detections['label_truth'] = detections['label_truth'].fillna('0') # interpret missing annotations as absence
+        # detections['label_truth'] = detections['label_truth'].apply(labels.clean_label)
+
+
+        # # Collate raw annotation data into simple 1 or 0 true presence per label
+        # print('Collating annotations per label...')
+        # collated_detection_labels = collate_annotations_as_detections(detections, labels_to_evaluate, only_annotated=False, only_TPandFP=False) # TODO: SET TO FALSE
+        # # print(collated_detection_labels)
+
+        # # Get detection serialno, date, and time
+        # collated_detection_labels[['serialno', 'date', 'time']] = collated_detection_labels['file'].apply(lambda f: pd.Series(parse_metadata_from_detection_audio_filename(f)))
+        # print_success(collated_detection_labels)
+
+        # DEBUG ########################################
+
+        # sys.exit()
 
         # Containers for performance metrics of all labels
         model_performance_metrics = pd.DataFrame()
@@ -225,20 +309,32 @@ if __name__ == '__main__':
                 print_warning(f"Skipping evaluation of invalid label {label_under_evaluation} for pretrained model...")
                 continue
 
-            detection_labels = collated_detection_labels[collated_detection_labels['label_predicted'] == label_under_evaluation]
-            species_performance_metrics = evaluate_species_performance(detection_labels, label_under_evaluation, True, title_label=model, save_to_dir=f'/Users/giojacuzzi/Downloads/perf/{model}')
+            detection_labels = predictions[predictions['label_predicted'] == label_under_evaluation]
+            # print(f'detection_labels before {len(detection_labels)}')
+
+            # # DEBUG: THIS ONLY INCLUDES THE ORIGINAL VALIDATION DATA FOR THE SPECIES AND THE ABIOTIC VALIDATION DATA
+            # # # DEBUG: Also, for each label in labels_to_evaluate, discard files containing label_truth that were NOT provided as explicit examples of the label in the training/validation data
+            # detection_labels_source = detection_labels[(detection_labels['label_source'].str.contains(label_under_evaluation, case=False, na=False))]
+            # detection_labels_abiotic = detection_labels[(detection_labels['label_source'].str.contains('abiotic', case=False, na=False))]
+            # detection_labels = pd.concat([detection_labels_source, detection_labels_abiotic], axis=0)
+            # # print(f'detection_labels after {len(detection_labels)}')
+
+            species_performance_metrics = evaluate_species_performance(detection_labels=detection_labels, species=label_under_evaluation, plot=False, title_label=model, save_to_dir=f'/Users/giojacuzzi/Downloads/perf/{model}')
             model_performance_metrics = pd.concat([model_performance_metrics, species_performance_metrics], ignore_index=True)
         
+        # DEBUG
+        # sys.exit()
+
         model_performance_metrics['model'] = model
         print(model_performance_metrics.to_string())
 
         performance_metrics = pd.concat([performance_metrics, model_performance_metrics], ignore_index=True)
 
-        collated_detection_labels['date'] = pd.to_datetime(collated_detection_labels['date'], format='%Y%m%d')
+        predictions['date'] = pd.to_datetime(predictions['date'], format='%Y%m%d')
         if model == out_dir_pretrained:
-            collated_detection_labels_pretrained = collated_detection_labels
+            collated_detection_labels_pretrained = predictions
         elif model == out_dir_custom:
-            collated_detection_labels_custom = collated_detection_labels
+            collated_detection_labels_custom = predictions
 
     print('FINAL RESULTS')
     performance_metrics.sort_values(by=['label', 'model'], inplace=True)
@@ -260,6 +356,8 @@ if __name__ == '__main__':
     #     - Number of sites detected / number of sites truly absent
 
     # TODO
+
+    sys.exit()
 
     site_deployment_metadata = get_site_deployment_metadata(2020)
 

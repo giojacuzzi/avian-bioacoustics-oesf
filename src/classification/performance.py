@@ -86,7 +86,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     # The average precision from prediction scores (AP) summarizes a precision-recall curve as the weighted mean of
     # precisions achieved at each threshold, with the increase in recall from the previous threshold used as the
     # weight. This can provide a more realistic measure of performance than AUC as it is not interpolated among scores.
-    pr_ap = sklearn.metrics.average_precision_score(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species)
+    pr_ap = np.nan # DEBUG: sklearn.metrics.average_precision_score(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species)
 
     # A baseline or "unskilled" classifier is one that cannot discriminate between the classes and would
     # predict a random class or a constant class in all cases. This is represented by a horizontal line
