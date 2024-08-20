@@ -173,14 +173,14 @@ if __name__ == '__main__':
     
     # Load results per classifier and calculate performance stats ---------------------------------------------------------------
     for model in [out_dir_pretrained, out_dir_custom]:
-        print(f'BEGIN MODEL EVALUATION {model}')
+        print(f'BEGIN MODEL EVALUATION {model} ==================================================')
 
         if model == out_dir_pretrained:
             model_labels_to_evaluate = preexisting_labels_to_evaluate
         else:
             model_labels_to_evaluate = labels_to_evaluate
 
-        print(f'Evaluating labels: {model_labels_to_evaluate}')
+        # print(f'Evaluating labels: {model_labels_to_evaluate}')
 
         # Load analyzer detection scores for each validation file example
         print('Loading analyzer detection scores for validation examples...')
@@ -241,17 +241,10 @@ if __name__ == '__main__':
         # TODO: see above
         annotations = pd.concat([annotations, revisions], ignore_index=True)
 
-        # AT THIS POINT...
-        # "predictions" contains the model confidence score for each validation example for each species
-        # print(f'predictions len {len(predictions)}')
-        # print(predictions.head())
-        # "annotations" contains the all annotations for each validation example
-        # print(f'annotations len {len(annotations)}')
-        # print(annotations.head())
+        # At this point,  "predictions" contains the model confidence score for each validation example for each species,
+        # and "annotations" contains the all annotations for each validation example
 
-        predictions.sort_values(by=['file', 'label_predicted'], inplace=True)
-
-        # Next, for each label, collate annotation data into simple presence ('label_predicted'), absence ('0'), or 'unknown' truth per label prediction per file, then merge with scores and interpret missing labels as absences
+        # Next, for each label, collate annotation data into simple presence ('label_predicted'), absence ('0'), or 'unknown' truth per label prediction per file, then add to 'predictions'
         predictions['label_truth'] = ''
         for index, row in predictions.iterrows():
 
@@ -267,9 +260,9 @@ if __name__ == '__main__':
             else:
                 predictions.at[index, 'label_truth'] = '0'
 
+        # Interpret missing labels as absences
         print(f"Intepreting {predictions['label_truth'].isna().sum()} missing labels as absences...")
         predictions['label_truth'] = predictions['label_truth'].fillna(0)
-        # print(f"There are now {predictions['label_truth'].isna().sum()} missing labels")
 
         # Get serialno, date, and time
         predictions[['serialno', 'date', 'time']] = predictions['file'].apply(lambda f: pd.Series(parse_metadata_from_detection_audio_filename(f)))
@@ -279,9 +272,8 @@ if __name__ == '__main__':
         print(f"{len(predictions['label_truth'].unique())} unique labels in predictions")
         print(f'{len(predictions)} predictions in total')
 
-        # Containers for performance metrics of all labels
-        model_performance_metrics = pd.DataFrame()
-
+        # Use 'predictions' to evaluate performance metrics for each label
+        model_performance_metrics = pd.DataFrame() # Container for performance metrics of all labels
         for label_under_evaluation in labels_to_evaluate:
             print(f'Calculating performance metrics for label {label_under_evaluation}...')
 
@@ -309,11 +301,8 @@ if __name__ == '__main__':
             collated_detection_labels_pretrained = predictions
         elif model == out_dir_custom:
             collated_detection_labels_custom = predictions
-        
-        # # DEBUG
-        # sys.exit()
 
-    print('FINAL RESULTS')
+    print('FINAL RESULTS ================================================')
     performance_metrics.sort_values(by=['label', 'model'], inplace=True)
     print(performance_metrics.to_string())
     # plt.show()
