@@ -87,6 +87,8 @@ custom_analyzer_filepath     = 'data/models/Custom/Custom_Classifier.tflite'
 custom_labels_filepath       = 'data/models/Custom/Custom_Classifier_Labels.txt'
 training_data_selections_dir = 'data/training/Custom/selections'
 
+debug_training_data_selections_revision_path = 'data/training/_training_data_log - Revisions.csv'
+
 overwrite = False
 
 def remove_extension(f):
@@ -178,6 +180,8 @@ if __name__ == '__main__':
         else:
             model_labels_to_evaluate = labels_to_evaluate
 
+        print(f'Evaluating labels: {model_labels_to_evaluate}')
+
         # Load analyzer detection scores for each validation file example
         print('Loading analyzer detection scores for validation examples...')
         score_files = []
@@ -214,11 +218,28 @@ if __name__ == '__main__':
         annotations['label_truth'] = annotations['label_truth'].str.lower()
         # print(annotations.to_string())
 
+        #######################################
+        # LOAD AND ADD REVISIONS
+        # TODO: Add these updated revisions directly to the raw annotation data instead of hacking them in here
+        revisions = pd.read_csv(debug_training_data_selections_revision_path)
+
+        # Replace empty values with 'unknown'
+        revisions['Label'] = revisions['Label'].replace('', 'unknown').fillna('unknown')
+        revisions.rename(columns={'Label': 'label_truth'}, inplace=True)
+        revisions.rename(columns={'Source': 'label_source'}, inplace=True)
+        revisions.rename(columns={'File': 'file'}, inplace=True)
+        revisions['file'] = revisions['file'].apply(remove_extension)
+        revisions = revisions[annotations.columns]
+
         # Clean annotation labels
         annotations['label_truth'] = annotations['label_truth'].apply(labels.clean_label)
 
         # Next, we discard annotations for files that were used in training
         annotations = annotations[annotations['file'].isin(set(in_validation_files))]
+
+        # Add revisions to annotations
+        # TODO: see above
+        annotations = pd.concat([annotations, revisions], ignore_index=True)
 
         # AT THIS POINT...
         # "predictions" contains the model confidence score for each validation example for each species
