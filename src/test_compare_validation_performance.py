@@ -171,7 +171,7 @@ if __name__ == '__main__':
     
     # Load results per classifier and calculate performance stats ---------------------------------------------------------------
     for model in [out_dir_pretrained, out_dir_custom]:
-        print(f'Evaluating model {model}...')
+        print(f'BEGIN MODEL EVALUATION {model}')
 
         if model == out_dir_pretrained:
             model_labels_to_evaluate = preexisting_labels_to_evaluate
@@ -222,33 +222,33 @@ if __name__ == '__main__':
 
         # AT THIS POINT...
         # "predictions" contains the model confidence score for each validation example for each species
-        print(f'predictions len {len(predictions)}')
-        print(predictions.head())
+        # print(f'predictions len {len(predictions)}')
+        # print(predictions.head())
+        # "annotations" contains the all annotations for each validation example
+        # print(f'annotations len {len(annotations)}')
+        # print(annotations.head())
 
         predictions.sort_values(by=['file', 'label_predicted'], inplace=True)
 
-        # "annotations" contains the all annotations for each validation example
-        print(f'annotations len {len(annotations)}')
-        print(annotations.head())
-
-        # Next, for each label, collate annotation data into simple 1 or 0 true presence per label per file, then merge with scores and interpret missing labels as absences
-        # collated_annotations = collate_annotations_as_detections(annotations, model_labels_to_evaluate, only_annotated=False, only_predicted=False)
-
+        # Next, for each label, collate annotation data into simple presence ('label_predicted'), absence ('0'), or 'unknown' truth per label prediction per file, then merge with scores and interpret missing labels as absences
         predictions['label_truth'] = ''
         for index, row in predictions.iterrows():
 
-            # Does the file contain the label?
+            # Does the file truly contain the label?
             present = row['label_predicted'] in set(annotations[annotations['file'] == row['file']]['label_truth'])
+            unknown = 'unknown' in set(annotations[annotations['file'] == row['file']]['label_truth'])
             if present:
                 predictions.at[index, 'label_truth'] = row['label_predicted']
                 # print(f"label_predicted: {row['label_predicted']}, file: {row['file']}")
                 # print(set(annotations[annotations['file'] == row['file']]['label_truth']))
+            elif unknown:
+                predictions.at[index, 'label_truth'] = 'unknown'
             else:
                 predictions.at[index, 'label_truth'] = '0'
 
         print(f"Intepreting {predictions['label_truth'].isna().sum()} missing labels as absences...")
         predictions['label_truth'] = predictions['label_truth'].fillna(0)
-        print(f"There are now {predictions['label_truth'].isna().sum()} missing labels")
+        # print(f"There are now {predictions['label_truth'].isna().sum()} missing labels")
 
         # Get serialno, date, and time
         predictions[['serialno', 'date', 'time']] = predictions['file'].apply(lambda f: pd.Series(parse_metadata_from_detection_audio_filename(f)))
@@ -257,47 +257,6 @@ if __name__ == '__main__':
         print(f"{len(predictions['file'].unique())} unique files in predictions")
         print(f"{len(predictions['label_truth'].unique())} unique labels in predictions")
         print(f'{len(predictions)} predictions in total')
-
-        # print(f'collated len {len(collated_annotations)}')
-
-        # print(f"{len(collated_annotations['file'].unique())} unique files in collated_annotations")
-        # print(f"{len(predictions['file'].unique())} unique files in predictions")
-
-        # print('Merging collated annotations with scores...')
-        # label_data_per_example = pd.merge(predictions, collated_annotations, how='left', on=['file'])
-        # print(label_data_per_example)
-        # print(len(label_data_per_example))
-
-        # print(f"diff in unique files is pred - label {set(predictions['file'].unique()) - set(collated_annotations['file'].unique())}")
-        # print(f"{len(label_data_per_example['file'].unique())} unique files in label_data_per_example")
-
-        # DEBUG ########################################
-
-        # # Merge, discarding annotations for non-validation files that were used in training
-        # print('Merging...')
-        # detections = pd.merge(predictions, annotations, on=['file_audio'], how='left')
-
-        # print(f'YOYO detections len {len(predictions)}')
-        # print_success(detections)
-        # # print('Sorting...')
-        # # detections.sort_values(by='file_audio', inplace=True)
-        # detections.rename(columns={'file_audio': 'file'}, inplace=True)
-        # detections['label_truth'] = detections['label_truth'].fillna('0') # interpret missing annotations as absence
-        # detections['label_truth'] = detections['label_truth'].apply(labels.clean_label)
-
-
-        # # Collate raw annotation data into simple 1 or 0 true presence per label
-        # print('Collating annotations per label...')
-        # collated_detection_labels = collate_annotations_as_detections(detections, labels_to_evaluate, only_annotated=False, only_TPandFP=False) # TODO: SET TO FALSE
-        # # print(collated_detection_labels)
-
-        # # Get detection serialno, date, and time
-        # collated_detection_labels[['serialno', 'date', 'time']] = collated_detection_labels['file'].apply(lambda f: pd.Series(parse_metadata_from_detection_audio_filename(f)))
-        # print_success(collated_detection_labels)
-
-        # DEBUG ########################################
-
-        # sys.exit()
 
         # Containers for performance metrics of all labels
         model_performance_metrics = pd.DataFrame()
@@ -309,21 +268,15 @@ if __name__ == '__main__':
                 print_warning(f"Skipping evaluation of invalid label {label_under_evaluation} for pretrained model...")
                 continue
 
+            # Get all the predictions and their associated confidence scores for this label
             detection_labels = predictions[predictions['label_predicted'] == label_under_evaluation]
-            # print(f'detection_labels before {len(detection_labels)}')
 
-            # # DEBUG: THIS ONLY INCLUDES THE ORIGINAL VALIDATION DATA FOR THE SPECIES AND THE ABIOTIC VALIDATION DATA
-            # # # DEBUG: Also, for each label in labels_to_evaluate, discard files containing label_truth that were NOT provided as explicit examples of the label in the training/validation data
-            # detection_labels_source = detection_labels[(detection_labels['label_source'].str.contains(label_under_evaluation, case=False, na=False))]
-            # detection_labels_abiotic = detection_labels[(detection_labels['label_source'].str.contains('abiotic', case=False, na=False))]
-            # detection_labels = pd.concat([detection_labels_source, detection_labels_abiotic], axis=0)
-            # # print(f'detection_labels after {len(detection_labels)}')
+            # Exclude unknown examples from calculations
+            print(f"Excluding {len(detection_labels[detection_labels['label_truth'] == 'unknown'])} unknown examples")
+            detection_labels = detection_labels[detection_labels['label_truth'] != 'unknown']
 
             species_performance_metrics = evaluate_species_performance(detection_labels=detection_labels, species=label_under_evaluation, plot=False, title_label=model, save_to_dir=f'/Users/giojacuzzi/Downloads/perf/{model}')
             model_performance_metrics = pd.concat([model_performance_metrics, species_performance_metrics], ignore_index=True)
-        
-        # DEBUG
-        # sys.exit()
 
         model_performance_metrics['model'] = model
         print(model_performance_metrics.to_string())
@@ -335,6 +288,9 @@ if __name__ == '__main__':
             collated_detection_labels_pretrained = predictions
         elif model == out_dir_custom:
             collated_detection_labels_custom = predictions
+        
+        # # DEBUG
+        # sys.exit()
 
     print('FINAL RESULTS')
     performance_metrics.sort_values(by=['label', 'model'], inplace=True)
