@@ -1,6 +1,7 @@
 # Compare performance on validation dataset between pre-traned and custom classifier
 # Takes a .csv listing all validation samples as input, and assumes a directory structure of .../POSITIVE_CLASS/sample.wav
 # NOTE: Must be executed from the top directory of the repo
+overwrite = False
 
 from classification import process_files
 from utils.log import *
@@ -58,13 +59,13 @@ preexisting_labels_to_evaluate = [
     "wilson's warbler"
 ]
 novel_labels_to_evaluate = [
-    "abiotic_aircraft",
-    "abiotic_logging",
-    "abiotic_rain",
-    "abiotic_vehicle",
-    "abiotic_wind",
-    "biotic_anuran",
-    "biotic_insect"
+    "abiotic aircraft",
+    "abiotic logging",
+    "abiotic rain",
+    "abiotic vehicle",
+    "abiotic wind",
+    "biotic anuran",
+    "biotic insect"
 ]
 labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
 
@@ -88,8 +89,6 @@ custom_labels_filepath       = 'data/models/Custom/Custom_Classifier_Labels.txt'
 training_data_selections_dir = 'data/training/Custom/selections'
 
 debug_training_data_selections_revision_path = 'data/training/_training_data_log - Revisions.csv'
-
-overwrite = False
 
 def remove_extension(f):
     return os.path.splitext(f)[0]
@@ -173,7 +172,7 @@ if __name__ == '__main__':
     
     # Load results per classifier and calculate performance stats ---------------------------------------------------------------
     for model in [out_dir_pretrained, out_dir_custom]:
-        print(f'BEGIN MODEL EVALUATION {model} ==================================================')
+        print(f'BEGIN MODEL EVALUATION {model} ================================================================================================')
 
         if model == out_dir_pretrained:
             model_labels_to_evaluate = preexisting_labels_to_evaluate
@@ -302,7 +301,7 @@ if __name__ == '__main__':
         elif model == out_dir_custom:
             collated_detection_labels_custom = predictions
 
-    print('FINAL RESULTS ================================================')
+    print('FINAL RESULTS ================================================================================================')
     performance_metrics.sort_values(by=['label', 'model'], inplace=True)
     print(performance_metrics.to_string())
     # plt.show()
@@ -314,6 +313,7 @@ if __name__ == '__main__':
     delta_metrics = pd.merge(metrics_custom, metrics_pre_trained, on='label')
     delta_metrics['AUC-PR_diff'] = delta_metrics['AUC-PR_custom'] - delta_metrics['AUC-PR_pre_trained']
     delta_metrics['p_max_r_diff'] = delta_metrics['p_max_r_custom'] - delta_metrics['p_max_r_pre_trained']
+    delta_metrics = delta_metrics.sort_index(axis=1)
     print(delta_metrics)
 
     # Site-level performance ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

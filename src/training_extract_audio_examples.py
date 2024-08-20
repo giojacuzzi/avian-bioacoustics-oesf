@@ -1,4 +1,5 @@
 ## Extract annotated audio examples as training data for a custom model
+overwrite = True
 
 from utils.files import *
 from utils.audio import *
@@ -15,8 +16,6 @@ dir_training_input_annotations = '/Users/giojacuzzi/Library/CloudStorage/GoogleD
 dir_training_output_data = '/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/Custom'
 # Path to directory with raw audio data
 data_dir = '/Volumes/gioj_b1/OESF'
-
-overwrite = True
 
 # Given a list of labels to train...
 species_labels = [
@@ -58,14 +57,14 @@ species_labels = [
     "white-crowned sparrow",
     "wilson's warbler"
 ]
-labels_to_train = species_labels + [
-    "abiotic_aircraft",
-    "abiotic_logging",
-    "abiotic_rain",
-    "abiotic_vehicle",
-    "abiotic_wind",
-    "biotic_anuran",
-    "biotic_insect"
+labels_to_train = species_labels + [  
+    "abiotic aircraft",
+    "abiotic logging",
+    "abiotic rain",
+    "abiotic vehicle",
+    "abiotic wind",
+    "biotic anuran",
+    "biotic insect"
 ] # e.g. 'abiotic vehicle' or others. Note that "Background" class is unique and must be manually added.
 
 species_list = pd.read_csv(species_list_filepath, index_col=None, usecols=['common_name', 'scientific_name'])
@@ -92,8 +91,13 @@ for label in labels_to_train:
         else:
             print_error(f"Scientific name for {label} not found.")
             continue
-    else: # Abiotic label
+    elif 'abiotic' in label: # Abiotic label
         label_label = f"Abiotic_{string.capwords(label)}"
+    elif 'biotic' in label:
+        label_label = f"Biotic_{string.capwords(label)}"
+    else:
+        print_error(f"Error processing label {label}.")
+        sys.exit()
 
     # Get the associated annotations for the label
     dir_label_input_annotations = dir_training_input_annotations + '/' + label
