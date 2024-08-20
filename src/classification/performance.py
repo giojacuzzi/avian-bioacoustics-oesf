@@ -86,7 +86,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     # The average precision from prediction scores (AP) summarizes a precision-recall curve as the weighted mean of
     # precisions achieved at each threshold, with the increase in recall from the previous threshold used as the
     # weight. This can provide a more realistic measure of performance than AUC as it is not interpolated among scores.
-    pr_ap = np.nan # DEBUG: sklearn.metrics.average_precision_score(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species)
+    pr_ap = sklearn.metrics.average_precision_score(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species)
 
     # A baseline or "unskilled" classifier is one that cannot discriminate between the classes and would
     # predict a random class or a constant class in all cases. This is represented by a horizontal line
@@ -106,7 +106,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         ax2.set_box_aspect(1)
 
     # Plot ROC
-    if False:
+    if True:
         # NOTE: ROC EVALUATIONS SHOWN FOR DEMONSTRATION. IMBALANCED EVALUATION DATA PRECLUDES INFERENCE.
         # The Receiver Operating Characteristic curve summarizes the tradeoff between the true positive rate (i.e. recall)
         # and the false positive rate (FPR) as we vary the confidence threshold. ROC curves are appropriate when the
@@ -123,18 +123,18 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
             print_warning("Could not compute ROC AUC, no negative examples.")
             roc_auc = 0.0
 
-        if plot:
-            # ns_probs = [species for _ in range(len(detection_labels))] # no skill classifier that only predicts 1 for all examples
-            # ns_roc_auc_score = sklearn.metrics.roc_auc_score(detection_labels['label_truth'], ns_probs, pos_label=species)
-            # ns_fpr, ns_tpr, _ = sklearn.metrics.roc_curve(detection_labels['label_truth'], ns_probs, pos_label=species, drop_intermediate=False)
-            # plt.plot(ns_fpr, ns_tpr, linestyle='--', label='Baseline', color='gray')
-            ax3.plot(fpr, tpr, marker='.', label='Classifier')
-            ax3.set_xlabel('False Positive Rate')
-            ax3.set_ylabel('True Positive Rate (Recall)')
-            ax3.set_title(f'ROC (AUC {roc_auc:.2f})', fontsize=font_size)
-            ax3.set_xlim([0.0-padding, 1.0+padding])
-            ax3.set_ylim([0.0-padding, 1.0+padding])
-            ax3.legend(loc='lower right')
+        # if plot:
+        #     # ns_probs = [species for _ in range(len(detection_labels))] # no skill classifier that only predicts 1 for all examples
+        #     # ns_roc_auc_score = sklearn.metrics.roc_auc_score(detection_labels['label_truth'], ns_probs, pos_label=species)
+        #     # ns_fpr, ns_tpr, _ = sklearn.metrics.roc_curve(detection_labels['label_truth'], ns_probs, pos_label=species, drop_intermediate=False)
+        #     # plt.plot(ns_fpr, ns_tpr, linestyle='--', label='Baseline', color='gray')
+        #     ax3.plot(fpr, tpr, marker='.', label='Classifier')
+        #     ax3.set_xlabel('False Positive Rate')
+        #     ax3.set_ylabel('True Positive Rate (Recall)')
+        #     ax3.set_title(f'ROC (AUC {roc_auc:.2f})', fontsize=font_size)
+        #     ax3.set_xlim([0.0-padding, 1.0+padding])
+        #     ax3.set_ylim([0.0-padding, 1.0+padding])
+        #     ax3.legend(loc='lower right')
 
     if plot:
         # fig.suptitle(species, x=0.0, y=1.0, horizontalalignment='left', verticalalignment='top', fontsize=12)
@@ -156,7 +156,8 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         'label':   [species],
         'AUC-PR':    [round(pr_auc, digits)],                                # Precision-Recall AUC
         'AP':        [round(pr_ap, digits)],                                 # Average precision
-        'p_mean':    [round(precision.mean(), digits)],                       # Average precision across all thresholds
+        'AUC-ROC':   [round(roc_auc, digits)],                               # Receiver Operating Characteristic AUC
+        'p_mean':    [round(precision.mean(), digits)],                      # Average precision across all thresholds
         'p_max':     [round(precision[np.argmax(precision[:-1])],  digits)], # Maximum precision across all thresholds
         'p_max_th':  [round(thresholds[np.argmax(precision[:-1])], digits)], # Score threshold to maximize precision
         'p_max_r':   [round(recall[np.argmax(precision[:-1])],     digits)], # Recall at maximum precision using threshold

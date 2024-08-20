@@ -308,10 +308,11 @@ if __name__ == '__main__':
 
     # Calculate metric deltas between custom and pre-trained
     print('Deltas between custom and pre-trained:')
-    metrics_custom = performance_metrics[performance_metrics['model'] == 'data/validation/Custom/custom'][['label', 'AUC-PR', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'p_max_r': 'p_max_r_custom'})
-    metrics_pre_trained = performance_metrics[performance_metrics['model'] == 'data/validation/Custom/pre-trained'][['label', 'AUC-PR', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
+    metrics_custom = performance_metrics[performance_metrics['model'] == 'data/validation/Custom/custom'][['label', 'AUC-PR', 'AUC-ROC', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'AUC-ROC': 'AUC-ROC_custom', 'p_max_r': 'p_max_r_custom'})
+    metrics_pre_trained = performance_metrics[performance_metrics['model'] == 'data/validation/Custom/pre-trained'][['label', 'AUC-PR', 'AUC-ROC', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'AUC-ROC': 'AUC-ROC_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
     delta_metrics = pd.merge(metrics_custom, metrics_pre_trained, on='label')
     delta_metrics['AUC-PR_diff'] = delta_metrics['AUC-PR_custom'] - delta_metrics['AUC-PR_pre_trained']
+    delta_metrics['AUC-ROC_diff'] = delta_metrics['AUC-ROC_custom'] - delta_metrics['AUC-ROC_pre_trained']
     delta_metrics['p_max_r_diff'] = delta_metrics['p_max_r_custom'] - delta_metrics['p_max_r_pre_trained']
     delta_metrics = delta_metrics.sort_index(axis=1)
     print(delta_metrics)
