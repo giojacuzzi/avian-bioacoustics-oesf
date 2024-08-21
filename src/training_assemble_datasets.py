@@ -63,6 +63,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+import subprocess
 
 # Normalize file paths to support both mac and windows
 training_data_path = os.path.normpath(training_data_path)
@@ -154,14 +155,14 @@ print(validation_examples['label'].value_counts())
 print(training_examples['label'].value_counts())
 
 # Define sample size experiments for model development
-sample_size_experiments = [25]
+sample_size_experiments = [2]
 
 # For each experiment (2,5,10,25,50,100 training examples)...
 for experiment_sample_size in sample_size_experiments:
     print(f'Running model development with {experiment_sample_size} training samples...')
 
     # Randomly sample the required number of examples per label from the training data
-    experiment_examples   = pd.DataFrame()
+    experiment_examples = pd.DataFrame()
     for label, group in training_examples.groupby('label'):
         label_examples = training_examples[training_examples['label'] == label]
         if len(label_examples) < experiment_sample_size:
@@ -170,10 +171,22 @@ for experiment_sample_size in sample_size_experiments:
         label_training = group.sample(n=min(experiment_sample_size, len(label_examples)), random_state=training_seed)
         experiment_examples = pd.concat([experiment_examples, label_training]).reset_index(drop=True)
     print(experiment_examples['label'].value_counts())
-    # print(experiment_examples.to_string())
 
-    # Train the model on these samples (both without and with hyperparameter autotune)
-    # TODO
+    # TODO: Train the model on these samples (both without and with hyperparameter autotune)
+    autotune = 0
+    print(f'Training model with {experiment_sample_size} examples ======================================================================================')
+    path_model_out = f'{os.getcwd()}/data/models/Custom/Custom_S{training_seed}_N{experiment_sample_size}_A{autotune}.tflite'
+    autotune = '--no-autotune' if not autotune else '--autotune'
+    args = [
+        'python3', 'src/demo.py',
+        '--i', '/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/Custom/audio', # Path to training data folder. Subfolder names are used as labels.
+        '--o', path_model_out, # Path to trained classifier model output.
+        autotune # Whether to use automatic hyperparameter tuning (this will execute multiple training runs to search for optimal hyperparameters).
+    ]
+    print(args)
+
+    # Run the script with arguments
+    subprocess.run(args)
     
     # Evaluate model performance with the shared validation data
     # TODO
