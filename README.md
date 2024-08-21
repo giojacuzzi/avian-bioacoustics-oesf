@@ -38,8 +38,9 @@ gsutil -m cp -r gs://gresearch/sound_separation/bird_mixit_model_checkpoints dat
 ## Training and performance evaluation pipeline
 1. Manually annotate training examples with Raven Pro
 2. Run `training_extract_audio_examples.py` to extract audio examples for training
-    - Manually add any additonal class examples (e.g. "Background") to the `audio` subdirectory
-3. Train a custom analyzer (ensure you have training data located in the input directory)
+    - Manually add any additonal class examples (e.g. "Background") to the `audio` subdirectory 
+3. Run `training_assemble_datasets.py` to assemble datasets for training
+4. Train custom classifiers with TODO
 ```
 cd src/submodules/BirdNET-Analyzer/
 python3 train.py --i /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/Custom/audio --o /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/models/Custom/Custom_Classifier.tflite
