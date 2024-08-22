@@ -43,7 +43,7 @@ gsutil -m cp -r gs://gresearch/sound_separation/bird_mixit_model_checkpoints dat
 4. Train custom classifiers with TODO
 ```
 cd src/submodules/BirdNET-Analyzer/
-python3 train.py --i /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/training/Custom/audio --o /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/models/Custom/Custom_Classifier.tflite
+python3 train_custom.py --i /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/models/custom/custom_S1_N2_A0/training_files.csv --o /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/models/custom/custom_S1_N2_A0/custom_S1_N2_A0.tflite --no-autotune
 ```
 4. Return to top directory with `cd ../../../`, then run `test_compare_validation_performance.py`
 
