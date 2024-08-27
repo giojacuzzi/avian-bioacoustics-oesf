@@ -116,7 +116,7 @@ def process_file(
 
     already_analyzed = list_base_files_by_extension(out_dir, 'csv')
     already_analyzed = [f.rstrip('.csv') for f in already_analyzed]
-    if (os.path.splitext(os.path.basename(in_filepath))[0]) in already_analyzed:
+    if out_dir != '' and ((os.path.splitext(os.path.basename(in_filepath))[0]) in already_analyzed):
         print(f'  {os.path.basename(in_filepath)} already analyzed. SKIPPING...')
         return
 

@@ -9,7 +9,7 @@ import os
 sort_by      = 'confidence' # Column to sort dataframe by
 ascending    = False        # Column sort direction
 save_to_file = False        # Save output to a file
-out_dir      = ''           # Output directory (e.g. '/Users/giojacuzzi/Downloads'), if saving output to file
+out_dir      = ''         # Output directory (e.g. os.path.normpath('/Users/giojacuzzi/Downloads')), if saving output to file
 
 # Analyzer config
 min_confidence = 0.1   # Minimum confidence score to retain a detection (only used if apply_sigmoid is True)
@@ -34,11 +34,10 @@ root_dir = os.path.dirname(in_filepath)
 if in_filepath.startswith("'") and in_filepath.endswith("'"):
     in_filepath = in_filepath[1:-1]
 in_filepath = os.path.normpath(in_filepath)
-out_dir     = os.path.normpath(out_dir)
 
 result = process_file.process_file(
     in_filepath    = in_filepath,
-    out_dir        = out_dir,
+    out_dir        = '',
     analyzer_filepath = analyzer_filepath,
     labels_filepath = labels_filepath,
     min_confidence = min_confidence,
