@@ -45,6 +45,8 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     precision, recall, thresholds = sklearn.metrics.precision_recall_curve(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species)
 
     f1_scores = 2*recall*precision/(recall+precision)
+    if np.any(np.isnan(f1_scores)):
+        f1_scores = f1_scores[~np.isnan(f1_scores)]
     f1_optimal_threshold = thresholds[np.argmax(f1_scores)]
     f1_max = np.max(f1_scores)
 

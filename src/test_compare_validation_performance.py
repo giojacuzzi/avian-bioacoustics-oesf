@@ -18,57 +18,16 @@ import shutil
 import sys
 import time
 
-custom_model_stub = f'custom_S1_N100_A0' # CHANGE ME
+custom_model_stub = f'custom_S1_N50_A0' # CHANGE ME
 custom_model_dir_path = f'data/models/custom/{custom_model_stub}'
 
-preexisting_labels_to_evaluate = [
-    "american robin",
-    "band-tailed pigeon",
-    "barred owl",
-    "belted kingfisher",
-    "black-throated gray warbler",
-    "common raven",
-    "dark-eyed junco",
-    "golden-crowned kinglet",
-    "hairy woodpecker",
-    "hammond's flycatcher",
-    "hermit thrush",
-    "hutton's vireo",
-    "marbled murrelet",
-    "northern flicker",
-    "northern pygmy-owl",
-    "northern saw-whet owl",
-    "olive-sided flycatcher",
-    "pacific wren",
-    "pacific-slope flycatcher",
-    "pileated woodpecker",
-    "purple finch",
-    "red crossbill",
-    "red-breasted nuthatch",
-    "ruby-crowned kinglet",
-    "rufous hummingbird",
-    "song sparrow",
-    "sooty grouse",
-    "spotted towhee",
-    "swainson's thrush",
-    "townsend's warbler",
-    "varied thrush",
-    "violet-green swallow",
-    "western screech-owl",
-    "western tanager",
-    "western wood-pewee",
-    "white-crowned sparrow",
-    "wilson's warbler"
-]
-novel_labels_to_evaluate = [
-    "abiotic aircraft",
-    "abiotic logging",
-    "abiotic rain",
-    "abiotic vehicle",
-    "abiotic wind",
-    "biotic anuran",
-    "biotic insect"
-]
+# Load class labels
+# NOTE: Labels are specified in training_labels.csv
+training_data_path = 'data/training'
+class_labels_csv_path = os.path.abspath(f'{training_data_path}/training_labels.csv')
+class_labels = pd.read_csv(class_labels_csv_path)
+preexisting_labels_to_evaluate = list(class_labels[class_labels['novel'] == 0]['label_birdnet'])
+novel_labels_to_evaluate = list(class_labels[class_labels['novel'] == 1]['label_birdnet'])
 labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
 
 # Output config
@@ -88,9 +47,6 @@ pretrained_analyzer_filepath = None # 'None' will default to the pretrained mode
 pretrained_labels_filepath   = 'src/classification/species_list/species_list_OESF.txt'
 custom_analyzer_filepath     = f'{custom_model_dir_path}/{custom_model_stub}.tflite'
 custom_labels_filepath       = f'{custom_model_dir_path}/{custom_model_stub}_Labels.txt'
-training_data_selections_dir = 'data/training/Custom/selections'
-
-debug_training_data_selections_revision_path = 'data/training/_training_data_log - Revisions.csv'
 
 def remove_extension(f):
     return os.path.splitext(f)[0]
@@ -100,7 +56,7 @@ if __name__ == '__main__':
 
     development_data = pd.read_csv(f'{custom_model_dir_path}/combined_files.csv')
     validation_data = development_data[development_data['dataset'] == 'validation']
-    validation_data['file'] = validation_data['file'].apply(remove_extension)
+    validation_data.loc[:, 'file'] = validation_data['file'].apply(remove_extension)
 
     out_dir_pretrained = out_dir + '/pre-trained'
     out_dir_custom     = out_dir + '/custom'
@@ -179,9 +135,9 @@ if __name__ == '__main__':
         print(f'BEGIN MODEL EVALUATION {model} ================================================================================================')
 
         if model == out_dir_pretrained:
-            model_labels_to_evaluate = preexisting_labels_to_evaluate
+            model_labels_to_evaluate = [label.split('_')[1].lower() for label in preexisting_labels_to_evaluate]
         else:
-            model_labels_to_evaluate = labels_to_evaluate
+            model_labels_to_evaluate = [label.split('_')[1].lower() for label in labels_to_evaluate]
 
         # print(f'Evaluating labels: {model_labels_to_evaluate}')
 
@@ -199,68 +155,38 @@ if __name__ == '__main__':
         predictions.rename(columns={'file_audio': 'file'}, inplace=True)
         predictions.rename(columns={'common_name': 'label_predicted'}, inplace=True)
         predictions['label_predicted'] = predictions['label_predicted'].str.lower()
-        # print(scores.to_string())
 
         # Discard scores for labels not under evaluation and files used in training
-        # Note this is redundant, because the score .csvs are only generated for the validation files
         predictions = predictions[predictions['file'].isin(set(validation_data['file']))]
         predictions = predictions[predictions['label_predicted'].isin(set(model_labels_to_evaluate))]
 
-        # Load selection table files
-        print('Loading corresponding annotation selection table files...')
-        selection_table_files = []
-        selection_table_files.extend(files.find_files(training_data_selections_dir, '.txt'))
-        annotations = pd.DataFrame()
-        for file in selection_table_files:
-            selections = files.load_raven_selection_table(file, cols_needed = ['label', 'file_audio']) # true labels
-            selections['label_source'] = os.path.basename(os.path.dirname(file))
-            annotations = pd.concat([annotations, selections], ignore_index=True)
-        annotations['file_audio'] = annotations['file_audio'].apply(remove_extension)
-        annotations.rename(columns={'file_audio': 'file'}, inplace=True)
-        annotations.rename(columns={'label': 'label_truth'}, inplace=True)
-        annotations['label_truth'] = annotations['label_truth'].str.lower()
-        # print(annotations)
-
-        #######################################
-        # LOAD AND ADD REVISIONS
-        # TODO: Add these updated revisions directly to the raw annotation data instead of hacking them in here
-        revisions = pd.read_csv(debug_training_data_selections_revision_path)
-
-        # Replace empty values with 'unknown'
-        revisions['Label'] = revisions['Label'].replace('', 'unknown').fillna('unknown')
-        revisions.rename(columns={'Label': 'label_truth'}, inplace=True)
-        revisions.rename(columns={'Source': 'label_source'}, inplace=True)
-        revisions.rename(columns={'File': 'file'}, inplace=True)
-        revisions['file'] = revisions['file'].apply(remove_extension)
-        revisions = revisions[annotations.columns]
-        # print(revisions)
-
-        # Add revisions to annotations
-        # TODO: see above
-        annotations = pd.concat([annotations, revisions], ignore_index=True)
-
-        # Clean annotation labels
-        annotations['label_truth'] = annotations['label_truth'].apply(labels.clean_label)
-
+        # Load annotation labels for the training files
+        print('Loading corresponding annotations...')
+        annotations = pd.read_csv(f'{training_data_path}/training_data_annotations.csv')
+  
         # Discard annotations for files that were used in training
+        print('Discarding annotations for files used in training...')
         annotations = annotations[annotations['file'].isin(set(validation_data['file']))]
 
-        # At this point,  "predictions" contains the model confidence score for each validation example for each species,
-        # and "annotations" contains the all annotations for each validation example
+        # At this point, "predictions" contains the model confidence score for each validation example for each predicted label,
+        # and "annotations" contains the all annotations (i.e. true labels) for each validation example.
 
-        # Next, for each label, collate annotation data into simple presence ('label_predicted'), absence ('0'), or 'unknown' truth per label prediction per file, then add to 'predictions'
+        # Next, for each label, collate annotation data into simple presence ('label_predicted') or absence ('0') truth per label prediction per file, then add to 'predictions'
+        print('Collating annotations for each label...')
         predictions['label_truth'] = ''
         for index, row in predictions.iterrows():
 
             # Does the file truly contain the label?
-            present = row['label_predicted'] in set(annotations[annotations['file'] == row['file']]['label_truth'])
-            unknown = 'unknown' in set(annotations[annotations['file'] == row['file']]['label_truth'])
+            true_labels = []
+            file_annotations = annotations[annotations['file'] == row['file']]
+            if len(file_annotations) > 0:
+                true_labels = str(file_annotations['labels'].iloc[0]).split(', ')
+                true_labels = [label.split('_')[1].lower() for label in true_labels]
+            # NOTE: Unannotated files (e.g. Background files) will be intepreted as having no labels
+
+            present = row['label_predicted'] in set(true_labels)
             if present:
                 predictions.at[index, 'label_truth'] = row['label_predicted']
-                # print(f"label_predicted: {row['label_predicted']}, file: {row['file']}")
-                # print(set(annotations[annotations['file'] == row['file']]['label_truth']))
-            elif unknown:
-                predictions.at[index, 'label_truth'] = 'unknown'
             else:
                 predictions.at[index, 'label_truth'] = '0'
 
@@ -270,19 +196,11 @@ if __name__ == '__main__':
 
         # Use 'predictions' to evaluate performance metrics for each label
         model_performance_metrics = pd.DataFrame() # Container for performance metrics of all labels
-        for label_under_evaluation in labels_to_evaluate:
+        for label_under_evaluation in model_labels_to_evaluate:
             print(f"Calculating performance metrics for '{label_under_evaluation}'...")
-
-            if model == out_dir_pretrained and label_under_evaluation in novel_labels_to_evaluate:
-                print_warning(f"Skipping evaluation of invalid label {label_under_evaluation} for pretrained model...")
-                continue
 
             # Get all the predictions and their associated confidence scores for this label
             detection_labels = predictions[predictions['label_predicted'] == label_under_evaluation]
-
-            # Exclude unknown examples from calculations
-            print(f"Excluding {len(detection_labels[detection_labels['label_truth'] == 'unknown'])} unknown examples")
-            detection_labels = detection_labels[detection_labels['label_truth'] != 'unknown']
 
             species_performance_metrics = evaluate_species_performance(detection_labels=detection_labels, species=label_under_evaluation, plot=False, title_label=model, save_to_dir=f'/Users/giojacuzzi/Downloads/perf/{model}')
             model_performance_metrics = pd.concat([model_performance_metrics, species_performance_metrics], ignore_index=True)
@@ -290,6 +208,11 @@ if __name__ == '__main__':
         model_performance_metrics['model'] = model
         print(f'PERFORMANCE METRICS FOR {model}')
         print(model_performance_metrics.to_string())
+
+        if model == out_dir_pretrained:
+            model_performance_metrics.to_csv(f"{out_dir}/metrics_pre-trained.csv")
+        else:
+            model_performance_metrics.to_csv(f"{out_dir}/metrics_custom.csv")
 
         performance_metrics = pd.concat([performance_metrics, model_performance_metrics], ignore_index=True)
 
@@ -305,14 +228,25 @@ if __name__ == '__main__':
 
     # Calculate metric deltas between custom and pre-trained
     print('Deltas between custom and pre-trained:')
-    metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom][['label', 'AUC-PR', 'AUC-ROC', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'AUC-ROC': 'AUC-ROC_custom', 'p_max_r': 'p_max_r_custom'})
-    metrics_pre_trained = performance_metrics[performance_metrics['model'] == out_dir_pretrained][['label', 'AUC-PR', 'AUC-ROC', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'AUC-ROC': 'AUC-ROC_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
+    metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom][['label', 'AUC-PR', 'AUC-ROC', 'f1_max', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'AUC-ROC': 'AUC-ROC_custom', 'f1_max': 'f1_max_custom', 'p_max_r': 'p_max_r_custom'})
+    metrics_pre_trained = performance_metrics[performance_metrics['model'] == out_dir_pretrained][['label', 'AUC-PR', 'AUC-ROC', 'f1_max', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'AUC-ROC': 'AUC-ROC_pre_trained', 'f1_max': 'f1_max_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
     delta_metrics = pd.merge(metrics_custom, metrics_pre_trained, on='label')
     delta_metrics['AUC-PR_diff'] = delta_metrics['AUC-PR_custom'] - delta_metrics['AUC-PR_pre_trained']
     delta_metrics['AUC-ROC_diff'] = delta_metrics['AUC-ROC_custom'] - delta_metrics['AUC-ROC_pre_trained']
+    delta_metrics['f1_max__diff'] = delta_metrics['f1_max_custom'] - delta_metrics['f1_max_pre_trained']
     delta_metrics['p_max_r_diff'] = delta_metrics['p_max_r_custom'] - delta_metrics['p_max_r_pre_trained']
     delta_metrics = delta_metrics.sort_index(axis=1)
+    col_order = ['label'] + [col for col in delta_metrics.columns if col != 'label']
+    delta_metrics = delta_metrics[col_order]
     print(delta_metrics)
+
+    # Calculate macro-averaged metrics for each model
+    mean_values = delta_metrics.drop(columns='label').mean()
+    mean_row = pd.Series(['MEAN'] + mean_values.tolist(), index=delta_metrics.columns)
+    delta_metrics = pd.concat([delta_metrics, pd.DataFrame([mean_row])], ignore_index=True)
+
+    print(delta_metrics)
+    delta_metrics.to_csv(f"{out_dir}/metrics_summary.csv")
 
     # Site-level performance ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #     - Number of sites detected / number of sites truly present
