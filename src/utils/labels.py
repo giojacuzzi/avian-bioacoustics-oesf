@@ -21,7 +21,7 @@ consolidated_labels = {
             "golden-crowned sparrow","sparrow","sparriw","sparrw","common loon","finch","grouse","hummingbird","kinglet","warbler","woodpecker"
         ], # 0 indicates a predicted species is NOT present
         # Other
-        "artifact_truncation": ["truncation","truncated"],
+        "artifact truncation": ["artifact_truncation","truncation","truncated"],
     }
 
 def get_species_classes():

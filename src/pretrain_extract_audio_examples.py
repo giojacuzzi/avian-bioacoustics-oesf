@@ -196,6 +196,26 @@ for label in labels_to_train:
             print(f'Saving to {full_out}')
             extracted_data.export(full_out, format='wav')
 
+            # TODO: Create data augmentation windows with temporal shifts to the left and right of the midpoint
+            data_augmentation = True
+            data_augmentation_shift_sec = 0.75
+            if data_augmentation:     
+                data_aug1_start_time = max(data_start_time - data_augmentation_shift_sec, 0.0)
+                data_aug1_end_time   = min(data_end_time - data_augmentation_shift_sec, audio_data.frame_count / 1000.0)
+                data_aug2_start_time = min(data_start_time + data_augmentation_shift_sec, audio_data.frame_count / 1000.0)
+                data_aug2_end_time   = min(data_end_time + data_augmentation_shift_sec, audio_data.frame_count / 1000.0)
+
+                if data_aug1_end_time - data_aug1_start_time == 3.0:
+                    extracted_data = audio_data[(data_aug1_start_time * 1000):(data_aug1_end_time * 1000)]
+                    full_out = f'{path_out}/{file_out_audio}_AUG{data_aug1_start_time}'
+                    print(f'Saving augmentation 1 to {full_out}')
+                    extracted_data.export(full_out, format='wav')
+                if data_aug2_end_time - data_aug2_start_time == 3.0:
+                    extracted_data = audio_data[(data_aug2_start_time * 1000):(data_aug2_end_time * 1000)]
+                    full_out = f'{path_out}/{file_out_audio}_AUG{data_aug2_start_time}'
+                    print(f'Saving augmentation 2 to {full_out}')
+                    extracted_data.export(full_out, format='wav')
+
         # Store info for later summary
         training_examples = pd.concat([training_examples, table], ignore_index=True) # Store the table
 

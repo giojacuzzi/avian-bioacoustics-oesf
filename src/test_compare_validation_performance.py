@@ -1,7 +1,7 @@
 # Compare performance on validation dataset between pre-traned and custom classifier
 # Takes a .csv listing all validation samples as input, and assumes a directory structure of .../POSITIVE_CLASS/sample.wav
 # NOTE: Must be executed from the top directory of the repo
-overwrite = False
+overwrite = True
 
 from classification import process_files
 from utils.log import *
@@ -26,6 +26,7 @@ custom_model_dir_path = f'data/models/custom/{custom_model_stub}'
 training_data_path = 'data/training'
 class_labels_csv_path = os.path.abspath(f'{training_data_path}/training_labels.csv')
 class_labels = pd.read_csv(class_labels_csv_path)
+class_labels = class_labels[class_labels['train'] == 1]
 preexisting_labels_to_evaluate = list(class_labels[class_labels['novel'] == 0]['label_birdnet'])
 novel_labels_to_evaluate = list(class_labels[class_labels['novel'] == 1]['label_birdnet'])
 labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
