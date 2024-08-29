@@ -234,7 +234,7 @@ if __name__ == '__main__':
     delta_metrics = pd.merge(metrics_custom, metrics_pre_trained, on='label')
     delta_metrics['AUC-PR_diff'] = delta_metrics['AUC-PR_custom'] - delta_metrics['AUC-PR_pre_trained']
     delta_metrics['AUC-ROC_diff'] = delta_metrics['AUC-ROC_custom'] - delta_metrics['AUC-ROC_pre_trained']
-    delta_metrics['f1_max__diff'] = delta_metrics['f1_max_custom'] - delta_metrics['f1_max_pre_trained']
+    delta_metrics['f1_max_diff'] = delta_metrics['f1_max_custom'] - delta_metrics['f1_max_pre_trained']
     delta_metrics['p_max_r_diff'] = delta_metrics['p_max_r_custom'] - delta_metrics['p_max_r_pre_trained']
     delta_metrics = delta_metrics.sort_index(axis=1)
     col_order = ['label'] + [col for col in delta_metrics.columns if col != 'label']

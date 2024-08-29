@@ -18,7 +18,7 @@ confusion_mtx = read.csv('data/annotations/processed/confusion_matrix.csv', row.
 
 perf_metrics = read.csv('data/annotations/processed/label_perf_metrics.csv')
 
-labels_to_remove = c('american three-toed woodpecker')
+labels_to_remove = c("long-eared owl", "american three-toed woodpecker", "cassin's vireo", "western kingbird", "eastern kingbird", "dusky flycatcher", "mountain bluebird", "vesper sparrow", "american redstart", "cassin's finch", "clark's nutcracker", "pine grosbeak", "lazuli bunting", "bushtit", "ring-necked pheasant", "california quail")
 confusion_mtx <- confusion_mtx[, !names(confusion_mtx) %in% labels_to_remove]
 confusion_mtx <- confusion_mtx[!rownames(confusion_mtx) %in% labels_to_remove, ]
 
@@ -139,7 +139,7 @@ my_from  <-  match( my_connect$from, my_vertices$name)
 my_to  <-  match( my_connect$to, my_vertices$name)
 
 g = ggraph(my_mygraph, layout = 'dendrogram', circular = TRUE) + 
-  geom_conn_bundle(data = get_con(from = my_from, to = my_to), alpha=0.2, width=0.4, aes(colour=..index..), tension = 0.98) +
+  geom_conn_bundle(data = get_con(from = my_from, to = my_to), alpha=0.2, width=0.5, aes(colour=..index..), tension = 0.98) +
   scale_edge_colour_distiller(palette = "RdPu") +
   # scale_edge_color_continuous(low="red", high="snow2") + # aliceblue, azure, snow2
   geom_node_text(aes(x = x*1.12, y=y*1.12, filter = leaf, label=tools::toTitleCase(name), angle = angle, hjust=hjust, colour=Group), size=2, alpha=1) +
