@@ -18,7 +18,7 @@ import shutil
 import sys
 import time
 
-custom_model_stub = f'custom_S1_N50_A0' # CHANGE ME
+custom_model_stub = 'custom_S1_N100_A0_U0_I4' # CHANGE ME
 custom_model_dir_path = f'data/models/custom/{custom_model_stub}'
 
 # Load class labels
