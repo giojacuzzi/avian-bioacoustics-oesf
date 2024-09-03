@@ -65,6 +65,22 @@ plot_histogram = ggplot(perf, aes(x = threshold)) +
 plot_histogram
 
 
+library(diptest)
+library(LaplacesDemon)
+label_to_test = 'song sparrow'
+pretrained_dist = subset(subset(perf, model == 'pretrained'), label == label_to_test, select = threshold)
+custom_dist = subset(subset(perf, model == 'custom'), label == label_to_test, select = threshold)
+plot(pretrained_dist)
+plot(custom_dist)
+is.unimodal(unlist(pretrained_dist))
+is.unimodal(unlist(custom_dist))
+is.multimodal(unlist(pretrained_dist))
+is.multimodal(unlist(custom_dist))
+dip.test(unlist(pretrained_dist))
+dip.test(unlist(custom_dist))
+
+
+
 if (labels_to_plot == 'all') {
   labels_to_plot = unique(perf$label)
 }
