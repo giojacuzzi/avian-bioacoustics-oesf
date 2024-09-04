@@ -148,10 +148,12 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
             fig.show()
             plt.show(block=False)
 
-    if 'sites' in detection_labels.columns:
+    if 'site' in detection_labels.columns:
         N_sites = detection_labels[detection_labels['label_truth'] == species]['site'].nunique(dropna=True)
+        sites = sorted(set(detection_labels[detection_labels['label_truth'] == species]['site'].dropna().tolist()))
     else:
         N_sites = np.nan
+        sites = []
     
     # Return the performance metrics
     return pd.DataFrame({
@@ -173,7 +175,8 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         'N_N':       [n_N],                                             # Total number of negative examples
         'N_unknown': [n_unknown],                                        # Total number of unknown examples excluded from evaluation
         'class_ratio': [round(n_P / n_examples, 2)],                                       # Class balance ratio (0.5 is perfectly balanced, 0.0 only negative, 1.0 only positive)
-        'N_sites': [N_sites] # Number of unique sites with true presences
+        'N_sites': [N_sites], # Number of unique sites with true presences
+        'sites': [sites]
     })
 
 # Returns a dataframe containing a confusion matrix (TP, FP, FN, TN) and number of truly present/absent sites for a given species from a detection history

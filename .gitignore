@@ -7,6 +7,8 @@
 *.wav
 *.csv
 *.png
+*.svg
+*.ai
 
 # Model and training files
 /data/training/*
