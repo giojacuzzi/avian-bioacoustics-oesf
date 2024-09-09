@@ -98,7 +98,7 @@ for example_audio_path in audio_paths:
     }
     test_data_annotations = pd.concat([test_data_annotations, pd.DataFrame([row])], ignore_index=True)
 
-out_path = 'data/testing/testing_data_annotations.csv'
+out_path = 'data/test/test_data_annotations.csv'
 print('Sorting results...')
 test_data_annotations = test_data_annotations.sort_values(by="target", ascending=True)
 test_data_annotations.to_csv(out_path)

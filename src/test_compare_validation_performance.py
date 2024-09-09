@@ -1,7 +1,12 @@
 # Compare performance on an evaluation dataset (e.g. validation, test) between pre-trained and custom classifier
 # Takes a .csv listing all validation samples as input, and assumes a directory structure of .../POSITIVE_CLASS/sample.wav
 # NOTE: Must be executed from the top directory of the repo
+
+# CHANGE ME ##############################################################################
 overwrite = True
+evaluation_dataset = 'validation' # 'validation' or 'test'
+custom_model_stub  = 'custom_S1_N5_LR0.001_BS1_HU0_LSFalse_US0_I0' # e.g. 'custom_S1_N100_A0_U0_I0' or None to only evaluate pre-trained model
+##########################################################################################
 
 from classification import process_files
 from utils.log import *
@@ -18,11 +23,12 @@ import shutil
 import sys
 import time
 
-custom_model_stub = 'custom_S1_N100_A0_U0_I0' # CHANGE ME, e.g. 'custom_S1_N100_A0_U0_I0'
-
-custom_model_dir_path = f'data/models/custom/{custom_model_stub}'
-
-training_data_path = 'data/training'
+if evaluation_dataset != 'validation' and evaluation_dataset != 'test':
+    print_error('Invalid evaluation dataset')
+    sys.exit()
+if custom_model_stub == None and evaluation_dataset == 'validation':
+    print_error('Evaluating with a validation dataset requires a custom model specified')
+    sys.exit()
 
 # Load class labels
 class_labels_csv_path = os.path.abspath(f'data/class_labels.csv')
@@ -36,7 +42,12 @@ labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
 sort_by      = 'confidence' # Column to sort dataframe by
 ascending    = False        # Column sort direction
 save_to_file = True        # Save output to a file
-out_dir      = f'data/validation/custom/{custom_model_stub}' # Output directory (e.g. '/Users/giojacuzzi/Downloads'), if saving output to file
+if evaluation_dataset == 'validation' and custom_model_stub != None:
+    out_dir = f'data/validation/custom/{custom_model_stub}' # Output directory (e.g. '/Users/giojacuzzi/Downloads'), if saving output to file
+    custom_model_dir_path = f'data/models/custom/{custom_model_stub}'
+elif evaluation_dataset == 'test':
+    out_dir = f'data/testing/{custom_model_stub}'
+    custom_model_dir_path = f'data/models/custom/{custom_model_stub}'
 
 # Analyzer config
 min_confidence = 0.0   # Minimum confidence score to retain a detection (only used if apply_sigmoid is True)
@@ -49,6 +60,7 @@ pretrained_analyzer_filepath = None # 'None' will default to the pretrained mode
 pretrained_labels_filepath   = 'src/classification/species_list/species_list_OESF.txt'
 custom_analyzer_filepath     = f'{custom_model_dir_path}/{custom_model_stub}.tflite'
 custom_labels_filepath       = f'{custom_model_dir_path}/{custom_model_stub}_Labels.txt'
+training_data_path           = 'data/training'
 
 def remove_extension(f):
     return os.path.splitext(f)[0]
@@ -59,12 +71,24 @@ if __name__ == '__main__':
     # Get the evaluation data as a dataframe with columns:
     # 'path' - full path to the audio file
     # 'file' - the basename of the audio file
-    development_data = pd.read_csv(f'{custom_model_dir_path}/combined_files.csv')
-    evaluation_data = development_data[development_data['dataset'] == 'validation']
-    evaluation_data.loc[:, 'file'] = evaluation_data['file'].apply(remove_extension)
+
+    if evaluation_dataset == 'validation':
+        development_data = pd.read_csv(f'{custom_model_dir_path}/combined_files.csv')
+        evaluation_data = development_data[development_data['dataset'] == 'validation']
+        evaluation_data.loc[:, 'file'] = evaluation_data['file'].apply(remove_extension)
+
+    elif evaluation_dataset == 'test':
+        evaluation_data = pd.read_csv('data/test/test_data_annotations.csv')
+        print(evaluation_data)
+        print('TODO')
+        sys.exit()
 
     out_dir_pretrained = out_dir + '/pre-trained'
     out_dir_custom     = out_dir + '/custom'
+    if custom_model_stub == None:
+        models = [out_dir_pretrained]
+    else:
+        models = [out_dir_pretrained, out_dir_custom]
 
     in_evaluation_audio_filepaths = evaluation_data['path']
 
@@ -92,23 +116,24 @@ if __name__ == '__main__':
 
         in_rootdirs = np.vectorize(get_second_to_last_directory_of_path)(in_evaluation_audio_filepaths)
 
-        # Custom classifier
-        print(f"Processing evaluation set with classifier {custom_analyzer_filepath}")
-        process_files.process_files_parallel(
-            in_files          = in_evaluation_audio_filepaths,
-            out_dir           = out_dir_custom,
-            root_dirs         = in_rootdirs,
-            in_filetype       = '.wav',
-            analyzer_filepath = custom_analyzer_filepath,
-            labels_filepath   = custom_labels_filepath,
-            n_processes       = n_processes,
-            min_confidence    = min_confidence,
-            apply_sigmoid     = apply_sigmoid,
-            num_separation    = num_separation,
-            cleanup           = cleanup,
-            sort_by           = sort_by,
-            ascending         = ascending
-        )
+        if custom_model_stub != None:
+            # Custom classifier
+            print(f"Processing evaluation set with classifier {custom_analyzer_filepath}")
+            process_files.process_files_parallel(
+                in_files          = in_evaluation_audio_filepaths,
+                out_dir           = out_dir_custom,
+                root_dirs         = in_rootdirs,
+                in_filetype       = '.wav',
+                analyzer_filepath = custom_analyzer_filepath,
+                labels_filepath   = custom_labels_filepath,
+                n_processes       = n_processes,
+                min_confidence    = min_confidence,
+                apply_sigmoid     = apply_sigmoid,
+                num_separation    = num_separation,
+                cleanup           = cleanup,
+                sort_by           = sort_by,
+                ascending         = ascending
+            )
 
         # Pre-trained classifier
         print(f"Processing evaluation set with classifier {pretrained_analyzer_filepath}")
@@ -136,12 +161,12 @@ if __name__ == '__main__':
     collated_detection_labels_custom = pd.DataFrame()
     
     # Load results per classifier and calculate performance stats ---------------------------------------------------------------
-    for model in [out_dir_pretrained, out_dir_custom]:
+    for model in models:
         print(f'BEGIN MODEL EVALUATION {model} ================================================================================================')
 
         if model == out_dir_pretrained:
             model_labels_to_evaluate = [label.split('_')[1].lower() for label in preexisting_labels_to_evaluate]
-        else:
+        elif model == out_dir_custom:
             model_labels_to_evaluate = [label.split('_')[1].lower() for label in labels_to_evaluate]
 
         # print(f'Evaluating labels: {model_labels_to_evaluate}')
@@ -218,7 +243,7 @@ if __name__ == '__main__':
 
         if model == out_dir_pretrained:
             model_performance_metrics.to_csv(f"{out_dir}/metrics_pre-trained.csv")
-        else:
+        elif model == out_dir_custom:
             model_performance_metrics.to_csv(f"{out_dir}/metrics_custom.csv")
 
         performance_metrics = pd.concat([performance_metrics, model_performance_metrics], ignore_index=True)
@@ -234,26 +259,27 @@ if __name__ == '__main__':
     # plt.show()
 
     # Calculate metric deltas between custom and pre-trained
-    print('Deltas between custom and pre-trained:')
-    metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom][['label', 'AUC-PR', 'AUC-ROC', 'f1_max', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'AUC-ROC': 'AUC-ROC_custom', 'f1_max': 'f1_max_custom', 'p_max_r': 'p_max_r_custom'})
-    metrics_pre_trained = performance_metrics[performance_metrics['model'] == out_dir_pretrained][['label', 'AUC-PR', 'AUC-ROC', 'f1_max', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'AUC-ROC': 'AUC-ROC_pre_trained', 'f1_max': 'f1_max_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
-    delta_metrics = pd.merge(metrics_custom, metrics_pre_trained, on='label')
-    delta_metrics['AUC-PR_diff'] = delta_metrics['AUC-PR_custom'] - delta_metrics['AUC-PR_pre_trained']
-    delta_metrics['AUC-ROC_diff'] = delta_metrics['AUC-ROC_custom'] - delta_metrics['AUC-ROC_pre_trained']
-    delta_metrics['f1_max_diff'] = delta_metrics['f1_max_custom'] - delta_metrics['f1_max_pre_trained']
-    delta_metrics['p_max_r_diff'] = delta_metrics['p_max_r_custom'] - delta_metrics['p_max_r_pre_trained']
-    delta_metrics = delta_metrics.sort_index(axis=1)
-    col_order = ['label'] + [col for col in delta_metrics.columns if col != 'label']
-    delta_metrics = delta_metrics[col_order]
-    print(delta_metrics)
+    if len(models) > 1:
+        print('Deltas between custom and pre-trained:')
+        metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom][['label', 'AUC-PR', 'AUC-ROC', 'f1_max', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'AUC-ROC': 'AUC-ROC_custom', 'f1_max': 'f1_max_custom', 'p_max_r': 'p_max_r_custom'})
+        metrics_pre_trained = performance_metrics[performance_metrics['model'] == out_dir_pretrained][['label', 'AUC-PR', 'AUC-ROC', 'f1_max', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'AUC-ROC': 'AUC-ROC_pre_trained', 'f1_max': 'f1_max_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
+        delta_metrics = pd.merge(metrics_custom, metrics_pre_trained, on='label')
+        delta_metrics['AUC-PR_diff'] = delta_metrics['AUC-PR_custom'] - delta_metrics['AUC-PR_pre_trained']
+        delta_metrics['AUC-ROC_diff'] = delta_metrics['AUC-ROC_custom'] - delta_metrics['AUC-ROC_pre_trained']
+        delta_metrics['f1_max_diff'] = delta_metrics['f1_max_custom'] - delta_metrics['f1_max_pre_trained']
+        delta_metrics['p_max_r_diff'] = delta_metrics['p_max_r_custom'] - delta_metrics['p_max_r_pre_trained']
+        delta_metrics = delta_metrics.sort_index(axis=1)
+        col_order = ['label'] + [col for col in delta_metrics.columns if col != 'label']
+        delta_metrics = delta_metrics[col_order]
+        # print(delta_metrics)
 
-    # Calculate macro-averaged metrics for each model
-    mean_values = delta_metrics.drop(columns='label').mean()
-    mean_row = pd.Series(['MEAN'] + mean_values.tolist(), index=delta_metrics.columns)
-    delta_metrics = pd.concat([delta_metrics, pd.DataFrame([mean_row])], ignore_index=True)
+        # Calculate macro-averaged metrics for each model
+        mean_values = delta_metrics.drop(columns='label').mean()
+        mean_row = pd.Series(['MEAN'] + mean_values.tolist(), index=delta_metrics.columns)
+        delta_metrics = pd.concat([delta_metrics, pd.DataFrame([mean_row])], ignore_index=True)
 
-    print(delta_metrics)
-    delta_metrics.to_csv(f"{out_dir}/metrics_summary.csv")
+        print(delta_metrics)
+        delta_metrics.to_csv(f"{out_dir}/metrics_summary.csv")
 
     # Site-level performance ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #     - Number of sites detected / number of sites truly present
