@@ -1,4 +1,4 @@
-# Compare performance on validation dataset between pre-traned and custom classifier
+# Compare performance on an evaluation dataset (e.g. validation, test) between pre-trained and custom classifier
 # Takes a .csv listing all validation samples as input, and assumes a directory structure of .../POSITIVE_CLASS/sample.wav
 # NOTE: Must be executed from the top directory of the repo
 overwrite = True
@@ -18,13 +18,14 @@ import shutil
 import sys
 import time
 
-custom_model_stub = 'custom_S1_N100_A0_U0_I4' # CHANGE ME
+custom_model_stub = 'custom_S1_N100_A0_U0_I0' # CHANGE ME, e.g. 'custom_S1_N100_A0_U0_I0'
+
 custom_model_dir_path = f'data/models/custom/{custom_model_stub}'
 
-# Load class labels
-# NOTE: Labels are specified in training_labels.csv
 training_data_path = 'data/training'
-class_labels_csv_path = os.path.abspath(f'{training_data_path}/training_labels.csv')
+
+# Load class labels
+class_labels_csv_path = os.path.abspath(f'data/class_labels.csv')
 class_labels = pd.read_csv(class_labels_csv_path)
 class_labels = class_labels[class_labels['train'] == 1]
 preexisting_labels_to_evaluate = list(class_labels[class_labels['novel'] == 0]['label_birdnet'])
@@ -55,20 +56,23 @@ def remove_extension(f):
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
 
+    # Get the evaluation data as a dataframe with columns:
+    # 'path' - full path to the audio file
+    # 'file' - the basename of the audio file
     development_data = pd.read_csv(f'{custom_model_dir_path}/combined_files.csv')
-    validation_data = development_data[development_data['dataset'] == 'validation']
-    validation_data.loc[:, 'file'] = validation_data['file'].apply(remove_extension)
+    evaluation_data = development_data[development_data['dataset'] == 'validation']
+    evaluation_data.loc[:, 'file'] = evaluation_data['file'].apply(remove_extension)
 
     out_dir_pretrained = out_dir + '/pre-trained'
     out_dir_custom     = out_dir + '/custom'
 
-    in_validation_filepaths = validation_data['path']
+    in_evaluation_audio_filepaths = evaluation_data['path']
 
-    print(f'Found {len(labels_to_evaluate)} labels to evaluate with {len(set(in_validation_filepaths))} validation files.')
+    print(f'Found {len(labels_to_evaluate)} labels to evaluate with {len(set(in_evaluation_audio_filepaths))} evaluation files.')
 
     # Normalize file paths to support both mac and windows
-    in_validation_filepaths = np.vectorize(os.path.normpath)(in_validation_filepaths)
-    out_dir      = os.path.normpath(out_dir)
+    in_evaluation_audio_filepaths = np.vectorize(os.path.normpath)(in_evaluation_audio_filepaths)
+    out_dir = os.path.normpath(out_dir)
 
     if overwrite and os.path.exists(out_dir):
         shutil.rmtree(out_dir)
@@ -76,7 +80,7 @@ if __name__ == '__main__':
     if os.path.exists(out_dir):
         print_warning('Data already processed, loading previous results...')
     else:
-        # Process validation examples with both classifiers -----------------------------------------------------------------------------
+        # Process evaluation examples with both classifiers -----------------------------------------------------------------------------
 
         def get_second_to_last_directory_of_path(path):
             parts = path.split(os.sep)
@@ -86,12 +90,12 @@ if __name__ == '__main__':
             else:
                 return None  # Handle cases where the path doesn't contain enough components
 
-        in_rootdirs = np.vectorize(get_second_to_last_directory_of_path)(in_validation_filepaths)
+        in_rootdirs = np.vectorize(get_second_to_last_directory_of_path)(in_evaluation_audio_filepaths)
 
         # Custom classifier
-        print(f"Processing validation set with classifier {custom_analyzer_filepath}")
+        print(f"Processing evaluation set with classifier {custom_analyzer_filepath}")
         process_files.process_files_parallel(
-            in_files          = in_validation_filepaths,
+            in_files          = in_evaluation_audio_filepaths,
             out_dir           = out_dir_custom,
             root_dirs         = in_rootdirs,
             in_filetype       = '.wav',
@@ -107,9 +111,9 @@ if __name__ == '__main__':
         )
 
         # Pre-trained classifier
-        print(f"Processing validation set with classifier {pretrained_analyzer_filepath}")
+        print(f"Processing evaluation set with classifier {pretrained_analyzer_filepath}")
         process_files.process_files_parallel(
-            in_files          = in_validation_filepaths,
+            in_files          = in_evaluation_audio_filepaths,
             out_dir           = out_dir_pretrained,
             root_dirs         = in_rootdirs,
             in_filetype       = '.wav',
@@ -142,8 +146,8 @@ if __name__ == '__main__':
 
         # print(f'Evaluating labels: {model_labels_to_evaluate}')
 
-        # Load analyzer detection scores for each validation file example
-        print('Loading analyzer detection scores for validation examples...')
+        # Load analyzer detection scores for each evaluation file example
+        print('Loading analyzer detection scores for evaluation examples...')
         score_files = []
         score_files.extend(files.find_files(model, '.csv')) 
         predictions = pd.DataFrame()
@@ -158,19 +162,21 @@ if __name__ == '__main__':
         predictions['label_predicted'] = predictions['label_predicted'].str.lower()
 
         # Discard scores for labels not under evaluation and files used in training
-        predictions = predictions[predictions['file'].isin(set(validation_data['file']))]
+        predictions = predictions[predictions['file'].isin(set(evaluation_data['file']))]
         predictions = predictions[predictions['label_predicted'].isin(set(model_labels_to_evaluate))]
 
-        # Load annotation labels for the training files
+        # Load annotation labels for the training files as dataframe with columns:
+        # 'file' - the basename of the audio file
+        # 'labels' - true labels, separated by ', ' token
         print('Loading corresponding annotations...')
         annotations = pd.read_csv(f'{training_data_path}/training_data_annotations.csv')
   
         # Discard annotations for files that were used in training
         print('Discarding annotations for files used in training...')
-        annotations = annotations[annotations['file'].isin(set(validation_data['file']))]
+        annotations = annotations[annotations['file'].isin(set(evaluation_data['file']))]
 
-        # At this point, "predictions" contains the model confidence score for each validation example for each predicted label,
-        # and "annotations" contains the all annotations (i.e. true labels) for each validation example.
+        # At this point, "predictions" contains the model confidence score for each evaluation example for each predicted label,
+        # and "annotations" contains the all annotations (i.e. true labels) for each evaluation example.
 
         # Next, for each label, collate annotation data into simple presence ('label_predicted') or absence ('0') truth per label prediction per file, then add to 'predictions'
         print('Collating annotations for each label...')
