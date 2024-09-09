@@ -115,7 +115,7 @@ def get_raw_annotations(dirs=[], overwrite=False, print_annotations=False):
         if print_annotations:
             print_warning(empty_annotations.to_string())
         raw_annotations = pd.concat([raw_annotations, empty_annotations[['label_predicted', 'label_truth', 'confidence', 'file']]], ignore_index=True)
-        raw_annotations['label_truth'] = raw_annotations['label_truth'].fillna(0)
+        raw_annotations['label_truth'] = raw_annotations['label_truth'].fillna('')
 
     raw_annotations = raw_annotations.sort_values(by=['label_predicted'])
 

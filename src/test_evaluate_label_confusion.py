@@ -11,7 +11,7 @@ from sklearn.metrics import ConfusionMatrixDisplay
 # Retrieve all incorrect detections above a score threhold (e.g. >= 0.9)
 
 dirs = [ # Annotation directories to use as evaluation data
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020',
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/transfer learning/data/test/2020',
 ]
 threshold = 0.5
 species = sorted(labels.get_species_classes())

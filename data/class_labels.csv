@@ -1,0 +1,252 @@
+label,label_birdnet,novel,train,order,family
+abiotic aircraft,Abiotic_Abiotic Aircraft,1,1,Abiotic,Abiotic
+abiotic logging,Abiotic_Abiotic Logging,1,1,Abiotic,Abiotic
+abiotic rain,Abiotic_Abiotic Rain,1,1,Abiotic,Abiotic
+abiotic vehicle,Abiotic_Abiotic Vehicle,1,1,Abiotic,Abiotic
+abiotic wind,Abiotic_Abiotic Wind,1,1,Abiotic,Abiotic
+biotic anuran,Biotic_Biotic Anuran,1,1,Biotic,Biotic
+biotic insect,Biotic_Biotic Insect,1,1,Biotic,Biotic
+american robin,Turdus migratorius_American Robin,0,1,Passeriformes,Turdidae
+band-tailed pigeon,Patagioenas fasciata_Band-tailed Pigeon,0,1,Columbiformes,Columbidae
+barred owl,Strix varia_Barred Owl,0,1,Strigiformes,Strigidae
+belted kingfisher,Megaceryle alcyon_Belted Kingfisher,0,1,Coraciiformes,Alcedinidae
+black-throated gray warbler,Setophaga nigrescens_Black-throated Gray Warbler,0,1,Passeriformes,Parulidae
+common raven,Corvus corax_Common Raven,0,1,Passeriformes,Corvidae
+dark-eyed junco,Junco hyemalis_Dark-eyed Junco,0,1,Passeriformes,Passerellidae
+golden-crowned kinglet,Regulus satrapa_Golden-crowned Kinglet,0,1,Passeriformes,Regulidae
+hairy woodpecker,Dryobates villosus_Hairy Woodpecker,0,1,Piciformes,Picidae
+hammond's flycatcher,Empidonax hammondii_Hammond's Flycatcher,0,1,Passeriformes,Tyrannidae
+hermit thrush,Catharus guttatus_Hermit Thrush,0,1,Passeriformes,Turdidae
+hutton's vireo,Vireo huttoni_Hutton's Vireo,0,1,Passeriformes,Vireonidae
+marbled murrelet,Brachyramphus marmoratus_Marbled Murrelet,0,1,Charadriiformes,Alcidae
+northern flicker,Colaptes auratus_Northern Flicker,0,1,Piciformes,Picidae
+northern pygmy-owl,Glaucidium californicum_Northern Pygmy-owl,0,1,Strigiformes,Strigidae
+northern saw-whet owl,Aegolius acadicus_Northern Saw-whet Owl,0,1,Strigiformes,Strigidae
+olive-sided flycatcher,Contopus cooperi_Olive-sided Flycatcher,0,1,Passeriformes,Tyrannidae
+pacific wren,Troglodytes pacificus_Pacific Wren,0,1,Passeriformes,Troglodytidae
+pacific-slope flycatcher,Empidonax difficilis_Pacific-slope Flycatcher,0,1,Passeriformes,Tyrannidae
+pileated woodpecker,Dryocopus pileatus_Pileated Woodpecker,0,1,Piciformes,Picidae
+purple finch,Haemorhous purpureus_Purple Finch,0,1,Passeriformes,Fringillidae
+red crossbill,Loxia curvirostra_Red Crossbill,0,1,Passeriformes,Fringillidae
+red-breasted nuthatch,Sitta canadensis_Red-breasted Nuthatch,0,1,Passeriformes,Sittidae
+ruby-crowned kinglet,Corthylio calendula_Ruby-crowned Kinglet,0,1,Passeriformes,Regulidae
+rufous hummingbird,Selasphorus rufus_Rufous Hummingbird,0,1,Apodiformes,Trochilidae
+song sparrow,Melospiza melodia_Song Sparrow,0,1,Passeriformes,Passerellidae
+sooty grouse,Dendragapus fuliginosus_Sooty Grouse,0,1,Galliformes,Phasianidae
+spotted towhee,Pipilo maculatus_Spotted Towhee,0,1,Passeriformes,Passerellidae
+swainson's thrush,Catharus ustulatus_Swainson's Thrush,0,1,Passeriformes,Turdidae
+townsend's warbler,Setophaga townsendi_Townsend's Warbler,0,1,Passeriformes,Parulidae
+varied thrush,Ixoreus naevius_Varied Thrush,0,1,Passeriformes,Turdidae
+violet-green swallow,Tachycineta thalassina_Violet-green Swallow,0,1,Passeriformes,Hirundinidae
+western screech-owl,Megascops kennicottii_Western Screech-owl,0,1,Strigiformes,Strigidae
+western tanager,Piranga ludoviciana_Western Tanager,0,1,Passeriformes,Cardinalidae
+western wood-pewee,Contopus sordidulus_Western Wood-pewee,0,1,Passeriformes,Tyrannidae
+white-crowned sparrow,Zonotrichia leucophrys_White-crowned Sparrow,0,1,Passeriformes,Passerellidae
+wilson's warbler,Cardellina pusilla_Wilson's Warbler,0,1,Passeriformes,Parulidae
+abiotic ambience,Abiotic_Abiotic Ambience,1,0,Abiotic,Abiotic
+abiotic other,Abiotic_Abiotic Other,1,0,Abiotic,Abiotic
+artifact truncation,Artifact_Artifact Truncation,1,0,Artifact,Artifact
+american three-toed woodpecker,Picoides dorsalis_American Three-toed Woodpecker,0,0,Piciformes,Picidae
+eastern kingbird,Tyrannus tyrannus_Eastern Kingbird,0,0,Passeriformes,Tyrannidae
+long-eared owl,Asio otus_Long-eared Owl,0,0,Strigiformes,Strigidae
+ring-necked pheasant,Phasianus colchicus_Ring-necked Pheasant,0,0,Galliformes,Phasianidae
+spotted owl,Strix occidentalis_Spotted Owl,0,0,Strigiformes,Strigidae
+vesper sparrow,Pooecetes gramineus_Vesper Sparrow,0,0,Passeriformes,Passerellidae
+white-tailed ptarmigan,Lagopus leucura_White-tailed Ptarmigan,0,0,Galliformes,Phasianidae
+common redpoll,Acanthis flammea_Common Redpoll,0,0,Passeriformes,Fringillidae
+cooper's hawk,Accipiter cooperii_Cooper's Hawk,0,0,Accipitriformes,Accipitridae
+northern goshawk,Accipiter gentilis_Northern Goshawk,0,0,Accipitriformes,Accipitridae
+sharp-shinned hawk,Accipiter striatus_Sharp-shinned Hawk,0,0,Accipitriformes,Accipitridae
+spotted sandpiper,Actitis macularius_Spotted Sandpiper,0,0,Charadriiformes,Scolopacidae
+western grebe,Aechmophorus occidentalis_Western Grebe,0,0,Podicipediformes,Podicipedidae
+red-winged blackbird,Agelaius phoeniceus_Red-winged Blackbird,0,0,Passeriformes,Icteridae
+wood duck,Aix sponsa_Wood Duck,0,0,Anseriformes,Anatidae
+northern pintail,Anas acuta_Northern Pintail,0,0,Anseriformes,Anatidae
+green-winged teal,Anas crecca_Green-winged Teal,0,0,Anseriformes,Anatidae
+mallard,Anas platyrhynchos_Mallard,0,0,Anseriformes,Anatidae
+greater white-fronted goose,Anser albifrons_Greater White-fronted Goose,0,0,Anseriformes,Anatidae
+snow goose,Anser caerulescens_Snow Goose,0,0,Anseriformes,Anatidae
+american pipit,Anthus rubescens_American Pipit,0,0,Passeriformes,Motacillidae
+sandhill crane,Antigone canadensis_Sandhill Crane,0,0,Gruiformes,Gruidae
+california scrub-jay,Aphelocoma californica_California Scrub-Jay,0,0,Passeriformes,Corvidae
+golden eagle,Aquila chrysaetos_Golden Eagle,0,0,Accipitriformes,Accipitridae
+great egret,Ardea alba_Great Egret,0,0,Pelecaniformes,Ardeidae
+great blue heron,Ardea herodias_Great Blue Heron,0,0,Pelecaniformes,Ardeidae
+sooty shearwater,Ardenna grisea_Sooty Shearwater,0,0,Procellariiformes,Procellariidae
+short-tailed shearwater,Ardenna tenuirostris_Short-tailed Shearwater,0,0,Procellariiformes,Procellariidae
+ruddy turnstone,Arenaria interpres_Ruddy Turnstone,0,0,Charadriiformes,Scolopacidae
+black turnstone,Arenaria melanocephala_Black Turnstone,0,0,Charadriiformes,Scolopacidae
+short-eared owl,Asio flammeus_Short-eared Owl,0,0,Strigiformes,Strigidae
+lesser scaup,Aythya affinis_Lesser Scaup,0,0,Anseriformes,Anatidae
+ring-necked duck,Aythya collaris_Ring-necked Duck,0,0,Anseriformes,Anatidae
+greater scaup,Aythya marila_Greater Scaup,0,0,Anseriformes,Anatidae
+cedar waxwing,Bombycilla cedrorum_Cedar Waxwing,0,0,Passeriformes,Bombycillidae
+bohemian waxwing,Bombycilla garrulus_Bohemian Waxwing,0,0,Passeriformes,Bombycillidae
+ruffed grouse,Bonasa umbellus_Ruffed Grouse,0,0,Galliformes,Phasianidae
+brant,Branta bernicla_Brant,0,0,Anseriformes,Anatidae
+canada goose,Branta canadensis_Canada Goose,0,0,Anseriformes,Anatidae
+cackling goose,Branta hutchinsii_Cackling Goose,0,0,Anseriformes,Anatidae
+great horned owl,Bubo virginianus_Great Horned Owl,0,0,Strigiformes,Strigidae
+bufflehead,Bucephala albeola_Bufflehead,0,0,Anseriformes,Anatidae
+common goldeneye,Bucephala clangula_Common Goldeneye,0,0,Anseriformes,Anatidae
+barrow's goldeneye,Bucephala islandica_Barrow's Goldeneye,0,0,Anseriformes,Anatidae
+red-tailed hawk,Buteo jamaicensis_Red-tailed Hawk,0,0,Accipitriformes,Accipitridae
+rough-legged hawk,Buteo lagopus_Rough-legged Hawk,0,0,Accipitriformes,Accipitridae
+red-shouldered hawk,Buteo lineatus_Red-shouldered Hawk,0,0,Accipitriformes,Accipitridae
+lapland longspur,Calcarius lapponicus_Lapland Longspur,0,0,Passeriformes,Calcariidae
+sanderling,Calidris alba_Sanderling,0,0,Charadriiformes,Scolopacidae
+dunlin,Calidris alpina_Dunlin,0,0,Charadriiformes,Scolopacidae
+baird's sandpiper,Calidris bairdii_Baird's Sandpiper,0,0,Charadriiformes,Scolopacidae
+red knot,Calidris canutus_Red Knot,0,0,Charadriiformes,Scolopacidae
+western sandpiper,Calidris mauri_Western Sandpiper,0,0,Charadriiformes,Scolopacidae
+least sandpiper,Calidris minutilla_Least Sandpiper,0,0,Charadriiformes,Scolopacidae
+semipalmated sandpiper,Calidris pusilla_Semipalmated Sandpiper,0,0,Charadriiformes,Scolopacidae
+surfbird,Calidris virgata_Surfbird,0,0,Charadriiformes,Scolopacidae
+california quail,Callipepla californica_California Quail,0,0,Galliformes,Odontophoridae
+anna's hummingbird,Calypte anna_Anna's Hummingbird,0,0,Apodiformes,Trochilidae
+turkey vulture,Cathartes aura_Turkey Vulture,0,0,Cathartiformes,Cathartidae
+veery,Catharus fuscescens_Veery,0,0,Passeriformes,Turdidae
+pigeon guillemot,Cepphus columba_Pigeon Guillemot,0,0,Charadriiformes,Alcidae
+brown creeper,Certhia americana_Brown Creeper,0,0,Passeriformes,Certhiidae
+vaux's swift,Chaetura vauxi_Vaux's Swift,0,0,Apodiformes,Apodidae
+wrentit,Chamaea fasciata_Wrentit,0,0,Passeriformes,Chamaeidae
+semipalmated plover,Charadrius semipalmatus_Semipalmated Plover,0,0,Charadriiformes,Charadriidae
+killdeer,Charadrius vociferus_Killdeer,0,0,Charadriiformes,Charadriidae
+black tern,Chlidonias niger_Black Tern,0,0,Charadriiformes,Sternidae
+common nighthawk,Chordeiles minor_Common Nighthawk,0,0,Caprimulgiformes,Caprimulgidae
+bonaparte's gull,Chroicocephalus philadelphia_Bonaparte's Gull,0,0,Charadriiformes,Laridae
+american dipper,Cinclus mexicanus_American Dipper,0,0,Passeriformes,Cinclidae
+northern harrier,Circus hudsonius_Northern Harrier,0,0,Accipitriformes,Accipitridae
+marsh wren,Cistothorus palustris_Marsh Wren,0,0,Passeriformes,Troglodytidae
+long-tailed duck,Clangula hyemalis_Long-tailed Duck,0,0,Anseriformes,Anatidae
+evening grosbeak,Coccothraustes vespertinus_Evening Grosbeak,0,0,Passeriformes,Fringillidae
+rock pigeon,Columba livia_Rock Pigeon,0,0,Columbiformes,Columbidae
+american crow,Corvus brachyrhynchos_American Crow,0,0,Passeriformes,Corvidae
+steller's jay,Cyanocitta stelleri_Steller's Jay,0,0,Passeriformes,Corvidae
+trumpeter swan,Cygnus buccinator_Trumpeter Swan,0,0,Anseriformes,Anatidae
+tundra swan,Cygnus columbianus_Tundra Swan,0,0,Anseriformes,Anatidae
+black swift,Cypseloides niger_Black Swift,0,0,Apodiformes,Apodidae
+sooty grouse,Dendragapus fuliginosus_Sooty Grouse,0,0,Galliformes,Phasianidae
+downy woodpecker,Dryobates pubescens_Downy Woodpecker,0,0,Piciformes,Picidae
+alder flycatcher,Empidonax alnorum_Alder Flycatcher,0,0,Passeriformes,Tyrannidae
+least flycatcher,Empidonax minimus_Least Flycatcher,0,0,Passeriformes,Tyrannidae
+dusky flycatcher,Empidonax oberholseri_Dusky Flycatcher,0,0,Passeriformes,Tyrannidae
+willow flycatcher,Empidonax traillii_Willow Flycatcher,0,0,Passeriformes,Tyrannidae
+horned lark,Eremophila alpestris_Horned Lark,0,0,Passeriformes,Alaudidae
+brewer's blackbird,Euphagus cyanocephalus_Brewer's Blackbird,0,0,Passeriformes,Icteridae
+merlin,Falco columbarius_Merlin,0,0,Falconiformes,Falconidae
+peregrine falcon,Falco peregrinus_Peregrine Falcon,0,0,Falconiformes,Falconidae
+american kestrel,Falco sparverius_American Kestrel,0,0,Falconiformes,Falconidae
+american coot,Fulica americana_American Coot,0,0,Gruiformes,Rallidae
+northern fulmar,Fulmarus glacialis_Northern Fulmar,0,0,Procellariiformes,Procellariidae
+wilson's snipe,Gallinago delicata_Wilson's Snipe,0,0,Charadriiformes,Scolopacidae
+common loon,Gavia immer_Common Loon,0,0,Gaviiformes,Gaviidae
+pacific loon,Gavia pacifica_Pacific Loon,0,0,Gaviiformes,Gaviidae
+red-throated loon,Gavia stellata_Red-throated Loon,0,0,Gaviiformes,Gaviidae
+macgillivray's warbler,Geothlypis tolmiei_MacGillivray's Warbler,0,0,Passeriformes,Parulidae
+common yellowthroat,Geothlypis trichas_Common Yellowthroat,0,0,Passeriformes,Parulidae
+black oystercatcher,Haematopus bachmani_Black Oystercatcher,0,0,Charadriiformes,Haematopodidae
+cassin's finch,Haemorhous cassinii_Cassin's Finch,0,0,Passeriformes,Fringillidae
+house finch,Haemorhous mexicanus_House Finch,0,0,Passeriformes,Fringillidae
+bald eagle,Haliaeetus leucocephalus_Bald Eagle,0,0,Accipitriformes,Accipitridae
+barn swallow,Hirundo rustica_Barn Swallow,0,0,Passeriformes,Hirundinidae
+harlequin duck,Histrionicus histrionicus_Harlequin Duck,0,0,Anseriformes,Anatidae
+leach's storm-petrel,Hydrobates leucorhous_Leach's Storm-Petrel,0,0,Procellariiformes,Hydrobatidae
+caspian tern,Hydroprogne caspia_Caspian Tern,0,0,Charadriiformes,Sternidae
+bullock's oriole,Icterus bullockii_Bullock's Oriole,0,0,Passeriformes,Icteridae
+northern shrike,Lanius borealis_Northern Shrike,0,0,Passeriformes,Laniidae
+herring gull,Larus argentatus_Herring Gull,0,0,Charadriiformes,Laridae
+short-billed gull,Larus brachyrhynchus_Short-billed Gull,0,0,Charadriiformes,Laridae
+california gull,Larus californicus_California Gull,0,0,Charadriiformes,Laridae
+ring-billed gull,Larus delawarensis_Ring-billed Gull,0,0,Charadriiformes,Laridae
+glaucous-winged gull,Larus glaucescens_Glaucous-winged Gull,0,0,Charadriiformes,Laridae
+iceland gull,Larus glaucoides_Iceland Gull,0,0,Charadriiformes,Laridae
+western gull,Larus occidentalis_Western Gull,0,0,Charadriiformes,Laridae
+orange-crowned warbler,Leiothlypis celata_Orange-crowned Warbler,0,0,Passeriformes,Parulidae
+nashville warbler,Leiothlypis ruficapilla_Nashville Warbler,0,0,Passeriformes,Parulidae
+short-billed dowitcher,Limnodromus griseus_Short-billed Dowitcher,0,0,Charadriiformes,Scolopacidae
+long-billed dowitcher,Limnodromus scolopaceus_Long-billed Dowitcher,0,0,Charadriiformes,Scolopacidae
+hooded merganser,Lophodytes cucullatus_Hooded Merganser,0,0,Anseriformes,Anatidae
+white-winged crossbill,Loxia leucoptera_White-winged Crossbill,0,0,Passeriformes,Fringillidae
+american wigeon,Mareca americana_American Wigeon,0,0,Anseriformes,Anatidae
+eurasian wigeon,Mareca penelope_Eurasian Wigeon,0,0,Anseriformes,Anatidae
+gadwall,Mareca strepera_Gadwall,0,0,Anseriformes,Anatidae
+acorn woodpecker,Melanerpes formicivorus_Acorn Woodpecker,0,0,Piciformes,Picidae
+black scoter,Melanitta americana_Black Scoter,0,0,Anseriformes,Anatidae
+surf scoter,Melanitta perspicillata_Surf Scoter,0,0,Anseriformes,Anatidae
+lincoln's sparrow,Melospiza lincolnii_Lincoln's Sparrow,0,0,Passeriformes,Emberizidae
+common merganser,Mergus merganser_Common Merganser,0,0,Anseriformes,Anatidae
+red-breasted merganser,Mergus serrator_Red-breasted Merganser,0,0,Anseriformes,Anatidae
+brown-headed cowbird,Molothrus ater_Brown-headed Cowbird,0,0,Passeriformes,Icteridae
+townsend's solitaire,Myadestes townsendi_Townsend's Solitaire,0,0,Passeriformes,Turdidae
+double-crested cormorant,Nannopterum auritum_Double-crested Cormorant,0,0,Suliformes,Phalacrocoracidae
+clark's nutcracker,Nucifraga columbiana_Clark's Nutcracker,0,0,Passeriformes,Corvidae
+long-billed curlew,Numenius americanus_Long-billed Curlew,0,0,Charadriiformes,Scolopacidae
+whimbrel,Numenius phaeopus_Whimbrel,0,0,Charadriiformes,Scolopacidae
+ruddy duck,Oxyura jamaicensis_Ruddy Duck,0,0,Anseriformes,Anatidae
+osprey,Pandion haliaetus_Osprey,0,0,Accipitriformes,Accipitridae
+northern waterthrush,Parkesia noveboracensis_Northern Waterthrush,0,0,Passeriformes,Parulidae
+house sparrow,Passer domesticus_House Sparrow,0,0,Passeriformes,Passeridae
+savannah sparrow,Passerculus sandwichensis_Savannah Sparrow,0,0,Passeriformes,Emberizidae
+fox sparrow,Passerella iliaca_Fox Sparrow,0,0,Passeriformes,Emberizidae
+lazuli bunting,Passerina amoena_Lazuli Bunting,0,0,Passeriformes,Cardinalidae
+canada jay,Perisoreus canadensis_Canada Jay,0,0,Passeriformes,Corvidae
+cliff swallow,Petrochelidon pyrrhonota_Cliff Swallow,0,0,Passeriformes,Hirundinidae
+red phalarope,Phalaropus fulicarius_Red Phalarope,0,0,Charadriiformes,Phalaropodidae
+red-necked phalarope,Phalaropus lobatus_Red-necked Phalarope,0,0,Charadriiformes,Phalaropodidae
+wilson's phalarope,Phalaropus tricolor_Wilson's Phalarope,0,0,Charadriiformes,Phalaropodidae
+black-headed grosbeak,Pheucticus melanocephalus_Black-headed Grosbeak,0,0,Passeriformes,Cardinalidae
+black-billed magpie,Pica hudsonia_Black-billed Magpie,0,0,Passeriformes,Corvidae
+pine grosbeak,Pinicola enucleator_Pine Grosbeak,0,0,Passeriformes,Cardinalidae
+snow bunting,Plectrophenax nivalis_Snow Bunting,0,0,Passeriformes,Calcariidae
+american golden-plover,Pluvialis dominica_American Golden-Plover,0,0,Charadriiformes,Charadriidae
+black-bellied plover,Pluvialis squatarola_Black-bellied Plover,0,0,Charadriiformes,Charadriidae
+horned grebe,Podiceps auritus_Horned Grebe,0,0,Podicipediformes,Podicipedidae
+red-necked grebe,Podiceps grisegena_Red-necked Grebe,0,0,Podicipediformes,Podicipedidae
+pied-billed grebe,Podilymbus podiceps_Pied-billed Grebe,0,0,Podicipediformes,Podicipedidae
+black-capped chickadee,Poecile atricapillus_Black-capped Chickadee,0,0,Passeriformes,Paridae
+mountain chickadee,Poecile gambeli_Mountain Chickadee,0,0,Passeriformes,Paridae
+chestnut-backed chickadee,Poecile rufescens_Chestnut-backed Chickadee,0,0,Passeriformes,Paridae
+sora,Porzana carolina_Sora,0,0,Gruiformes,Rallidae
+bushtit,Psaltriparus minimus_Bushtit,0,0,Passeriformes,Aegithalidae
+virginia rail,Rallus limicola_Virginia Rail,0,0,Gruiformes,Rallidae
+bank swallow,Riparia riparia_Bank Swallow,0,0,Passeriformes,Hirundinidae
+black phoebe,Sayornis nigricans_Black Phoebe,0,0,Passeriformes,Tyrannidae
+say's phoebe,Sayornis saya_Say's Phoebe,0,0,Passeriformes,Tyrannidae
+yellow-rumped warbler,Setophaga coronata_Yellow-rumped Warbler,0,0,Passeriformes,Parulidae
+hermit warbler,Setophaga occidentalis_Hermit Warbler,0,0,Passeriformes,Parulidae
+yellow warbler,Setophaga petechia_Yellow Warbler,0,0,Passeriformes,Parulidae
+american redstart,Setophaga ruticilla_American Redstart,0,0,Passeriformes,Parulidae
+mountain bluebird,Sialia currucoides_Mountain Bluebird,0,0,Passeriformes,Turdidae
+western bluebird,Sialia mexicana_Western Bluebird,0,0,Passeriformes,Turdidae
+white-breasted nuthatch,Sitta carolinensis_White-breasted Nuthatch,0,0,Passeriformes,Sittidae
+pygmy nuthatch,Sitta pygmaea_Pygmy Nuthatch,0,0,Passeriformes,Sittidae
+northern shoveler,Spatula clypeata_Northern Shoveler,0,0,Anseriformes,Anatidae
+cinnamon teal,Spatula cyanoptera_Cinnamon Teal,0,0,Anseriformes,Anatidae
+blue-winged teal,Spatula discors_Blue-winged Teal,0,0,Anseriformes,Anatidae
+red-breasted sapsucker,Sphyrapicus ruber_Red-breasted Sapsucker,0,0,Piciformes,Picidae
+pine siskin,Spinus pinus_Pine Siskin,0,0,Passeriformes,Fringillidae
+lesser goldfinch,Spinus psaltria_Lesser Goldfinch,0,0,Passeriformes,Fringillidae
+american goldfinch,Spinus tristis_American Goldfinch,0,0,Passeriformes,Fringillidae
+chipping sparrow,Spizella passerina_Chipping Sparrow,0,0,Passeriformes,Emberizidae
+american tree sparrow,Spizelloides arborea_American Tree Sparrow,0,0,Passeriformes,Emberizidae
+northern rough-winged swallow,Stelgidopteryx serripennis_Northern Rough-winged Swallow,0,0,Passeriformes,Hirundinidae
+parasitic jaeger,Stercorarius parasiticus_Parasitic Jaeger,0,0,Charadriiformes,Stercorariidae
+arctic tern,Sterna paradisaea_Arctic Tern,0,0,Charadriiformes,Sternidae
+eurasian collared-dove,Streptopelia decaocto_Eurasian Collared-Dove,0,0,Columbiformes,Columbidae
+western meadowlark,Sturnella neglecta_Western Meadowlark,0,0,Passeriformes,Icteridae
+european starling,Sturnus vulgaris_European Starling,0,0,Passeriformes,Sturnidae
+tree swallow,Tachycineta bicolor_Tree Swallow,0,0,Passeriformes,Hirundinidae
+bewick's wren,Thryomanes bewickii_Bewick's Wren,0,0,Passeriformes,Troglodytidae
+lesser yellowlegs,Tringa flavipes_Lesser Yellowlegs,0,0,Charadriiformes,Scolopacidae
+greater yellowlegs,Tringa melanoleuca_Greater Yellowlegs,0,0,Charadriiformes,Scolopacidae
+house wren,Troglodytes aedon_House Wren,0,0,Passeriformes,Troglodytidae
+western kingbird,Tyrannus verticalis_Western Kingbird,0,0,Passeriformes,Tyrannidae
+common murre,Uria aalge_Common Murre,0,0,Charadriiformes,Alcidae
+cassin's vireo,Vireo cassinii_Cassin's Vireo,0,0,Passeriformes,Vireonidae
+warbling vireo,Vireo gilvus_Warbling Vireo,0,0,Passeriformes,Vireonidae
+red-eyed vireo,Vireo olivaceus_Red-eyed Vireo,0,0,Passeriformes,Vireonidae
+sabine's gull,Xema sabini_Sabine's Gull,0,0,Charadriiformes,Laridae
+mourning dove,Zenaida macroura_Mourning Dove,0,0,Columbiformes,Columbidae
+white-throated sparrow,Zonotrichia albicollis_White-throated Sparrow,0,0,Passeriformes,Emberizidae
+golden-crowned sparrow,Zonotrichia atricapilla_Golden-crowned Sparrow,0,0,Passeriformes,Emberizidae

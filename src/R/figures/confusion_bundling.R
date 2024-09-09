@@ -12,7 +12,7 @@ library(scales)
 
 node_alpha_max = 0.2
 
-labels = read.csv('data/training/training_labels.csv')
+labels = read.csv('data/class_labels.csv')
 
 confusion_mtx = read.csv('data/annotations/processed/confusion_matrix.csv', row.names=1, check.names = FALSE)
 

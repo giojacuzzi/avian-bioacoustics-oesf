@@ -19,6 +19,7 @@
 !/data/species/*
 !/data/training/readme.md
 !/data/models/readme.md
+!/data/class_labels.csv
 
 # Apple files
 .DS_Store
