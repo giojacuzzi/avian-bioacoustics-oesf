@@ -1,10 +1,9 @@
-# Given a deployment number, site ID, and serial number, extract audio for all raw classifier detections and sort by confidence score
+# Given a deployment number, site ID, and serial number, review audio for raw classifier detections, sorted by descending confidence score
 
 # CHANGE ME
-deployment = 2
-serial_no  = 'SMA00309'
-# site     = 'XX1234i'
-label = 'pacific-slope flycatcher'
+deployment = 8
+serial_no  = "SMA00424"
+label = "northern goshawk"
 
 threshold = 0.1
 
@@ -74,7 +73,7 @@ def find_matching_file(files, target_datetime):
 
             # TODO: Extract the audio data and save to file
             extracted_data = audio_data[(delta_sec * 1000):((delta_sec + 3) * 1000)]
-            full_out = f'{path_out}/{i}.wav'
+            full_out = f'{path_out}/{serial_no}_{round(confidence, 4)}_{i}.wav'
             if not os.path.exists(path_out):
                 os.makedirs(path_out)
             print(f'Saving to {full_out}')
@@ -87,7 +86,8 @@ print(f'Reviewing detections:')
 i = 1
 for index, row in detections.iterrows():
     print(f"{i}/{len(detections)} ({len(detections) - i} remaining)")
-    print(f"confidence: {row['confidence']}")
+    confidence = row['confidence']
+    print(f"confidence: {confidence}")
     specific_datetime = datetime.strptime(row['start_date'], '%Y-%m-%d %H:%M:%S')
     print(f"{specific_datetime}")
 
