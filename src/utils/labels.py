@@ -15,7 +15,7 @@ consolidated_labels = {
         "biotic coyote": [ "biotic_coyote","coyote","coyotes howling"],
         "biotic dog": ["biotic_dog","dog","dogs"],
         "biotic insect": ["biotic_insect","insect","bee"],
-        "biotic other": ["biotic_other","animal","wingbeats","bird flapping"],
+        "biotic other": ["biotic_other","animal","wingbeats","bird flapping","squirrel"],
         "not_target": [
             "0","not_target", "not-bird", "not bird", "not'species","unknown sparrow",
             "golden-crowned sparrow","sparrow","sparriw","sparrw","common loon","finch","grouse","hummingbird","kinglet","warbler","woodpecker"

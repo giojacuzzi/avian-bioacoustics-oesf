@@ -18,7 +18,7 @@ import re
 
 # Retrieve and validate raw annotation data
 print('Retrieving annotation data...')
-raw_annotations = get_raw_annotations(dirs = [in_dir], overwrite = False)
+raw_annotations = get_raw_annotations(dirs = [in_dir], overwrite = True)
 
 # Check for missing annotations
 species = labels.get_species_classes()

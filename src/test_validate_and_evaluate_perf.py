@@ -34,7 +34,7 @@ only_annotated = False # DEBUG: skip files that do not have annotations (selecti
 
 # Annotation directories to use as evaluation data
 dirs = [
-    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/_annotator/2020',
+    '/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/transfer learning/data/test/2020',
 ]
 
 import pandas as pd

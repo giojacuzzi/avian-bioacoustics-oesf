@@ -3,9 +3,9 @@
 # NOTE: Must be executed from the top directory of the repo
 
 # CHANGE ME ##############################################################################
-overwrite = True
+overwrite = False
 evaluation_dataset = 'validation' # 'validation' or 'test'
-custom_model_stub  = 'custom_S1_N5_LR0.001_BS1_HU0_LSFalse_US0_I0' # e.g. 'custom_S1_N100_A0_U0_I0' or None to only evaluate pre-trained model
+custom_model_stub  = 'custom_S1_N100_A0_U0_I0' # e.g. 'custom_S1_N100_A0_U0_I0' or None to only evaluate pre-trained model
 ##########################################################################################
 
 from classification import process_files
@@ -33,10 +33,15 @@ if custom_model_stub == None and evaluation_dataset == 'validation':
 # Load class labels
 class_labels_csv_path = os.path.abspath(f'data/class_labels.csv')
 class_labels = pd.read_csv(class_labels_csv_path)
-class_labels = class_labels[class_labels['train'] == 1]
+if evaluation_dataset == 'validation':
+    class_labels = class_labels[class_labels['train'] == 1] # only evaluate labels that were trained on
 preexisting_labels_to_evaluate = list(class_labels[class_labels['novel'] == 0]['label_birdnet'])
 novel_labels_to_evaluate = list(class_labels[class_labels['novel'] == 1]['label_birdnet'])
 labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
+print(preexisting_labels_to_evaluate)
+input()
+
+# TODO: Also support labels that the classifier looked for but did not find
 
 # Output config
 sort_by      = 'confidence' # Column to sort dataframe by
@@ -46,7 +51,10 @@ if evaluation_dataset == 'validation' and custom_model_stub != None:
     out_dir = f'data/validation/custom/{custom_model_stub}' # Output directory (e.g. '/Users/giojacuzzi/Downloads'), if saving output to file
     custom_model_dir_path = f'data/models/custom/{custom_model_stub}'
 elif evaluation_dataset == 'test':
-    out_dir = f'data/testing/{custom_model_stub}'
+    if custom_model_stub != None:
+        out_dir = f'data/test/{custom_model_stub}'
+    else:
+        out_dir = 'data/test/pre-trained'
     custom_model_dir_path = f'data/models/custom/{custom_model_stub}'
 
 # Analyzer config
@@ -79,9 +87,15 @@ if __name__ == '__main__':
 
     elif evaluation_dataset == 'test':
         evaluation_data = pd.read_csv('data/test/test_data_annotations.csv')
-        print(evaluation_data)
-        print('TODO')
-        sys.exit()
+        # print('Discard evaluation data for invalid class labels...')
+        # print(f"before # {len(evaluation_data)}")
+        evaluation_data = evaluation_data[evaluation_data['target'].isin(set(labels_to_evaluate))]
+        # print(labels_to_evaluate)
+        # print(f"after # {len(evaluation_data)}")
+        # input()
+        evaluation_data['labels'] = evaluation_data['labels'].fillna('')
+        # print(evaluation_data)
+        # input()
 
     out_dir_pretrained = out_dir + '/pre-trained'
     out_dir_custom     = out_dir + '/custom'
@@ -93,6 +107,8 @@ if __name__ == '__main__':
     in_evaluation_audio_filepaths = evaluation_data['path']
 
     print(f'Found {len(labels_to_evaluate)} labels to evaluate with {len(set(in_evaluation_audio_filepaths))} evaluation files.')
+    print(sorted(labels_to_evaluate))
+    # input()
 
     # Normalize file paths to support both mac and windows
     in_evaluation_audio_filepaths = np.vectorize(os.path.normpath)(in_evaluation_audio_filepaths)
@@ -169,62 +185,157 @@ if __name__ == '__main__':
         elif model == out_dir_custom:
             model_labels_to_evaluate = [label.split('_')[1].lower() for label in labels_to_evaluate]
 
-        # print(f'Evaluating labels: {model_labels_to_evaluate}')
+        print(f'Evaluating labels: {model_labels_to_evaluate}')
+        # input()
 
         # Load analyzer detection scores for each evaluation file example
         print('Loading analyzer detection scores for evaluation examples...')
         score_files = []
         score_files.extend(files.find_files(model, '.csv')) 
         predictions = pd.DataFrame()
+        i = 0
         for file in score_files:
+            if i % 100 == 0:
+                print(f"{round(i/len(score_files) * 100, 2)}%")
             score = pd.read_csv(file)
             score.drop(columns=['start_date'], inplace=True)
             score['file_audio'] = os.path.basename(file)
             predictions = pd.concat([predictions, score], ignore_index=True)
+            i += 1
         predictions['file_audio'] = predictions['file_audio'].apply(remove_extension)
         predictions.rename(columns={'file_audio': 'file'}, inplace=True)
         predictions.rename(columns={'common_name': 'label_predicted'}, inplace=True)
         predictions['label_predicted'] = predictions['label_predicted'].str.lower()
 
-        # Discard scores for labels not under evaluation and files used in training
-        predictions = predictions[predictions['file'].isin(set(evaluation_data['file']))]
+        if evaluation_dataset == 'validation':
+            # Discard scores for files used in training
+            predictions = predictions[predictions['file'].isin(set(evaluation_data['file']))]
+        
+        # Discard prediction scores for labels not under evaluation
+        print('Discard prediction scores for labels not under evaluation')
+        # print(f"before # {len(predictions)}")
+        # input()
         predictions = predictions[predictions['label_predicted'].isin(set(model_labels_to_evaluate))]
+        predictions['label_truth'] = ''
+        # print(f"after # {len(predictions)}")
+        # input()
+        print(predictions)
+        # input()
 
-        # Load annotation labels for the training files as dataframe with columns:
-        # 'file' - the basename of the audio file
-        # 'labels' - true labels, separated by ', ' token
         print('Loading corresponding annotations...')
-        annotations = pd.read_csv(f'{training_data_path}/training_data_annotations.csv')
-  
-        # Discard annotations for files that were used in training
-        print('Discarding annotations for files used in training...')
-        annotations = annotations[annotations['file'].isin(set(evaluation_data['file']))]
+        if evaluation_dataset == 'validation':
+            # Load annotation labels for the training files as dataframe with columns:
+            # 'file' - the basename of the audio file
+            # 'labels' - true labels, separated by ', ' token
+            annotations = pd.read_csv(f'{training_data_path}/training_data_annotations.csv')
+    
+            # Discard annotations for files that were used in training
+            print('Discarding annotations for files used in training...')
+            annotations = annotations[annotations['file'].isin(set(evaluation_data['file']))]
+        
+        elif evaluation_dataset == 'test':
+            annotations = evaluation_data
+            annotations['file'] = annotations['file'].apply(remove_extension)
+            print(annotations)
+            # input()
+        
+        # Discard prediction scores for files not in evaluation dataset
+        print('Discard prediction scores for files not in evaluation dataset')
+        # print(f"before # {len(predictions)}")
+        # input()
+        predictions = predictions[predictions['file'].isin(set(evaluation_data['file']))]
+        # print(f"after # {len(predictions)}")
+        # input()
 
         # At this point, "predictions" contains the model confidence score for each evaluation example for each predicted label,
         # and "annotations" contains the all annotations (i.e. true labels) for each evaluation example.
 
         # Next, for each label, collate annotation data into simple presence ('label_predicted') or absence ('0') truth per label prediction per file, then add to 'predictions'
         print('Collating annotations for each label...')
-        predictions['label_truth'] = ''
-        for index, row in predictions.iterrows():
+        count = 0
+        for i, row in predictions.iterrows():
+            if count % 100 == 0:
+                print(f"{round(i/len(predictions) * 100, 2)}%")
+
+            DEBUG = True
+            if DEBUG:
+                print(f"Predicting: {row['label_predicted']}")
 
             # Does the file truly contain the label?
-            true_labels = []
+            present = False
+            unknown = False
             file_annotations = annotations[annotations['file'] == row['file']]
-            if len(file_annotations) > 0:
-                true_labels = str(file_annotations['labels'].iloc[0]).split(', ')
-                true_labels = [label.split('_')[1].lower() for label in true_labels]
-            # NOTE: Unannotated files (e.g. Background files) will be intepreted as having no labels
+            # if DEBUG:
+            #     print('file_annotations:')
+            #     print(file_annotations)
+            true_labels = []
+            if len(file_annotations) == 0:
+                print_warning(f"No annotations for file {row['file']}!")
+                predictions.at[i, 'label_truth'] = '0' # NOTE: Unannotated files (e.g. Background files) are intepreted as having no labels
+                continue
+            
+            true_labels = str(file_annotations['labels'].iloc[0]).split(', ')
+            # print(true_labels)
+            if len(true_labels) > 0:
+                # input(f'found {len(true_labels)} labels')
+                print(f'before: {true_labels}')
+                # Convert birdnet labels to simple labels
+                simple_labels = []
+                for label in true_labels:
+                    split = label.split('_')
+                    if len(split) > 1 and label not in ['unknown', 'not_target']:
+                        label = split[1].lower()
+                    simple_labels.append(label)
+                true_labels = set(simple_labels)
+                print(f'after: {true_labels}')
 
-            present = row['label_predicted'] in set(true_labels)
+            present = row['label_predicted'] in true_labels
+
             if present:
-                predictions.at[index, 'label_truth'] = row['label_predicted']
+                predictions.at[i, 'label_truth'] = row['label_predicted']
             else:
-                predictions.at[index, 'label_truth'] = '0'
+                predictions.at[i, 'label_truth'] = '0'
+
+                if 'unknown' in true_labels:
+                    print_warning('Skipping unknown example...')
+                    predictions.at[i, 'label_truth'] = 'unknown'
+                    # input()
+                elif 'not_target' in true_labels:
+                    print_warning('found a not_target')
+                    # input()
+
+                    for j, a in file_annotations.iterrows():
+                        target = a['target']
+                        # print('a')
+                        # print(a)
+                        # input()
+                        if len(target.split('_')) > 1:
+                            target = a['target'].split('_')[1].lower()
+                        # print(f'target {target}')
+                        # input()
+                        if target != row['label_predicted']:
+                            print_warning(f"Skipping unknown 'not_target' example for another label ({target})...")
+                            predictions.at[i, 'label_truth'] = 'unknown'
+                            # input()
+                            break
+            
+            if DEBUG:
+                print(f'Truth: {true_labels}')
+                print(f"Result ({row['label_predicted']}): {predictions.at[i, 'label_truth']}")
+            # input()
+        count += 1
+        
+        # input()
 
         # Interpret missing labels as absences
-        print(f"Intepreting {predictions['label_truth'].isna().sum()} missing labels as absences...")
-        predictions['label_truth'] = predictions['label_truth'].fillna(0)
+        if predictions['label_truth'].isna().sum() > 0:
+            print(f"Intepreting {predictions['label_truth'].isna().sum()} missing labels as absences...")
+            predictions['label_truth'] = predictions['label_truth'].fillna(0)
+
+        # Drop unknown labels
+        if len(predictions[predictions['label_truth'] == 'unknown']) > 0:
+            print(f"Dropping {len(predictions[predictions['label_truth'] == 'unknown'])} unknown labels...")
+            predictions = predictions[predictions['label_truth'] != 'unknown']
 
         # Use 'predictions' to evaluate performance metrics for each label
         model_performance_metrics = pd.DataFrame() # Container for performance metrics of all labels
@@ -254,7 +365,8 @@ if __name__ == '__main__':
             collated_detection_labels_custom = predictions
 
     print('FINAL RESULTS ================================================================================================')
-    performance_metrics.sort_values(by=['label', 'model'], inplace=True)
+    # performance_metrics.sort_values(by=['label', 'model'], inplace=True)
+    performance_metrics.sort_values(by=['AUC-PR'], inplace=True)
     print(performance_metrics.to_string())
     # plt.show()
 
