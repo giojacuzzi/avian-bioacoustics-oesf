@@ -38,8 +38,8 @@ if evaluation_dataset == 'validation':
 preexisting_labels_to_evaluate = list(class_labels[class_labels['novel'] == 0]['label_birdnet'])
 novel_labels_to_evaluate = list(class_labels[class_labels['novel'] == 1]['label_birdnet'])
 labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
-print(preexisting_labels_to_evaluate)
-input()
+# print(preexisting_labels_to_evaluate)
+# input()
 
 # TODO: Also support labels that the classifier looked for but did not find
 
@@ -254,10 +254,11 @@ if __name__ == '__main__':
         print('Collating annotations for each label...')
         count = 0
         for i, row in predictions.iterrows():
-            if count % 100 == 0:
-                print(f"{round(i/len(predictions) * 100, 2)}%")
+            if count % 1000 == 0:
+                print_success(f"{round(count/len(predictions) * 100, 2)}%")
+            count += 1
 
-            DEBUG = True
+            DEBUG = False
             if DEBUG:
                 print(f"Predicting: {row['label_predicted']}")
 
@@ -270,7 +271,7 @@ if __name__ == '__main__':
             #     print(file_annotations)
             true_labels = []
             if len(file_annotations) == 0:
-                print_warning(f"No annotations for file {row['file']}!")
+                # print_warning(f"No annotations for file {row['file']}!")
                 predictions.at[i, 'label_truth'] = '0' # NOTE: Unannotated files (e.g. Background files) are intepreted as having no labels
                 continue
             
@@ -278,7 +279,7 @@ if __name__ == '__main__':
             # print(true_labels)
             if len(true_labels) > 0:
                 # input(f'found {len(true_labels)} labels')
-                print(f'before: {true_labels}')
+                # print(f'before: {true_labels}')
                 # Convert birdnet labels to simple labels
                 simple_labels = []
                 for label in true_labels:
@@ -287,7 +288,7 @@ if __name__ == '__main__':
                         label = split[1].lower()
                     simple_labels.append(label)
                 true_labels = set(simple_labels)
-                print(f'after: {true_labels}')
+                # print(f'after: {true_labels}')
 
             present = row['label_predicted'] in true_labels
 
@@ -297,11 +298,11 @@ if __name__ == '__main__':
                 predictions.at[i, 'label_truth'] = '0'
 
                 if 'unknown' in true_labels:
-                    print_warning('Skipping unknown example...')
+                    # print_warning('Skipping unknown example...')
                     predictions.at[i, 'label_truth'] = 'unknown'
                     # input()
                 elif 'not_target' in true_labels:
-                    print_warning('found a not_target')
+                    # print_warning('found a not_target')
                     # input()
 
                     for j, a in file_annotations.iterrows():
@@ -314,7 +315,7 @@ if __name__ == '__main__':
                         # print(f'target {target}')
                         # input()
                         if target != row['label_predicted']:
-                            print_warning(f"Skipping unknown 'not_target' example for another label ({target})...")
+                            # print_warning(f"Skipping unknown 'not_target' example for another label ({target})...")
                             predictions.at[i, 'label_truth'] = 'unknown'
                             # input()
                             break
@@ -323,7 +324,6 @@ if __name__ == '__main__':
                 print(f'Truth: {true_labels}')
                 print(f"Result ({row['label_predicted']}): {predictions.at[i, 'label_truth']}")
             # input()
-        count += 1
         
         # input()
 
