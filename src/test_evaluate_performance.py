@@ -42,7 +42,8 @@ labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
 # print(preexisting_labels_to_evaluate)
 # input()
 
-plot = True
+plot_precision_recall = True
+plot_score_distributions = False
 # DEBUG #################################################################
 debug = False
 debug_threshold = 1.0
@@ -52,7 +53,7 @@ if debug:
     preexisting_labels_to_evaluate = [debug_label]
     labels_to_evaluate = [debug_label]
     novel_labels_to_evaluate = []
-    plot = True
+    plot_precision_recall = True
 # DEBUG #################################################################
 
 # TODO: Also support labels that the classifier looked for but did not find
@@ -206,7 +207,7 @@ if __name__ == '__main__':
         # Load analyzer detection scores for each evaluation file example
         print('Loading analyzer detection scores for evaluation examples...')
         score_files = []
-        score_files.extend(files.find_files(model, '.csv')) 
+        score_files.extend(files.find_files(model, '.csv', exclude_dirs=['threshold_perf'])) 
         predictions = pd.DataFrame()
         i = 0
         for file in score_files:
@@ -238,6 +239,11 @@ if __name__ == '__main__':
         print(predictions)
         # input()
 
+        if model == out_dir_pretrained:
+            raw_predictions_pretrained = predictions
+        elif model == out_dir_custom:
+            raw_predictions_custom = predictions
+
         print('Loading corresponding annotations...')
         if evaluation_dataset == 'validation':
             # Load annotation labels for the training files as dataframe with columns:
@@ -254,30 +260,6 @@ if __name__ == '__main__':
             annotations['file'] = annotations['file'].apply(remove_extension)
             print(annotations)
             # input()
-        
-        # TODO: For each label in 'predictions', perform Hartigan's dip test for multimodality with raw logit scores
-        # If p_value < 0.05 we reject the null hypothesis of unimodality and conclude the data for that label is likely multimodal
-        from diptest import diptest
-        for label in model_labels_to_evaluate:
-            print(f'Performing dip test for {label}...')
-            logit_scores = predictions[predictions['label_predicted'] == label]
-            print(logit_scores)
-            conf_scores  = logit_scores['confidence']
-            logit_scores = logit_scores['logit']
-            dipstat, p_value = diptest(logit_scores)
-            print("Dip statistic:", dipstat)
-            print("P-value:", p_value)
-
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
-            fig.suptitle(label)
-            ax1.hist(conf_scores, bins=20, color='blue', alpha=0.7)
-            ax1.set_ylim(0, 30)
-            ax1.set_title('Detection Scores')
-            ax2.hist(logit_scores, bins=50, color='green', alpha=0.7)
-            ax2.set_xlim(-16, 16)
-            ax2.set_title('Logit Scores')
-            plt.tight_layout()
-            plt.show()
 
         # Discard prediction scores for files not in evaluation dataset
         # DEBUG DEBUG DEBUG ################################################################
@@ -409,6 +391,11 @@ if __name__ == '__main__':
         print(predictions)
         print(len(predictions))
 
+        if model == out_dir_pretrained:
+            collated_predictions_pretrained = predictions
+        elif model == out_dir_custom:
+            collated_predictions_custom = predictions
+
         print('Filtering...')
         # Filter out rows where 'label_truth' is 0
         pred_copy = predictions
@@ -439,12 +426,15 @@ if __name__ == '__main__':
             # Get all the predictions and their associated confidence scores for this label
             detection_labels = predictions[predictions['label_predicted'] == label_under_evaluation]
 
-            species_performance_metrics = evaluate_species_performance(detection_labels=detection_labels, species=label_under_evaluation, plot=plot, title_label=model, save_to_dir=f'/Users/giojacuzzi/Downloads/perf/{model}')
+            species_performance_metrics = evaluate_species_performance(detection_labels=detection_labels, species=label_under_evaluation, plot=plot_precision_recall, title_label=model, save_to_dir=f'{model}/threshold_perf')
             model_performance_metrics = pd.concat([model_performance_metrics, species_performance_metrics], ignore_index=True)
 
         model_performance_metrics['model'] = model
         print(f'PERFORMANCE METRICS FOR {model}')
         print(model_performance_metrics.to_string())
+
+        if plot_precision_recall:
+            plt.show()
 
         if model == out_dir_pretrained:
             model_performance_metrics.to_csv(f"{out_dir}/metrics_pre-trained.csv")
@@ -462,9 +452,6 @@ if __name__ == '__main__':
     # performance_metrics.sort_values(by=['label', 'model'], inplace=True)
     performance_metrics.sort_values(by=['AUC-PR'], inplace=True)
     print(performance_metrics.to_string())
-    if plot:
-        plt.show()
-        input('plot?')
 
     # Calculate metric deltas between custom and pre-trained
     if len(models) > 1:
@@ -488,6 +475,68 @@ if __name__ == '__main__':
 
         print(delta_metrics)
         delta_metrics.to_csv(f"{out_dir}/metrics_summary.csv")
+
+
+    # TODO: For each label in 'predictions', perform Hartigan's dip test for multimodality with raw logit scores
+    # If p_value < 0.05 we reject the null hypothesis of unimodality and conclude the data for that label is likely multimodal
+    if False:
+        from diptest import diptest
+        for label in [label.split('_')[1].lower() for label in preexisting_labels_to_evaluate]:
+            print(f'Performing dip test for {label}...')
+            print('PRETRAINED')
+            pretrained_scores = raw_predictions_pretrained[raw_predictions_pretrained['label_predicted'] == label]
+            pretrained_dipstat, pretrained_p_value = diptest(pretrained_scores['logit'])
+            print("Dip statistic:", pretrained_dipstat)
+            print("P-value:", pretrained_p_value)
+
+            print('CUSTOM')
+            custom_scores = raw_predictions_custom[raw_predictions_custom['label_predicted'] == label]
+            custom_dipstat, custom_p_value = diptest(custom_scores['logit'])
+            print("Dip statistic:", custom_dipstat)
+            print("P-value:", custom_p_value)
+
+            if plot_score_distributions:
+                fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
+                fig.suptitle(label)
+                ax1.hist(pretrained_scores['confidence'], bins=20, color='red', alpha=0.5)
+                ax1.hist(custom_scores['confidence'], bins=20, color='blue', alpha=0.5)
+                ax1.set_ylim(0, 25)
+                ax1.set_title('Detection Scores')
+                ax2.hist(pretrained_scores['logit'], bins=50, color='red', alpha=0.5)
+                ax2.hist(custom_scores['logit'], bins=50, color='blue', alpha=0.5)
+                ax2.set_xlim(-16, 16)
+                ax2.set_title('Logit Scores')
+                plt.tight_layout()
+                plt.show()
+
+        # # TODO: Sample present and absent examples equally to compare distributions
+        # num_rows_present = raw_predictions_custom[raw_predictions_custom['label_truth'] == label].shape[0]
+        # df_present = raw_predictions_custom[raw_predictions_custom['label_truth'] == label].sample(n=num_rows_present, random_state=1)
+        # df_absent = raw_predictions_custom[raw_predictions_custom['label_truth'] != label].sample(n=num_rows_present, random_state=1)
+        # custom_sampled_dipstat, custom_sampled_p_value = diptest(df_absent['logit'] + df_present['logit'])
+        # print("Dip statistic:", custom_sampled_dipstat)
+        # print("P-value:", custom_sampled_p_value)
+
+        # if plot_score_distributions:
+        #     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
+        #     fig.suptitle(label)
+        #     ax1.hist(df_absent['confidence'], bins=20, color='orange', alpha=0.5)
+        #     ax1.hist(df_present['confidence'], bins=20, color='green', alpha=0.5)
+        #     ax1.set_ylim(0, 25)
+        #     ax1.set_title('Detection Scores')
+        #     ax2.hist(df_absent['logit'], bins=20, color='orange', alpha=0.5)
+        #     ax2.hist(df_present['logit'], bins=20, color='green', alpha=0.5)
+        #     ax2.set_xlim(-16, 16)
+        #     ax2.set_title('Logit Scores')
+        #     plt.tight_layout()
+        #     plt.show()
+    
+    # TODO: Test Silverman's test for modality
+    # from statsmodels.nonparametric.bandwidths import bw_silverman, bw_scott, select_bandwidth
+    # silverman_bandwidth = bw_silverman(data)
+    # # select bandwidth allows to set a different kernel
+    # silverman_bandwidth_gauss = select_bandwidth(data, bw = 'silverman', kernel = 'gauss')
+
 
     # Site-level performance ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #     - Number of sites detected / number of sites truly present
@@ -517,7 +566,7 @@ if __name__ == '__main__':
         how='inner'
     )
     detections_pretrained = pd.merge(
-        site_deployment_metadata, 
+        site_deployment_metadata,
         collated_detection_labels_pretrained, 
         left_on=['SerialNo', 'SurveyDate'], 
         right_on=['serialno', 'date'],

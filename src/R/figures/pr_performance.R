@@ -6,8 +6,10 @@ library(ggplot2)
 library(cowplot)
 library(patchwork)
 
-path_pretrained = '/Users/giojacuzzi/Downloads/perf/data/validation/Custom/pre-trained'
-path_custom = '/Users/giojacuzzi/Downloads/perf/data/validation/Custom/custom'
+custom_model_stub = 'custom_S1_N100_LR0.001_BS100_HU0_LSFalse_US0_I0'
+
+path_pretrained = paste('/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/validation/custom/', custom_model_stub, '/pre-trained/threshold_perf', sep='')
+path_custom = paste('/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/validation/custom/', custom_model_stub, '/custom/threshold_perf', sep='')
 
 labels_to_plot = 'all'
 labels_to_plot = c('marbled murrelet', 'pacific-slope flycatcher')
@@ -59,25 +61,25 @@ plot_histogram = ggplot(perf, aes(x = threshold)) +
   geom_histogram(data = subset(perf, model == "custom"), fill = "blue", alpha = 0.55, bins = 12) +
   facet_wrap(~ label, scales = "free_y") +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
-  coord_cartesian(ylim = c(0, 10)) +
+  coord_cartesian(ylim = c(0, 20)) +
   labs(x = "Score Threshold", y = "Number of Detections") +
   theme_minimal()
 plot_histogram
 
 
-library(diptest)
-library(LaplacesDemon)
-label_to_test = 'song sparrow'
-pretrained_dist = subset(subset(perf, model == 'pretrained'), label == label_to_test, select = threshold)
-custom_dist = subset(subset(perf, model == 'custom'), label == label_to_test, select = threshold)
-plot(pretrained_dist)
-plot(custom_dist)
-is.unimodal(unlist(pretrained_dist))
-is.unimodal(unlist(custom_dist))
-is.multimodal(unlist(pretrained_dist))
-is.multimodal(unlist(custom_dist))
-dip.test(unlist(pretrained_dist))
-dip.test(unlist(custom_dist))
+# library(diptest)
+# library(LaplacesDemon)
+# label_to_test = 'song sparrow'
+# pretrained_dist = subset(subset(perf, model == 'pretrained'), label == label_to_test, select = threshold)
+# custom_dist = subset(subset(perf, model == 'custom'), label == label_to_test, select = threshold)
+# plot(pretrained_dist)
+# plot(custom_dist)
+# is.unimodal(unlist(pretrained_dist))
+# is.unimodal(unlist(custom_dist))
+# is.multimodal(unlist(pretrained_dist))
+# is.multimodal(unlist(custom_dist))
+# dip.test(unlist(pretrained_dist))
+# dip.test(unlist(custom_dist))
 
 
 
