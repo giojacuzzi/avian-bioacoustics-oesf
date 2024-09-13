@@ -5,8 +5,8 @@
 
 # CHANGE ME ##############################################################################
 overwrite = False
-evaluation_dataset = 'test' # 'validation' or 'test'
-custom_model_stub  = None # e.g. 'custom_S1_N100_A0_U0_I0' or None to only evaluate pre-trained model
+evaluation_dataset = 'validation' # 'validation' or 'test'
+custom_model_stub  = 'custom_S1_N100_LR0.001_BS100_HU0_LSFalse_US0_I0' # e.g. 'custom_S1_N100_LR0.001_BS100_HU0_LSFalse_US0_I0' or None to only evaluate pre-trained model
 ##########################################################################################
 
 from classification import process_files
@@ -48,7 +48,7 @@ debug = False
 debug_threshold = 1.0
 if debug:
     debug_threshold = 0.0
-    debug_label = "Dendragapus fuliginosus_Sooty Grouse"
+    debug_label = "Megaceryle alcyon_Belted Kingfisher"
     preexisting_labels_to_evaluate = [debug_label]
     labels_to_evaluate = [debug_label]
     novel_labels_to_evaluate = []
@@ -73,7 +73,7 @@ elif evaluation_dataset == 'test':
 
 # Analyzer config
 min_confidence = 0.0   # Minimum confidence score to retain a detection (only used if apply_sigmoid is True)
-apply_sigmoid  = True # Sigmoid transformation or raw logit score
+apply_sigmoid  = False # Sigmoid transformation or raw logit score
 num_separation = 1     # Number of sounds to separate for analysis. Leave as 1 for original file alone.
 cleanup        = True  # Keep or remove any temporary files created through analysis
 n_processes = 1
@@ -255,6 +255,30 @@ if __name__ == '__main__':
             print(annotations)
             # input()
         
+        # TODO: For each label in 'predictions', perform Hartigan's dip test for multimodality with raw logit scores
+        # If p_value < 0.05 we reject the null hypothesis of unimodality and conclude the data for that label is likely multimodal
+        from diptest import diptest
+        for label in model_labels_to_evaluate:
+            print(f'Performing dip test for {label}...')
+            logit_scores = predictions[predictions['label_predicted'] == label]
+            print(logit_scores)
+            conf_scores  = logit_scores['confidence']
+            logit_scores = logit_scores['logit']
+            dipstat, p_value = diptest(logit_scores)
+            print("Dip statistic:", dipstat)
+            print("P-value:", p_value)
+
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
+            fig.suptitle(label)
+            ax1.hist(conf_scores, bins=20, color='blue', alpha=0.7)
+            ax1.set_ylim(0, 30)
+            ax1.set_title('Detection Scores')
+            ax2.hist(logit_scores, bins=50, color='green', alpha=0.7)
+            ax2.set_xlim(-16, 16)
+            ax2.set_title('Logit Scores')
+            plt.tight_layout()
+            plt.show()
+
         # Discard prediction scores for files not in evaluation dataset
         # DEBUG DEBUG DEBUG ################################################################
         print('Discard prediction scores for files not in evaluation dataset')
@@ -512,12 +536,12 @@ if __name__ == '__main__':
             print(f'Calculating site-level performance metrics for label {label} with custom vs pretrained classifier ...')
 
             pmax_th_custom = performance_metrics[(performance_metrics['label'] == label) & (performance_metrics['model'] == out_dir_custom)]['p_max_th'].iloc[0]
-            species_perf_custom = get_site_level_confusion_matrix(label, detections_custom, pmax_th_custom, all_sites)
+            species_perf_custom = get_site_level_confusion_matrix(label, detections_custom, pmax_th_custom, all_sites) # TODO: replace with site presence/absence matrix file
             species_perf_custom['model'] = 'custom'
             site_level_perf = pd.concat([site_level_perf, species_perf_custom], ignore_index=True)
 
             pmax_th_pretrained = performance_metrics[(performance_metrics['label'] == label) & (performance_metrics['model'] == out_dir_pretrained)]['p_max_th'].iloc[0]
-            species_perf_pretrained = get_site_level_confusion_matrix(label, detections_pretrained, pmax_th_pretrained, all_sites)
+            species_perf_pretrained = get_site_level_confusion_matrix(label, detections_pretrained, pmax_th_pretrained, all_sites) # TODO: replace with site presence/absence matrix file
             species_perf_pretrained['model'] = 'pretrained'
             site_level_perf = pd.concat([site_level_perf, species_perf_pretrained], ignore_index=True)
 
