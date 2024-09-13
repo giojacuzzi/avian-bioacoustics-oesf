@@ -1,11 +1,12 @@
 # Compare performance on an evaluation dataset (e.g. validation, test) between pre-trained and custom classifier
 # Takes a .csv listing all validation samples as input, and assumes a directory structure of .../POSITIVE_CLASS/sample.wav
 # NOTE: Must be executed from the top directory of the repo
+# NOTE: Ensure you have run pretest_consolidate_test_annotations.py prior to running this!
 
 # CHANGE ME ##############################################################################
 overwrite = False
-evaluation_dataset = 'validation' # 'validation' or 'test'
-custom_model_stub  = 'custom_S1_N100_A0_U0_I0' # e.g. 'custom_S1_N100_A0_U0_I0' or None to only evaluate pre-trained model
+evaluation_dataset = 'test' # 'validation' or 'test'
+custom_model_stub  = None # e.g. 'custom_S1_N100_A0_U0_I0' or None to only evaluate pre-trained model
 ##########################################################################################
 
 from classification import process_files
@@ -40,6 +41,19 @@ novel_labels_to_evaluate = list(class_labels[class_labels['novel'] == 1]['label_
 labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
 # print(preexisting_labels_to_evaluate)
 # input()
+
+plot = True
+# DEBUG #################################################################
+debug = False
+debug_threshold = 1.0
+if debug:
+    debug_threshold = 0.0
+    debug_label = "Dendragapus fuliginosus_Sooty Grouse"
+    preexisting_labels_to_evaluate = [debug_label]
+    labels_to_evaluate = [debug_label]
+    novel_labels_to_evaluate = []
+    plot = True
+# DEBUG #################################################################
 
 # TODO: Also support labels that the classifier looked for but did not find
 
@@ -89,7 +103,8 @@ if __name__ == '__main__':
         evaluation_data = pd.read_csv('data/test/test_data_annotations.csv')
         # print('Discard evaluation data for invalid class labels...')
         # print(f"before # {len(evaluation_data)}")
-        evaluation_data = evaluation_data[evaluation_data['target'].isin(set(labels_to_evaluate))]
+        # DEBUG
+        evaluation_data = evaluation_data[evaluation_data['target'].isin(set(class_labels['label_birdnet']))]
         # print(labels_to_evaluate)
         # print(f"after # {len(evaluation_data)}")
         # input()
@@ -215,6 +230,7 @@ if __name__ == '__main__':
         print('Discard prediction scores for labels not under evaluation')
         # print(f"before # {len(predictions)}")
         # input()
+        # DEBUG ################################################################################################
         predictions = predictions[predictions['label_predicted'].isin(set(model_labels_to_evaluate))]
         predictions['label_truth'] = ''
         # print(f"after # {len(predictions)}")
@@ -240,12 +256,14 @@ if __name__ == '__main__':
             # input()
         
         # Discard prediction scores for files not in evaluation dataset
+        # DEBUG DEBUG DEBUG ################################################################
         print('Discard prediction scores for files not in evaluation dataset')
         # print(f"before # {len(predictions)}")
         # input()
-        predictions = predictions[predictions['file'].isin(set(evaluation_data['file']))]
+        # predictions = predictions[predictions['file'].isin(set(evaluation_data['file']))]
         # print(f"after # {len(predictions)}")
         # input()
+        # DEBUG DEBUG DEBUG ################################################################
 
         # At this point, "predictions" contains the model confidence score for each evaluation example for each predicted label,
         # and "annotations" contains the all annotations (i.e. true labels) for each evaluation example.
@@ -253,14 +271,20 @@ if __name__ == '__main__':
         # Next, for each label, collate annotation data into simple presence ('label_predicted') or absence ('0') truth per label prediction per file, then add to 'predictions'
         print('Collating annotations for each label...')
         count = 0
+        annotations_files_set = set(annotations['file'])
         for i, row in predictions.iterrows():
             if count % 1000 == 0:
                 print_success(f"{round(count/len(predictions) * 100, 2)}%")
             count += 1
 
-            DEBUG = False
-            if DEBUG:
-                print(f"Predicting: {row['label_predicted']}")
+            conf = row['confidence']
+
+            # DEBUG
+            if row['file'] not in annotations_files_set: # TODO: AND / INSTEAD the original target for this prediction is not in class_labels...
+                # print_warning('Setting invalid file to unknown')
+                predictions.at[i, 'label_truth'] = 'unknown'
+                continue
+
 
             # Does the file truly contain the label?
             present = False
@@ -276,34 +300,51 @@ if __name__ == '__main__':
                 continue
             
             true_labels = str(file_annotations['labels'].iloc[0]).split(', ')
-            # print(true_labels)
+            if debug:
+                print(f'true labels before {true_labels}')
             if len(true_labels) > 0:
                 # input(f'found {len(true_labels)} labels')
                 # print(f'before: {true_labels}')
                 # Convert birdnet labels to simple labels
                 simple_labels = []
                 for label in true_labels:
-                    split = label.split('_')
-                    if len(split) > 1 and label not in ['unknown', 'not_target']:
-                        label = split[1].lower()
+                    if label not in ['unknown', 'not_target']:
+                        split = label.split('_')
+                        if len(split) > 1:
+                            label = split[1].lower()
                     simple_labels.append(label)
                 true_labels = set(simple_labels)
                 # print(f'after: {true_labels}')
+            
+            if conf > debug_threshold and debug: # DEBUG
+                print(f"row[file] {row['file']}")
+                print(f'true_labels {true_labels}')
 
             present = row['label_predicted'] in true_labels
 
             if present:
                 predictions.at[i, 'label_truth'] = row['label_predicted']
+                # if conf > debug_threshold and debug: # DEBUG
+                #     print('present')
+                
             else:
                 predictions.at[i, 'label_truth'] = '0'
+
+                # if conf > debug_threshold and debug: # DEBUG
+                #     print('not present')
 
                 if 'unknown' in true_labels:
                     # print_warning('Skipping unknown example...')
                     predictions.at[i, 'label_truth'] = 'unknown'
                     # input()
+                    # if conf > debug_threshold and debug: # DEBUG
+                    #     print('unknown')
                 elif 'not_target' in true_labels:
                     # print_warning('found a not_target')
                     # input()
+
+                    # if conf > debug_threshold and debug: # DEBUG
+                    #     print(f'not_target file_annotations {file_annotations}')
 
                     for j, a in file_annotations.iterrows():
                         target = a['target']
@@ -318,11 +359,13 @@ if __name__ == '__main__':
                             # print_warning(f"Skipping unknown 'not_target' example for another label ({target})...")
                             predictions.at[i, 'label_truth'] = 'unknown'
                             # input()
+                            # if conf > debug_threshold and debug: # DEBUG
+                            #     print('not_target unknown')
                             break
             
-            if DEBUG:
-                print(f'Truth: {true_labels}')
-                print(f"Result ({row['label_predicted']}): {predictions.at[i, 'label_truth']}")
+            # if DEBUG:
+            #     print(f'Truth: {true_labels}')
+            #     print(f"Result ({row['label_predicted']}): {predictions.at[i, 'label_truth']}")
             # input()
         
         # input()
@@ -337,6 +380,33 @@ if __name__ == '__main__':
             print(f"Dropping {len(predictions[predictions['label_truth'] == 'unknown'])} unknown labels...")
             predictions = predictions[predictions['label_truth'] != 'unknown']
 
+        # DEBUG
+        # Save predictions to file
+        print(predictions)
+        print(len(predictions))
+
+        print('Filtering...')
+        # Filter out rows where 'label_truth' is 0
+        pred_copy = predictions
+        # df = pred_copy[pred_copy['label_truth'] != 0]
+        # df = df[df['label_truth'] != '0']
+        # df = pred_copy[pred_copy['label_truth'] == 'western tanager']
+        # df = df[df['label_predicted'] != 'western tanager']
+        # # Group by 'file' and concatenate unique 'label_truth' values
+        # df = df.groupby('file').agg({'label_truth': lambda x: ', '.join(x.unique())}).reset_index()
+        # # Rename the 'label_truth' column to 'labels'
+        # df = df.rename(columns={'label_truth': 'labels'})
+        df = predictions
+        df = df[df['confidence'] > debug_threshold]
+        df['serialno'] = df['file'].str.extract(r'(SMA\d{5})')
+        df['month'] = df['file'].str.extract(r'(_2020\d{2})')
+        # df = df.sort_values(by=['serialno', 'month', 'file']).reset_index(drop=True)
+        df = df.sort_values(by=['confidence']).reset_index(drop=True)
+        df.to_csv('/Users/giojacuzzi/Downloads/test_labels_revised.csv')
+        print(f'Down to {len(df)} files')
+        # input()
+        # DEBUG
+
         # Use 'predictions' to evaluate performance metrics for each label
         model_performance_metrics = pd.DataFrame() # Container for performance metrics of all labels
         for label_under_evaluation in model_labels_to_evaluate:
@@ -345,7 +415,7 @@ if __name__ == '__main__':
             # Get all the predictions and their associated confidence scores for this label
             detection_labels = predictions[predictions['label_predicted'] == label_under_evaluation]
 
-            species_performance_metrics = evaluate_species_performance(detection_labels=detection_labels, species=label_under_evaluation, plot=False, title_label=model, save_to_dir=f'/Users/giojacuzzi/Downloads/perf/{model}')
+            species_performance_metrics = evaluate_species_performance(detection_labels=detection_labels, species=label_under_evaluation, plot=plot, title_label=model, save_to_dir=f'/Users/giojacuzzi/Downloads/perf/{model}')
             model_performance_metrics = pd.concat([model_performance_metrics, species_performance_metrics], ignore_index=True)
 
         model_performance_metrics['model'] = model
@@ -368,7 +438,9 @@ if __name__ == '__main__':
     # performance_metrics.sort_values(by=['label', 'model'], inplace=True)
     performance_metrics.sort_values(by=['AUC-PR'], inplace=True)
     print(performance_metrics.to_string())
-    # plt.show()
+    if plot:
+        plt.show()
+        input('plot?')
 
     # Calculate metric deltas between custom and pre-trained
     if len(models) > 1:
