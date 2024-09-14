@@ -72,8 +72,12 @@ def process_dir_parallel(
         print_error('Root directory must contain input directory')
         return
 
+    print('getting dirs...')
     dirs = getDirectoriesWithFiles(in_dir, in_filetype)
     dirs.sort()
+
+    print('printing dirs...')
+    print(dirs)
 
     for dir in dirs:
         print('Processing directory ' + dir +'...')
@@ -85,13 +89,17 @@ def process_dir_parallel(
 
         start_time_dir = time.time()
         files = list_files_in_directory(dir)
-        files = [f for f in files if f.endswith(in_filetype)]
+        files = [f for f in files]
         files.sort()
+        print(files)
+        print(f'LAUNCH {n_processes}')
         with Pool(min(len(files), n_processes)) as pool: # start process pool for all files in directory
             pool.starmap(process_file, zip(
                 files,                  # in_filepath
                 repeat(out_dir),        # out_dir
                 repeat(root_dir),       # root_dir
+                repeat(None),           # analyzer_filepath
+                repeat('src/classification/species_list/species_list_OESF.txt'), # labels_filepath
                 repeat(min_confidence), # min_confidence
                 repeat(apply_sigmoid),  # apply_sigmoid
                 repeat(num_separation), # num_separation

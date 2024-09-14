@@ -68,7 +68,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         # Plot precision and recall as a function of threshold
         ax1.plot(thresholds, precision[:-1], label='Precision', marker='.') #, marker='.' 
         ax1.plot(thresholds, recall[:-1], label='Recall', marker='.') # , marker='.'
-        ax1.plot(thresholds, f1_scores[:-1], label='F1 Score') # , marker='.'
+        # ax1.plot(thresholds, f1_scores[:-1], label='F1 Score') # , marker='.'
         ax1.set_xlabel('Threshold') 
         ax1.set_ylabel('Performance')
         ax1.set_title(f'{title_label}\n{species}\nThreshold performance', fontsize=font_size)
@@ -122,7 +122,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         if n_P > 0 and n_N > 0:
             roc_auc = sklearn.metrics.roc_auc_score(detection_labels['label_truth'], detection_labels['confidence'])
         else:
-            print_warning("Could not compute ROC AUC, no negative examples.")
+            print_warning(f"Could not compute ROC AUC ({n_P} positive, {n_N} negative examples).")
             roc_auc = 0.0
 
         # if plot:
@@ -180,32 +180,53 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     })
 
 # Returns a dataframe containing a confusion matrix (TP, FP, FN, TN) and number of truly present/absent sites for a given species from a detection history
-def get_site_level_confusion_matrix(species, detections, threshold, all_sites):
+def get_site_level_confusion_matrix(species, detections, threshold, site_presence_absence):
+
+    # print(detections)
+    # print(f"threshold {threshold}")
+    # input()
+
+    # print(site_presence_absence)
+    all_sites = site_presence_absence.columns
+    # print(f"all_sites ({len(all_sites)}) {all_sites}")
+
+    species_row = site_presence_absence.loc[species]
+    # print(species_row)
+    # Get site names for each condition (1, ?, 0)
+    sites_present = species_row[species_row == '1'].index.tolist()
+    sites_unknown = species_row[species_row == '?'].index.tolist()
+    sites_absent  = species_row[species_row == '0'].index.tolist()
+    # Display results
+    # print(f"Sites with 'present' for {species}:", sites_present)
+    # print(f"Sites with 'unknown' for {species}:", sites_unknown)
+    # print(f"Sites with 'absent'  for {species}:", sites_absent)
+
+    valid_sites = np.setdiff1d(all_sites, sites_unknown)
+    # print(f"Valid sites: {valid_sites}")
+    # input()
+    
     # Filter for species detections, excluding unknown examples
-    detections_species = detections[(detections['label_predicted'] == species) & (detections['label_truth'] != 'unknown')]
+    # TODO: replace
+    # detections_species = detections[(detections['label_predicted'] == species)]
+    # print(detections_species)
 
-    # Sites truly present (based on TP detections)
-    sites_present  = detections_species[(detections_species['label_truth'] == species)]["StationName"].unique()
-    # print(f'Sites present ({len(sites_present)}): {sites_present}')
-
-    # Sites truly absent
-    sites_absent = np.setdiff1d(all_sites, sites_present)
-    # print(f'Sites absent  ({ len(sites_absent)}): {sites_absent}')
-
-    if len(sites_present) + len(sites_absent) != len(all_sites):
-        print_error(f'Number of sites present ({len(sites_present)}) and absent ({len(sites_absent)}) does not equal total number of sites ({len(all_sites)})')
+    if len(sites_present) + len(sites_unknown) + len(sites_absent) != len(all_sites):
+        print_error(f'Number of sites present ({len(sites_present)}), unknown ({len(sites_unknown)}), and absent ({len(sites_absent)}) does not equal total number of sites ({len(all_sites)})')
 
     # Sites detected using the threshold
-    detections_thresholded = detections_species[(detections_species['confidence'] >= threshold)]
-    sites_detected = detections_thresholded["StationName"].unique()
+    detections_thresholded = detections[(detections['confidence'] >= threshold)]
+    # print('detections_thresholded')
+    # print(detections_thresholded)
+    sites_detected = detections_thresholded['site'].unique()
+    # print(sites_detected)
     # print(f'Sites detected with threshold {threshold}  ({len(sites_detected)}): {sites_detected}')
 
     # Sites not detected using the threshold
-    sites_notdetected = np.setdiff1d(all_sites, sites_detected)
+    sites_notdetected = np.setdiff1d(valid_sites, sites_detected)
     # print(f'Sites not detected with threshold {threshold}  ({len(sites_notdetected)}): {sites_notdetected}')
 
-    if len(sites_detected) + len(sites_notdetected) != len(all_sites):
-        print_error(f'Number of sites detected ({len(sites_detected)}) and not detected ({len(sites_notdetected)}) does not equal total number of sites ({len(all_sites)})')
+    # if len(sites_detected) + len(sites_notdetected) != len(all_sites):
+    #     print_error(f'Number of sites detected ({len(sites_detected)}) and not detected ({len(sites_notdetected)}) does not equal total number of sites ({len(all_sites)})')
 
     # TP - Number of sites correctly detected (at least once)
     tp_sites = np.intersect1d(sites_present, sites_detected)
@@ -221,9 +242,9 @@ def get_site_level_confusion_matrix(species, detections, threshold, all_sites):
     # FN - Number of sites incorrectly not detected
     nsites_fn = len(np.intersect1d(sites_notdetected, sites_present))
 
-    nsites_accounted_for = nsites_tp + nsites_fp + nsites_tn + nsites_fn
-    if nsites_accounted_for != len(all_sites):
-        print_error(f'Only {nsites_accounted_for} sites accounted for of {len(all_sites)} total')
+    # nsites_accounted_for = nsites_tp + nsites_fp + nsites_tn + nsites_fn
+    # if nsites_accounted_for != len(all_sites):
+    #     print_error(f'Only {nsites_accounted_for} sites accounted for of {len(all_sites)} total')
     
     if nsites_tp + nsites_fn != len(sites_present):
         print_error(f'Incorrect true presences TP {nsites_tp} + FN {nsites_fn} != {len(sites_present)}')
@@ -251,6 +272,7 @@ def get_site_level_confusion_matrix(species, detections, threshold, all_sites):
         'label':          [species],
         'present':        [len(sites_present)],
         'absent':         [len(sites_absent)],
+        'unknown':        [len(sites_unknown)],
         'threshold':      [threshold],
         'detected':       [len(sites_detected)],
         'notdetected':    [len(sites_notdetected)],
@@ -265,6 +287,8 @@ def get_site_level_confusion_matrix(species, detections, threshold, all_sites):
         # 'TP_pcnt': [tp_pcnt],
         # 'TN_pcnt': [tn_pcnt],
         'precision': [round(precision,3)],
-        'recall':    [round(recall,3)]
+        'recall':    [round(recall,3)],
+        'sites_detected': [sites_detected],
+        'sites_notdetected': [sites_notdetected]
     }
     return(pd.DataFrame(result, index=None))

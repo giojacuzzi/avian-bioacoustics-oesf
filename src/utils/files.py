@@ -37,10 +37,11 @@ def parse_metadata_from_annotation_file(filename):
 # Function to parse serial number, date, and time from a raw detection audio filename,
 # e.g. "SMA00556_20200526_050022_3400.8122" or "_SMA00309_20200424_031413"
 def parse_metadata_from_detection_audio_filename(filename):
-    pattern = r'^_?(SMA\d+)_([0-9]{8})_([0-9]{6})'
-    match = re.match(pattern, filename)
+    # print(f"parse_metadata_from_detection_audio_filename {filename}")
+    pattern = r'_SMA(\d+)_([0-9]{8})_([0-9]{6})$'
+    match = re.search(pattern, filename)
     if match:
-        serial_no = match.group(1)
+        serial_no = 'SMA' + match.group(1)
         date = match.group(2)
         time = match.group(3)
         return serial_no, date, time
@@ -73,10 +74,12 @@ def parse_metadata_from_raw_audio_filepath(filepath):
         print_error(f'Unable to parse info from filepath: {filepath}')
 
 # Find all selection table files under a root directory
-def find_files(directory, suffix=None, prefix=None):
+def find_files(directory, suffix=None, prefix=None, exclude_dirs=[]):
 
     results = []
     for root, dirs, files in os.walk(directory):
+        if any(exclude_dir in root for exclude_dir in exclude_dirs):
+            continue
         for file in files:
             suffix_match = (suffix is None) or (suffix is not None and file.endswith(suffix))
             prefix_match = (prefix is None) or (prefix is not None and file.startswith(prefix))
@@ -107,14 +110,23 @@ def parse_metadata_from_filename(path):
 
 def getDirectoriesWithFiles(path, filetype):
     directoryList = []
+    print(f'YO: {os.listdir(path)}')
+    print(len(os.listdir(path)))
     if os.path.isfile(path):
+        print('returning from isfile!')
         return []
+    print(f'found {len([f for f in os.listdir(path)])} files')
     # Add dir to directorylist if it contains files of filetype
-    if len([f for f in os.listdir(path) if f.endswith(filetype)]) > 0:
+    files_in_dir = [f for f in os.listdir(path)]
+    if len(files_in_dir) > 0:
+        files_of_type = [f for f in files_in_dir if f.endswith('.wav')]
+        print(f'endswith {len(files_of_type)}')
+        print(f'adding path {path}')
         directoryList.append(path)
     for d in os.listdir(path):
         new_path = os.path.join(path, d)
         if os.path.isdir(new_path):
+            print(f'adding a dir {d}')
             directoryList += getDirectoriesWithFiles(new_path, filetype)
     return directoryList
 

@@ -31,7 +31,10 @@ load_perf = function(path, model_tag) {
 }
 
 perf_pretrained = load_perf(path_pretrained, 'pretrained')
+perf_pretrained$f1 = 2*perf_pretrained$recall * perf_pretrained$precision/(perf_pretrained$recall+perf_pretrained$precision)
+
 perf_custom     = load_perf(path_custom, 'custom')
+perf_custom$f1 = 2*perf_custom$recall * perf_custom$precision/(perf_custom$recall+perf_custom$precision)
 
 perf = bind_rows(perf_pretrained, perf_custom)
 perf$label = factor(perf$label)
@@ -40,9 +43,10 @@ perf$model = factor(perf$model, levels = c('pretrained', 'custom'))
 plot_threshold_pr = ggplot(perf, aes(x = threshold)) +
   geom_path(aes(y = recall, linetype = "Recall", color = model)) +
   geom_path(aes(y = precision, linetype = "Precision", color = model)) +
-  facet_wrap(~ label, scales = "free_y") +
+  geom_path(aes(y = f1, linetype = "F1", color = model)) +
+  facet_wrap(~ label, ncol = 6, scales = "free_y") +
   scale_color_manual(values = c("custom" = "royalblue", "pretrained" = "salmon")) +
-  scale_linetype_manual(values = c("Recall" = "dotted", "Precision" = "solid")) +
+  scale_linetype_manual(values = c("Recall" = "dashed", "Precision" = "solid", "F1" = "dotted")) +
   labs(x = "Threshold", y = "Value") +
   theme_minimal()
 plot_threshold_pr
