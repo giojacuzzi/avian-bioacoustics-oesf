@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import sys
 
-custom_models_stub = 'custom_S1_N100_A0_U0_I' # CHANGE ME
+custom_models_stub = 'custom_S1_N100_LR0.001_BS10_HU0_LSFalse_US0_I' # CHANGE ME
 
 desired_metrics = ['AUC-PR', 'AUC-ROC', 'f1_max'] # AP?
 round_digits = 3

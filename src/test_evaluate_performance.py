@@ -8,7 +8,7 @@
 # CHANGE ME ##############################################################################
 overwrite = False
 evaluation_dataset = 'test' # 'validation' or 'test'
-custom_model_stub  = None # e.g. 'custom_S1_N100_LR0.001_BS100_HU0_LSFalse_US0_I0' or None to only evaluate pre-trained model
+custom_model_stub  = None # e.g. 'custom_S1_N100_LR0.001_BS10_HU0_LSFalse_US0_I0' or None to only evaluate pre-trained model
 ##########################################################################################
 
 from classification import process_files
@@ -546,11 +546,8 @@ if __name__ == '__main__':
     #     - Number of sites detected / number of sites truly present
     #     - Number of sites not detected / number of sites truly present
     #     - Number of sites detected / number of sites truly absent
-    print(f'BEGIN EVALUATION (site level) ================================================================================================')
-    site_level_perf_pretrained = pd.DataFrame()
-    collated_predictions_pretrained.to_csv('/Users/giojacuzzi/Downloads/collated_predictions_pretrained.csv')
     if evaluation_dataset == 'test':
-
+        collated_predictions_pretrained.to_csv('/Users/giojacuzzi/Downloads/collated_predictions_pretrained.csv')
         # Load site true presence and absence
         print('Loading site true presence and absence...')
         site_presence_absence = pd.read_csv('data/test/site_presence_absence.csv', header=None)
@@ -563,8 +560,6 @@ if __name__ == '__main__':
         site_key.columns = new_columns
         site_key['months'] = site_key['months'].apply(lambda x: list(map(int, x.split(','))))
         print(site_key)
-
-        all_sites = set(site_key['site'])
 
         site_presence_absence = site_presence_absence.iloc[5:].reset_index(drop=True)
         site_presence_absence.set_index(0, inplace=True)
@@ -583,20 +578,6 @@ if __name__ == '__main__':
         true_species_richness = site_presence_absence.apply(sum_list)
         print(true_species_richness)
 
-        print('Calculating site-level performance metrics...')
-
-        # Find matching unique site ID for each prediction
-        collated_predictions_pretrained['site'] = ''
-
-        # TODO: Calculate perf with thresholds optimized for precision and F1 score
-        print('Calculate site-level performance per label...')
-        metrics_pre_trained = performance_metrics[performance_metrics['model'] == out_dir_pretrained]
-        print('metrics_pre_trained')
-        print(metrics_pre_trained)
-        # metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom]
-        # print('metrics_custom')
-        # print(metrics_custom)
-
         def get_site(s, m):
             # print(f'getting site for {s} and {m}...')
             filtered_df = site_key[(site_key['serialno'] == s) & (site_key['months'].apply(lambda x: m in x))]
@@ -604,109 +585,150 @@ if __name__ == '__main__':
                 return filtered_df['site'].tolist()[0]
             else:
                 return None
-            
-        for label in list(class_labels[class_labels['novel'] == 0]['label']):
-            print(f'Evaluating site-level performance for {label}...')
-            # print(collated_predictions_pretrained)
-            predictions_for_label = collated_predictions_pretrained[collated_predictions_pretrained['label_predicted'] == label].copy()
-            # print('predictions_for_label')
-            # print(predictions_for_label)
-            # input()
-            # print('parsing metadata...')
-            metadata = predictions_for_label['file'].apply(files.parse_metadata_from_detection_audio_filename)
-            # print('METADATA')
-            # print(metadata)
-            # print(f"len(metadata) {len(metadata)}")
-            # print(f"len(predictions_for_label) {len(predictions_for_label)}")
-            serialnos = metadata.apply(lambda x: x[0]).tolist()
-            dates = metadata.apply(lambda x: x[1]).tolist()
-            times = metadata.apply(lambda x: x[2]).tolist()
-            predictions_for_label['serialno'] = serialnos
-            predictions_for_label['date']     = dates
-            predictions_for_label['time']     = times
-            # input()
-            predictions_for_label['date'] = pd.to_datetime(predictions_for_label['date'], format='%Y%m%d')
-            # print_success('predictions_for_label')
-            # print(predictions_for_label)
-            # input()
-            for i, row in predictions_for_label.iterrows():
-                # print(i)
-                # print(row)
-                serialno = row['serialno']
-                month = row['date'].month
-                site = get_site(serialno, month)
-                # print(f"got site {site} for serialno {serialno} and month {month}")
-                predictions_for_label.at[i, 'site'] = site
-            # print('PREDICTIONS')
-            # print(predictions_for_label)
 
-            # TODO: thresholds pmax, f1max, 0.9, and 0.5
+        site_level_perf = pd.DataFrame()
+        site_level_perf_mean = pd.DataFrame()
+        for model in models:
+            print(f'BEGIN MODEL EVALUATION {model} (site level) ================================================================================================')
 
-            # Pre-trained model
-            # print('METRICS PRETRAINED')
-            pretrained_label_metrics = metrics_pre_trained[metrics_pre_trained['label'] == label]
-            pretrained_threshold_pmax = pretrained_label_metrics['p_max_th'].iloc[0]
-            pretrained_threshold_f1max = pretrained_label_metrics['f1_max_th'].iloc[0]
-            species_perf_pretrained = get_site_level_confusion_matrix(label, predictions_for_label, pretrained_threshold_pmax, site_presence_absence)
-            species_perf_pretrained['model'] = 'pretrained'
-            species_perf_pretrained['threshold'] = 'pmax'
-            print(species_perf_pretrained)
-            site_level_perf_pretrained = pd.concat([site_level_perf_pretrained, species_perf_pretrained], ignore_index=True)
+            if model == out_dir_pretrained:
+                # Find matching unique site ID for each prediction
+                cpp = collated_predictions_pretrained
+            elif model == out_dir_custom:
+                cpp = collated_predictions_custom
+            cpp['site'] = ''
 
-            # # TODO: Custom model
-            # if custom_model_stub != None:
-            #     print('METRICS CUSTOM')
-            #     print(custom_label_metrics)
-            #     custom_label_metrics = metrics_pre_trained[metrics_pre_trained['label'] == label]
-            #     custom_threshold_pmax = custom_label_metrics['p_max_th'].iloc[0]
-            #     custom_threshold_f1max = custom_label_metrics['f1_max_th'].iloc[0]
-            #     species_perf_pretrained = get_site_level_confusion_matrix(label, predictions_for_label, pretrained_threshold_pmax, site_presence_absence)
-            #     species_perf_pretrained['model'] = 'pretrained'
-            #     print(species_perf_pretrained)
-            #     site_level_perf_pretrained = pd.concat([site_level_perf_pretrained, species_perf_pretrained], ignore_index=True)
+            print('Calculating site-level performance metrics...')
 
-        print('FINAL RESULTS (site level) ================================================================================================')
-        print(site_level_perf_pretrained.to_string())
+            # TODO: Calculate perf with thresholds optimized for precision and F1 score
+            print('Calculate site-level performance per label...')
+            metrics = performance_metrics[performance_metrics['model'] == model]
+            print('metrics')
+            print(metrics)
+            # metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom]
+            # print('metrics_custom')
+            # print(metrics_custom)
+                
+            for label in list(class_labels[class_labels['novel'] == 0]['label']):
+                print(f'Evaluating site-level performance for {label}...')
+                # print(cpp)
+                predictions_for_label = cpp[cpp['label_predicted'] == label].copy()
+                # print('predictions_for_label')
+                # print(predictions_for_label)
+                # input()
+                # print('parsing metadata...')
+                metadata = predictions_for_label['file'].apply(files.parse_metadata_from_detection_audio_filename)
+                # print('METADATA')
+                # print(metadata)
+                # print(f"len(metadata) {len(metadata)}")
+                # print(f"len(predictions_for_label) {len(predictions_for_label)}")
+                serialnos = metadata.apply(lambda x: x[0]).tolist()
+                dates = metadata.apply(lambda x: x[1]).tolist()
+                times = metadata.apply(lambda x: x[2]).tolist()
+                predictions_for_label['serialno'] = serialnos
+                predictions_for_label['date']     = dates
+                predictions_for_label['time']     = times
+                # input()
+                predictions_for_label['date'] = pd.to_datetime(predictions_for_label['date'], format='%Y%m%d')
+                # print_success('predictions_for_label')
+                # print(predictions_for_label)
+                # input()
+                for i, row in predictions_for_label.iterrows():
+                    # print(i)
+                    # print(row)
+                    serialno = row['serialno']
+                    month = row['date'].month
+                    site = get_site(serialno, month)
+                    # print(f"got site {site} for serialno {serialno} and month {month}")
+                    predictions_for_label.at[i, 'site'] = site
+                # print('PREDICTIONS')
+                # print(predictions_for_label)
 
-        site_level_perf_pretrained = site_level_perf_pretrained.dropna() # remove any species for which there is no valid data (e.g. species without a corresponding optimized threshold)
+                # Pre-trained model
+                # print('METRICS PRETRAINED')
+                label_metrics = metrics[metrics['label'] == label]
+                threshold_pmax = label_metrics['p_max_th'].iloc[0]
+                threshold_f1max = label_metrics['f1_max_th'].iloc[0]
 
-        # Species richness comparison
-        print('Site species counts:')
-        # Explode 'sites_detected' column to create one row per site-species detection
-        df_exploded = site_level_perf_pretrained.explode('sites_detected')
-        # Count the number of species (i.e. labels) for each site
-        site_species_counts = df_exploded.groupby('sites_detected')['label'].count()
-        # Convert result to a DataFrame for a clearer view
-        site_species_counts = site_species_counts.reset_index(name='species_count')
-        # print(site_species_counts)
-        # print('versus truth:')
-        # print(true_species_richness)
+                thresholds = [threshold_pmax, threshold_f1max, 0.5, 0.9]
+                threshold_labels = ['pmax', 'f1max', 'naive_0.5', 'naive_0.9']
+                species_perf = pd.DataFrame()
+                for i, threshold in enumerate(thresholds):
+                    threshold_label = threshold_labels[i]
+                    print(f'Calculating site-level confusion matrix with {threshold_label} threshold {threshold}...')
 
-        # Add the 'true_species_richness' values to the 'site_species_counts' DataFrame by mapping from the Series
-        site_species_counts['true_species_richness'] = site_species_counts['sites_detected'].map(true_species_richness)
-        # Calculate the difference
-        site_species_counts['delta'] = site_species_counts['species_count'] - site_species_counts['true_species_richness']
-        # Calculate the percentage difference
-        site_species_counts['delta_pcnt'] = (site_species_counts['species_count'] / site_species_counts['true_species_richness']) * 100.0
-        # Display the updated DataFrame
-        print(site_species_counts)
+                    species_perf_at_threshold = get_site_level_confusion_matrix(label, predictions_for_label, threshold, site_presence_absence)
+                    species_perf_at_threshold['model'] = model
+                    species_perf_at_threshold['threshold'] = threshold_label
+                    species_perf = pd.concat([species_perf, species_perf_at_threshold], ignore_index=True)
 
-        print(f'Total average site precision: {site_level_perf_pretrained['precision'].mean()}')
-        print(f'Total average site recall: {site_level_perf_pretrained['recall'].mean()}')
-        print(f'Total average site error percentage: {site_level_perf_pretrained['error_pcnt'].mean()}')
-        print(f'Total average species richness percentage: {site_species_counts['delta_pcnt'].mean()}')
+                print(species_perf)
+                site_level_perf = pd.concat([site_level_perf, species_perf], ignore_index=True)
 
-        # Determine effect of habitat type on performance
-        # Merge the 'stratum_df' DataFrame with 'site_species_counts' on the 'site' and 'sites_detected' columns
-        print('Average species richness percentage difference by strata:')
-        merged_df = pd.merge(site_key, site_species_counts, left_on='site', right_on='sites_detected', how='inner')
-        # Calculate the average 'percentage_difference' for each unique 'stratum'
-        average_percentage_diff_by_stratum = merged_df.groupby('stratum')['delta_pcnt'].mean()
-        # Display the result
-        print(average_percentage_diff_by_stratum)
+            print(f'FINAL RESULTS {model} (site level) ================================================================================================')
+            print(site_level_perf.to_string())
+            input()
 
-        # TODO: Determine effect of vocal activity on site-level performance vs. detection-level performance (do very frequent vocalizers perform better at the site level?)
-        # - Correlation between detection-level performance and site-level performance
-        # - Correlation between vocal activity (number of true examples in the test dataset) and site-level performance
+            site_level_perf = site_level_perf.dropna() # remove any species for which there is no valid data (e.g. species without a corresponding optimized threshold)
 
-        # TODO: Compare number of detections per label between models using an optimized threshold
+            for threshold_label in threshold_labels:
+                print(f'Evaluating site-level performance for {threshold_label}...')
+
+                temp = site_level_perf[site_level_perf['threshold'] == threshold_label].copy()
+
+                # Species richness comparison
+                print('Site species counts:')
+                # Explode 'sites_detected' column to create one row per site-species detection
+                df_exploded = temp.explode('sites_detected')
+                # Count the number of species (i.e. labels) for each site
+                site_species_counts = df_exploded.groupby('sites_detected')['label'].count()
+                # Convert result to a DataFrame for a clearer view
+                site_species_counts = site_species_counts.reset_index(name='species_count')
+                # print(site_species_counts)
+                # print('versus truth:')
+                # print(true_species_richness)
+
+                # Add the 'true_species_richness' values to the 'site_species_counts' DataFrame by mapping from the Series
+                site_species_counts['true_species_richness'] = site_species_counts['sites_detected'].map(true_species_richness)
+                # Calculate the difference
+                site_species_counts['delta'] = site_species_counts['species_count'] - site_species_counts['true_species_richness']
+                # Calculate the percentage difference
+                site_species_counts['delta_pcnt'] = (site_species_counts['species_count'] / site_species_counts['true_species_richness']) * 100.0
+                # Display the updated DataFrame
+                print(site_species_counts)
+
+                print(f"Total average site precision: {temp['precision'].mean()}")
+                print(f"Total average site recall: {temp['recall'].mean()}")
+                print(f"Total average site error percentage: {temp['error_pcnt'].mean()}")
+                print(f"Total average species richness percentage: {site_species_counts['delta_pcnt'].mean()}")
+                mean_site_perf_at_threshold = pd.DataFrame({
+                    "precision":  [temp['precision'].mean()], # total average site precision
+                    "recall":     [temp['recall'].mean()], # total average site recall
+                    "error_pcnt": [temp['error_pcnt'].mean()], # total average site error %
+                    "delta_pcnt": [site_species_counts['delta_pcnt'].mean()], # total average species richness % of truth
+                    "threshold":  [threshold_label],
+                    "model":      [model]
+                })
+                print(mean_site_perf_at_threshold)
+                site_level_perf_mean = pd.concat([site_level_perf_mean, mean_site_perf_at_threshold], ignore_index=True)
+                input()
+
+                # Determine effect of habitat type on performance
+                print('Average species richness percentage difference by strata:')
+                merged_df = pd.merge(site_key, site_species_counts, left_on='site', right_on='sites_detected', how='inner')
+                average_percentage_diff_by_stratum = merged_df.groupby('stratum')['delta_pcnt'].mean()
+                print('Species richness difference:')
+                print(average_percentage_diff_by_stratum)
+                print('Site error difference:')
+                average_error_diff_by_stratum = merged_df.groupby('stratum')['error_pcnt'].mean()
+                print(average_error_diff_by_stratum)
+                input()
+
+                # TODO: Determine effect of vocal activity on site-level performance vs. detection-level performance (do very frequent vocalizers perform better at the site level?)
+                # - Correlation between detection-level performance and site-level performance
+                # - Correlation between vocal activity (number of true examples in the test dataset) and site-level performance
+
+                # TODO: Compare number of detections per label between models using an optimized threshold
+        
+        print('FINAL MEAN SITE LEVEL PERF:')
+        print_success(site_level_perf_mean.to_string())
