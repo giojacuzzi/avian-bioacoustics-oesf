@@ -21,8 +21,8 @@ cleanup        = True  # Keep or remove any temporary files created through anal
 analyzer_filepath = None
 labels_filepath   = 'src/classification/species_list/species_list_OESF.txt'
 # CUSTOM
-# analyzer_filepath = 'data/models/Custom/Custom_Classifier.tflite'
-# labels_filepath   = 'data/models/Custom/Custom_Classifier_Labels.txt'
+analyzer_filepath = 'data/models/custom/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0.tflite'
+labels_filepath   = 'data/models/custom/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0_Labels.txt'
 
 # -----------------------------------------------------------------------------
 

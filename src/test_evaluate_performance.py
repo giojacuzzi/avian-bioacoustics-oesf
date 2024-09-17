@@ -1,4 +1,4 @@
-# Compare performance on an evaluation dataset (e.g. validation, test) between pre-trained and custom classifier
+# Evaluate performance of a model on an evaluation dataset (e.g. validation, test), and compare performance with a pre-trained model
 # Takes a .csv listing all validation samples as input, and assumes a directory structure of .../POSITIVE_CLASS/sample.wav
 # NOTE: Must be executed from the top directory of the repo
 # NOTE: Ensure you have run pretest_consolidate_test_annotations.py prior to running this!
@@ -8,7 +8,7 @@
 # CHANGE ME ##############################################################################
 overwrite = False
 evaluation_dataset = 'test' # 'validation' or 'test'
-custom_model_stub  = None # e.g. 'custom_S1_N100_LR0.001_BS10_HU0_LSFalse_US0_I0' or None to only evaluate pre-trained model
+custom_model_stub  = 'custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0' # e.g. 'custom_S1_N100_LR0.001_BS10_HU0_LSFalse_US0_I0' or None to only evaluate pre-trained model
 ##########################################################################################
 
 from classification import process_files
@@ -40,11 +40,12 @@ if evaluation_dataset == 'validation':
     class_labels = class_labels[class_labels['train'] == 1] # only evaluate labels that were trained on
 preexisting_labels_to_evaluate = list(class_labels[class_labels['novel'] == 0]['label_birdnet'])
 novel_labels_to_evaluate = list(class_labels[class_labels['novel'] == 1]['label_birdnet'])
-labels_to_evaluate = preexisting_labels_to_evaluate + novel_labels_to_evaluate
+target_labels_to_evaluate = list(class_labels[class_labels['train'] == 1]['label_birdnet'])
+# all_labels = preexisting_labels_to_evaluate + novel_labels_to_evaluate
 # print(preexisting_labels_to_evaluate)
 # input()
 
-plot_precision_recall = False
+plot_precision_recall = True
 plot_score_distributions = False
 # DEBUG #################################################################
 debug = False
@@ -93,6 +94,8 @@ def remove_extension(f):
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
 
+    print(f'PERFORMANCE EVALUATION - vocalization level ================================================================================================')
+
     # Get the evaluation data as a dataframe with columns:
     # 'path' - full path to the audio file
     # 'file' - the basename of the audio file
@@ -103,7 +106,7 @@ if __name__ == '__main__':
         evaluation_data.loc[:, 'file'] = evaluation_data['file'].apply(remove_extension)
 
     elif evaluation_dataset == 'test':
-        evaluation_data = pd.read_csv('data/test/test_data_annotations.csv')
+        evaluation_data = pd.read_csv('data/test/test_data_annotations.csv') # see pretest_consolidate_test_annotations.py
         # print('Discard evaluation data for invalid class labels...')
         # print(f"before # {len(evaluation_data)}")
         # DEBUG
@@ -124,8 +127,8 @@ if __name__ == '__main__':
 
     in_evaluation_audio_filepaths = evaluation_data['path']
 
-    print(f'Found {len(labels_to_evaluate)} labels to evaluate with {len(set(in_evaluation_audio_filepaths))} evaluation files.')
-    print(sorted(labels_to_evaluate))
+    # print(f'Found {len(labels_to_evaluate)} labels to evaluate with {len(set(in_evaluation_audio_filepaths))} evaluation files.')
+    # print(sorted(labels_to_evaluate))
     # input()
 
     # Normalize file paths to support both mac and windows
@@ -136,7 +139,7 @@ if __name__ == '__main__':
         shutil.rmtree(out_dir)
 
     if os.path.exists(out_dir):
-        print_warning('Data already processed, loading previous results...')
+        print_warning('Raw audio data already processed, loading previous detection results for model(s)...')
     else:
         # Process evaluation examples with both classifiers -----------------------------------------------------------------------------
 
@@ -152,7 +155,7 @@ if __name__ == '__main__':
 
         if custom_model_stub != None:
             # Custom classifier
-            print(f"Processing evaluation set with classifier {custom_analyzer_filepath}")
+            print(f"Processing evaluation set with classifier {custom_analyzer_filepath}..................................................")
             process_files.process_files_parallel(
                 in_files          = in_evaluation_audio_filepaths,
                 out_dir           = out_dir_custom,
@@ -170,7 +173,7 @@ if __name__ == '__main__':
             )
 
         # Pre-trained classifier
-        print(f"Processing evaluation set with classifier {pretrained_analyzer_filepath}")
+        print(f"Processing evaluation set with classifier {pretrained_analyzer_filepath}..................................................")
         process_files.process_files_parallel(
             in_files          = in_evaluation_audio_filepaths,
             out_dir           = out_dir_pretrained,
@@ -196,18 +199,18 @@ if __name__ == '__main__':
     
     # Load results per classifier and calculate performance stats ---------------------------------------------------------------
     for model in models:
-        print(f'BEGIN MODEL EVALUATION {model} (sample level) ================================================================================================')
+        print(f'BEGIN MODEL EVALUATION {model} (sample level) ---------------------------------------------------------------------------')
 
         if model == out_dir_pretrained:
             model_labels_to_evaluate = [label.split('_')[1].lower() for label in preexisting_labels_to_evaluate]
         elif model == out_dir_custom:
-            model_labels_to_evaluate = [label.split('_')[1].lower() for label in labels_to_evaluate]
+            model_labels_to_evaluate = [label.split('_')[1].lower() for label in target_labels_to_evaluate]
 
         print(f'Evaluating labels: {model_labels_to_evaluate}')
         # input()
 
         # Load analyzer detection scores for each evaluation file example
-        print('Loading analyzer detection scores for evaluation examples...')
+        print(f'Loading {model} detection scores for evaluation examples...')
         score_files = []
         score_files.extend(files.find_files(model, '.csv', exclude_dirs=['threshold_perf'])) 
         predictions = pd.DataFrame()
@@ -230,16 +233,23 @@ if __name__ == '__main__':
             predictions = predictions[predictions['file'].isin(set(evaluation_data['file']))]
         
         # Discard prediction scores for labels not under evaluation
-        print('Discard prediction scores for labels not under evaluation')
-        # print(f"before # {len(predictions)}")
+        print('Discarding prediction scores for labels not under evaluation...')
+        l_before = predictions['label_predicted'].unique()
+        print(f"before # {len(predictions)}")
+        # print(predictions['label_predicted'].unique())
         # input()
         # DEBUG ################################################################################################
         predictions = predictions[predictions['label_predicted'].isin(set(model_labels_to_evaluate))]
         predictions['label_truth'] = ''
-        # print(f"after # {len(predictions)}")
-        # input()
+        print(f"after # {len(predictions)}")
+        # print(predictions['label_predicted'].unique())
+        l_after = predictions['label_predicted'].unique()
+        print(f'discarded: {np.setdiff1d(l_before, l_after)}')
+        input()
+
+        print('after predictions:')
         print(predictions)
-        # input()
+        input()
 
         if model == out_dir_pretrained:
             raw_predictions_pretrained = predictions
@@ -258,14 +268,14 @@ if __name__ == '__main__':
             annotations = annotations[annotations['file'].isin(set(evaluation_data['file']))]
         
         elif evaluation_dataset == 'test':
-            annotations = evaluation_data
+            annotations = evaluation_data.copy()
             annotations['file'] = annotations['file'].apply(remove_extension)
             print(annotations)
             # input()
 
         # Discard prediction scores for files not in evaluation dataset
         # DEBUG DEBUG DEBUG ################################################################
-        print('Discard prediction scores for files not in evaluation dataset')
+        # print('Discard prediction scores for files not in evaluation dataset')
         # print(f"before # {len(predictions)}")
         # input()
         # predictions = predictions[predictions['file'].isin(set(evaluation_data['file']))]
@@ -304,7 +314,7 @@ if __name__ == '__main__':
             true_labels = []
             if len(file_annotations) == 0:
                 # print_warning(f"No annotations for file {row['file']}!")
-                predictions.at[i, 'label_truth'] = '0' # NOTE: Unannotated files (e.g. Background files) are intepreted as having no labels
+                predictions.at[i, 'label_truth'] = '0' # NOTE: Unannotated files (e.g. Background files) are intepreted as having no relevant signals (i.e. labels) present
                 continue
             
             true_labels = str(file_annotations['labels'].iloc[0]).split(', ')
@@ -376,17 +386,25 @@ if __name__ == '__main__':
             #     print(f"Result ({row['label_predicted']}): {predictions.at[i, 'label_truth']}")
             # input()
         
-        # input()
+        print(f'DEBUG {model} predictions....')
+        print(predictions)
+        print('unique:')
+        print(predictions['label_truth'].unique())
+        input()
 
         # Interpret missing labels as absences
         if predictions['label_truth'].isna().sum() > 0:
-            print(f"Intepreting {predictions['label_truth'].isna().sum()} missing labels as absences...")
+            print(f"Intepreting {predictions['label_truth'].isna().sum()} predictions with missing labels as absences...")
             predictions['label_truth'] = predictions['label_truth'].fillna(0)
 
         # Drop unknown labels
         if len(predictions[predictions['label_truth'] == 'unknown']) > 0:
-            print(f"Dropping {len(predictions[predictions['label_truth'] == 'unknown'])} unknown labels...")
+            print(f"Dropping {len(predictions[predictions['label_truth'] == 'unknown'])} predictions with unknown labels...")
             predictions = predictions[predictions['label_truth'] != 'unknown']
+        
+        print('DEBUG post unknown drop')
+        print(predictions)
+        input()
 
         # DEBUG
         # Save predictions to file
@@ -449,16 +467,20 @@ if __name__ == '__main__':
             collated_detection_labels_pretrained = predictions
         elif model == out_dir_custom:
             collated_detection_labels_custom = predictions
+        
+        input()
 
-    print('FINAL RESULTS (sample level) ================================================================================================')
+    print('FINAL RESULTS (vocalization level) -----------------------------------------------------------------------------------------------')
     # performance_metrics.sort_values(by=['label', 'model'], inplace=True)
     performance_metrics.sort_values(by=['AUC-PR'], inplace=True)
     print(performance_metrics.to_string())
+    input()
 
     performance_metrics.to_csv('/Users/giojacuzzi/Downloads/performance_metrics.csv')
 
     # Calculate metric deltas between custom and pre-trained
     if len(models) > 1:
+        # TODO: Ensure these are comparing the same shared labels?
         print('Deltas between custom and pre-trained:')
         metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom][['label', 'AUC-PR', 'AUC-ROC', 'f1_max', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'AUC-ROC': 'AUC-ROC_custom', 'f1_max': 'f1_max_custom', 'p_max_r': 'p_max_r_custom'})
         metrics_pre_trained = performance_metrics[performance_metrics['model'] == out_dir_pretrained][['label', 'AUC-PR', 'AUC-ROC', 'f1_max', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'AUC-ROC': 'AUC-ROC_pre_trained', 'f1_max': 'f1_max_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
@@ -479,6 +501,7 @@ if __name__ == '__main__':
 
         print(delta_metrics)
         delta_metrics.to_csv(f"{out_dir}/metrics_summary.csv")
+        input()
 
 
     # TODO: For each label in 'predictions', perform Hartigan's dip test for multimodality with raw logit scores
@@ -541,11 +564,12 @@ if __name__ == '__main__':
     # # select bandwidth allows to set a different kernel
     # silverman_bandwidth_gauss = select_bandwidth(data, bw = 'silverman', kernel = 'gauss')
 
-
     # Site-level performance ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     #     - Number of sites detected / number of sites truly present
     #     - Number of sites not detected / number of sites truly present
     #     - Number of sites detected / number of sites truly absent
+    input('Press [return] to proceed to site level performance evaluation')
+    print(f'PERFORMANCE EVALUATION - site level ================================================================================================')
     if evaluation_dataset == 'test':
         collated_predictions_pretrained.to_csv('/Users/giojacuzzi/Downloads/collated_predictions_pretrained.csv')
         # Load site true presence and absence
@@ -589,18 +613,20 @@ if __name__ == '__main__':
         site_level_perf = pd.DataFrame()
         site_level_perf_mean = pd.DataFrame()
         for model in models:
-            print(f'BEGIN MODEL EVALUATION {model} (site level) ================================================================================================')
+            print(f'BEGIN MODEL EVALUATION {model} (site level) --------------------------------------------------------------------')
 
             if model == out_dir_pretrained:
                 # Find matching unique site ID for each prediction
                 cpp = collated_predictions_pretrained
+                model_labels_to_evaluate = [label.split('_')[1].lower() for label in preexisting_labels_to_evaluate]
             elif model == out_dir_custom:
                 cpp = collated_predictions_custom
+                model_labels_to_evaluate = [label.split('_')[1].lower() for label in target_labels_to_evaluate] # TODO: do not include novel target labels
             cpp['site'] = ''
 
             print('Calculating site-level performance metrics...')
 
-            # TODO: Calculate perf with thresholds optimized for precision and F1 score
+            # Calculate perf with thresholds optimized for precision and F1 score
             print('Calculate site-level performance per label...')
             metrics = performance_metrics[performance_metrics['model'] == model]
             print('metrics')
@@ -609,7 +635,7 @@ if __name__ == '__main__':
             # print('metrics_custom')
             # print(metrics_custom)
                 
-            for label in list(class_labels[class_labels['novel'] == 0]['label']):
+            for label in model_labels_to_evaluate: # TODO: calculate site-level perf for all relevant labels for each model, then only compare across the shared labels
                 print(f'Evaluating site-level performance for {label}...')
                 # print(cpp)
                 predictions_for_label = cpp[cpp['label_predicted'] == label].copy()
@@ -665,7 +691,7 @@ if __name__ == '__main__':
                 print(species_perf)
                 site_level_perf = pd.concat([site_level_perf, species_perf], ignore_index=True)
 
-            print(f'FINAL RESULTS {model} (site level) ================================================================================================')
+            print(f'FINAL RESULTS {model} (site level) ------------------------------------------------------------------------------------------------------')
             print(site_level_perf.to_string())
             input()
 
@@ -675,6 +701,8 @@ if __name__ == '__main__':
                 print(f'Evaluating site-level performance for {threshold_label}...')
 
                 temp = site_level_perf[site_level_perf['threshold'] == threshold_label].copy()
+                print('temp')
+                print(temp)
 
                 # Species richness comparison
                 print('Site species counts:')
@@ -694,6 +722,9 @@ if __name__ == '__main__':
                 site_species_counts['delta'] = site_species_counts['species_count'] - site_species_counts['true_species_richness']
                 # Calculate the percentage difference
                 site_species_counts['delta_pcnt'] = (site_species_counts['species_count'] / site_species_counts['true_species_richness']) * 100.0
+
+                # TODO: add error_pcnt
+
                 # Display the updated DataFrame
                 print(site_species_counts)
 
@@ -716,12 +747,15 @@ if __name__ == '__main__':
                 # Determine effect of habitat type on performance
                 print('Average species richness percentage difference by strata:')
                 merged_df = pd.merge(site_key, site_species_counts, left_on='site', right_on='sites_detected', how='inner')
+                print('merged_df')
+                print(merged_df)
                 average_percentage_diff_by_stratum = merged_df.groupby('stratum')['delta_pcnt'].mean()
                 print('Species richness difference:')
                 print(average_percentage_diff_by_stratum)
-                print('Site error difference:')
-                average_error_diff_by_stratum = merged_df.groupby('stratum')['error_pcnt'].mean()
-                print(average_error_diff_by_stratum)
+                # TODO:
+                # print('Site error difference:')
+                # average_error_diff_by_stratum = merged_df.groupby('stratum')['error_pcnt'].mean()
+                # print(average_error_diff_by_stratum)
                 input()
 
                 # TODO: Determine effect of vocal activity on site-level performance vs. detection-level performance (do very frequent vocalizers perform better at the site level?)

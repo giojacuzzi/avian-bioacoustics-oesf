@@ -35,6 +35,7 @@ for custom_model_stub in iterations:
     pretrained_model_iteration_metrics = pd.read_csv(f'{custom_model_dir_path}/metrics_pre-trained.csv', index_col=0)
     pretrained_model_metrics = pd.concat([pretrained_model_metrics, pretrained_model_iteration_metrics], ignore_index=True)
 
+input()
 print('Custom model metrics:')
 print(custom_model_metrics.to_string())
 print('Pretrained model metrics:')
@@ -105,3 +106,4 @@ def output_formatted_metrics(model_metrics):
     model_xvalidation_metrics.to_csv(f'{out_path}/xval_metrics_summary.csv')
 
 output_formatted_metrics(xvalidation_metrics)
+xvalidation_metrics.to_csv(f'data/results/xvalidation_metrics_{custom_models_stub}.csv')

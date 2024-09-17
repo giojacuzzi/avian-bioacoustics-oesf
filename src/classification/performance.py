@@ -237,10 +237,12 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
     nsites_fp = len(fp_sites)
 
     # TN - Number of sites correctly not detected
-    nsites_tn = len(np.intersect1d(sites_notdetected, sites_absent))
+    tn_sites = np.intersect1d(sites_notdetected, sites_absent)
+    nsites_tn = len(tn_sites)
 
     # FN - Number of sites incorrectly not detected
-    nsites_fn = len(np.intersect1d(sites_notdetected, sites_present))
+    fn_sites = np.intersect1d(sites_notdetected, sites_present)
+    nsites_fn = len(fn_sites)
 
     # nsites_accounted_for = nsites_tp + nsites_fp + nsites_tn + nsites_fn
     # if nsites_accounted_for != len(all_sites):
@@ -289,6 +291,7 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
         'precision': [round(precision,3)],
         'recall':    [round(recall,3)],
         'sites_detected': [sites_detected],
-        'sites_notdetected': [sites_notdetected]
+        'sites_notdetected': [sites_notdetected],
+        'sites_error': [np.concatenate((fp_sites, fp_sites))]
     }
     return(pd.DataFrame(result, index=None))
