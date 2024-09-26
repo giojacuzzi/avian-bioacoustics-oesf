@@ -47,7 +47,6 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     f1_scores = 2*recall*precision/(recall+precision)
     if np.any(np.isnan(f1_scores)):
         f1_scores = f1_scores[~np.isnan(f1_scores)]
-    f1_optimal_threshold = thresholds[np.argmax(f1_scores)]
     f1_max = np.max(f1_scores)
 
     if save_to_dir != '':
@@ -68,7 +67,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         # Plot precision and recall as a function of threshold
         ax1.plot(thresholds, precision[:-1], label='Precision', marker='.') #, marker='.' 
         ax1.plot(thresholds, recall[:-1], label='Recall', marker='.') # , marker='.'
-        # ax1.plot(thresholds, f1_scores[:-1], label='F1 Score') # , marker='.'
+        ax1.plot(thresholds, f1_scores[:-1], label='F1 Score') # , marker='.'
         ax1.set_xlabel('Threshold') 
         ax1.set_ylabel('Performance')
         ax1.set_title(f'{title_label}\n{species}\nThreshold performance', fontsize=font_size)
@@ -113,7 +112,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         # The Receiver Operating Characteristic curve summarizes the tradeoff between the true positive rate (i.e. recall)
         # and the false positive rate (FPR) as we vary the confidence threshold. ROC curves are appropriate when the
         # evaluation data are balanced between each class (i.e. present vs non-present).
-        fpr, tpr, th = sklearn.metrics.roc_curve(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species, drop_intermediate=False)
+        fpr, tpr, roc_th = sklearn.metrics.roc_curve(detection_labels['label_truth'], detection_labels['confidence'], pos_label=species, drop_intermediate=False)
 
         # The ROC Area Under the Curve (ROC-AUC) is a useful summary statistic of the ROC curve that tells us the
         # probability that a randomly-selected positive example ranks higher than a randomly-selected negative one.
@@ -154,29 +153,90 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     else:
         N_sites = np.nan
         sites = []
+
+    # print('fpr')
+    # print(fpr)
+    # print('roc_th')
+    # print(roc_th)
+    # input()
+    
+    # Get index of value in array, or nearest greater value if it doesn't exit 
+    def argnearest(arr, v):
+        idx_exact_match = np.where(arr == v)[0]
+        if idx_exact_match.size > 0:
+            return idx_exact_match[0]
+        idx_gt = np.where(arr > v)[0]
+        if idx_gt.size > 0:
+            return idx_gt[np.argmin(arr[idx_gt])]
+        else:
+            return None
+
+    idx_Tp = np.argmax(precision[:-1])
+    Tp     = thresholds[idx_Tp]          # Score threshold to maximize precision, Tp
+    p_Tp   = precision[idx_Tp]           # Precision at Tp
+    r_Tp   = recall[idx_Tp]              # Recall at Tp
+    fpr_Tp = fpr[argnearest(roc_th, Tp)] # False positive rate at Tp
+
+    idx_Tf1 = np.argmax(f1_scores)
+    Tf1 = thresholds[idx_Tf1]               # Score threshold to maximize F1 score, Tf1
+    p_Tf1 = precision[idx_Tf1]              # Precision at Tf1
+    r_Tf1 = recall[idx_Tf1]                 # Recall at Tf1
+    fpr_Tf1 = fpr[argnearest(roc_th, Tf1)]  # False positive rate at Tf1
+
+    idx_T09 = argnearest(thresholds, 0.9)
+    if idx_T09 != None:
+        p_T09 = precision[idx_T09] # Precision at naive aribtary threshold 0.9
+        r_T09 = recall[idx_T09]    # Recall at naive aribtary threshold 0.9
+        fpr_T09 = fpr[argnearest(roc_th, 0.9)]
+    else:
+        p_T09 = 0.0
+        r_T09 = 0.0
+        fpr_T09 = 0.0
+
+    idx_T05 = argnearest(thresholds, 0.5)
+    if idx_T05 != None:
+        p_T05 = precision[idx_T05] # Precision at naive aribtary threshold 0.5
+        r_T05 = recall[idx_T05]    # Recall at naive aribtary threshold 0.5
+        fpr_T05 = fpr[argnearest(roc_th, 0.5)]
+    else:
+        p_T05 = 0.0
+        r_T05 = 0.0
+        fpr_T05 = 0.0
     
     # Return the performance metrics
     return pd.DataFrame({
         'label':   [species],
-        'AUC-PR':    [round(pr_auc, digits)],                                # Precision-Recall AUC
-        'AP':        [round(pr_ap, digits)],                                 # Average precision
-        'AUC-ROC':   [round(roc_auc, digits)],                               # Receiver Operating Characteristic AUC
-        'p_mean':    [round(precision.mean(), digits)],                      # Average precision across all thresholds
-        'p_max':     [round(precision[np.argmax(precision[:-1])],  digits)], # Maximum precision across all thresholds
-        'p_max_th':  [round(thresholds[np.argmax(precision[:-1])], digits)], # Score threshold to maximize precision
-        'p_max_r':   [round(recall[np.argmax(precision[:-1])],     digits)], # Recall at maximum precision using threshold
-        'r_max':     [round(recall[np.argmax(precision[:-1])],     digits)], # Maximum recall across all thresholds (should be 1.0)
-        'r_max_th':  [round(thresholds[len(recall) - 1 - np.argmax(recall[::-1])], digits)], # Score threshold to maximize recall (last value to also secondarily max precision)
-        'r_max_p':   [round( precision[len(recall) - 1 - np.argmax(recall[::-1])], digits)], # Precision at maximum precision using threshold (last value to also secondarily max precision)
-        'f1_max':    [f1_max],                                          # Maximum F1 score across all thresholds
-        'f1_max_th': [f1_optimal_threshold],                            # Score threshold to maximize F1 score
-        'N':         [n_examples],                                      # Total number of examples (not including "unknown" examples)
-        'N_P':       [n_P],                                             # Total number of positive examples
-        'N_N':       [n_N],                                             # Total number of negative examples
-        'N_unknown': [n_unknown],                                        # Total number of unknown examples excluded from evaluation
-        'class_ratio': [round(n_P / n_examples, 2)],                                       # Class balance ratio (0.5 is perfectly balanced, 0.0 only negative, 1.0 only positive)
-        'N_sites': [N_sites], # Number of unique sites with true presences
-        'sites': [sites]
+        # Summary metrics
+        'PR_AUC':    [pr_auc],                                 # Precision-Recall AUC
+        'AP':        [pr_ap],                                  # Average precision
+        'ROC_AUC':   [roc_auc],                                # Receiver Operating Characteristic AUC
+        'f1_max':    [f1_max],                                                # Maximum F1 score across all thresholds
+        'conf_max': [detection_labels['confidence'].max()],    # Maximum confidence score
+        # 'p_mean':    [round(precision.mean(), digits)],                       # Average precision across all thresholds
+        # 'p_max':     [round(precision[np.argmax(precision[:-1])],  digits)],  # Maximum precision across all thresholds
+        # Optimize for precision
+        'Tp':        [Tp],     # Score threshold to maximize precision, Tp
+        'p_Tp':      [p_Tp],   # Precision at Tp
+        'r_Tp':      [r_Tp],   # Recall at Tp
+        'fpr_Tp':    [fpr_Tp], # False positive rate at Tp
+        # Optimize for F1 score
+        'Tf1':       [Tf1],     # Score threshold to maximize F1 score, Tf1
+        'p_Tf1':     [p_Tf1],   # Precision at Tf1
+        'r_Tf1':     [r_Tf1],   # Recall at Tf1
+        'fpr_Tf1':   [fpr_Tf1], # False positive rate at Tf1
+        # Naive arbitrary thresholds
+        'p_T09': [p_T09], # 0.9
+        'r_T09': [r_T09],
+        'fpr_T09': [fpr_T09],
+        'p_T05': [p_T05], # 0.5
+        'r_T05': [r_T05],
+        'fpr_T05': [fpr_T05],
+        # Sample sizes
+        'N':           [n_examples],                                            # Total number of examples (not including "unknown" examples)
+        'N_pos':       [n_P],                                                   # Total number of positive examples
+        'N_neg':       [n_N],                                                   # Total number of negative examples
+        'N_unk':       [n_unknown],                                             # Total number of unknown examples excluded from evaluation
+        'class_ratio': [round(n_P / n_examples, 2)]                           # Class balance ratio (0.5 is perfectly balanced, 0.0 only negative, 1.0 only positive)
     })
 
 # Returns a dataframe containing a confusion matrix (TP, FP, FN, TN) and number of truly present/absent sites for a given species from a detection history

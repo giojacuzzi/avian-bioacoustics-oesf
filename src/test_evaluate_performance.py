@@ -45,18 +45,21 @@ target_labels_to_evaluate = list(class_labels[class_labels['train'] == 1]['label
 # print(preexisting_labels_to_evaluate)
 # input()
 
-plot_precision_recall = True
+plot_precision_recall = False
 plot_score_distributions = False
 # DEBUG #################################################################
 debug = False
 debug_threshold = 1.0
 if debug:
     debug_threshold = 0.0
-    debug_label = "Megaceryle alcyon_Belted Kingfisher"
+    debug_label = "Coccothraustes vespertinus_Evening Grosbeak"
     preexisting_labels_to_evaluate = [debug_label]
-    labels_to_evaluate = [debug_label]
-    novel_labels_to_evaluate = []
+    target_labels_to_evaluate = [debug_label]
     plot_precision_recall = True
+
+# preexisting_labels_to_evaluate = ['Bubo virginianus_Great Horned Owl', 'Junco hyemalis_Dark-eyed Junco', 'Regulus satrapa_Golden-crowned Kinglet', 'Dendragapus fuliginosus_Sooty Grouse', 'Dryobates pubescens_Downy Woodpecker']
+# novel_labels_to_evaluate = ['Abiotic_Abiotic Aircraft']
+# target_labels_to_evaluate = ['Abiotic_Abiotic Aircraft', 'Junco hyemalis_Dark-eyed Junco', 'Regulus satrapa_Golden-crowned Kinglet', 'Dendragapus fuliginosus_Sooty Grouse']
 # DEBUG #################################################################
 
 # TODO: Also support labels that the classifier looked for but did not find
@@ -235,21 +238,21 @@ if __name__ == '__main__':
         # Discard prediction scores for labels not under evaluation
         print('Discarding prediction scores for labels not under evaluation...')
         l_before = predictions['label_predicted'].unique()
-        print(f"before # {len(predictions)}")
+        # print(f"before # {len(predictions)}")
         # print(predictions['label_predicted'].unique())
         # input()
         # DEBUG ################################################################################################
         predictions = predictions[predictions['label_predicted'].isin(set(model_labels_to_evaluate))]
         predictions['label_truth'] = ''
-        print(f"after # {len(predictions)}")
+        # print(f"after # {len(predictions)}")
         # print(predictions['label_predicted'].unique())
-        l_after = predictions['label_predicted'].unique()
-        print(f'discarded: {np.setdiff1d(l_before, l_after)}')
-        input()
+        # l_after = predictions['label_predicted'].unique()
+        # print(f'discarded: {np.setdiff1d(l_before, l_after)}')
+        # input()
 
-        print('after predictions:')
-        print(predictions)
-        input()
+        # print('after predictions:')
+        # print(predictions)
+        # input()
 
         if model == out_dir_pretrained:
             raw_predictions_pretrained = predictions
@@ -270,7 +273,7 @@ if __name__ == '__main__':
         elif evaluation_dataset == 'test':
             annotations = evaluation_data.copy()
             annotations['file'] = annotations['file'].apply(remove_extension)
-            print(annotations)
+            # print(annotations)
             # input()
 
         # Discard prediction scores for files not in evaluation dataset
@@ -318,8 +321,8 @@ if __name__ == '__main__':
                 continue
             
             true_labels = str(file_annotations['labels'].iloc[0]).split(', ')
-            if debug:
-                print(f'true labels before {true_labels}')
+            # if debug:
+            #     print(f'true labels before {true_labels}')
             if len(true_labels) > 0:
                 # input(f'found {len(true_labels)} labels')
                 # print(f'before: {true_labels}')
@@ -334,9 +337,9 @@ if __name__ == '__main__':
                 true_labels = set(simple_labels)
                 # print(f'after: {true_labels}')
             
-            if conf > debug_threshold and debug: # DEBUG
-                print(f"row[file] {row['file']}")
-                print(f'true_labels {true_labels}')
+            # if conf > debug_threshold and debug: # DEBUG
+            #     print(f"row[file] {row['file']}")
+            #     print(f'true_labels {true_labels}')
 
             present = row['label_predicted'] in true_labels
 
@@ -386,11 +389,11 @@ if __name__ == '__main__':
             #     print(f"Result ({row['label_predicted']}): {predictions.at[i, 'label_truth']}")
             # input()
         
-        print(f'DEBUG {model} predictions....')
-        print(predictions)
-        print('unique:')
-        print(predictions['label_truth'].unique())
-        input()
+        # print(f'DEBUG {model} predictions....')
+        # print(predictions)
+        # print('unique:')
+        # print(predictions['label_truth'].unique())
+        # input()
 
         # Interpret missing labels as absences
         if predictions['label_truth'].isna().sum() > 0:
@@ -402,14 +405,14 @@ if __name__ == '__main__':
             print(f"Dropping {len(predictions[predictions['label_truth'] == 'unknown'])} predictions with unknown labels...")
             predictions = predictions[predictions['label_truth'] != 'unknown']
         
-        print('DEBUG post unknown drop')
-        print(predictions)
-        input()
+        # print('DEBUG post unknown drop')
+        # print(predictions)
+        # input()
 
         # DEBUG
         # Save predictions to file
-        print(predictions)
-        print(len(predictions))
+        # print(predictions)
+        # print(len(predictions))
 
         if model == out_dir_pretrained:
             collated_predictions_pretrained = predictions
@@ -418,7 +421,7 @@ if __name__ == '__main__':
 
         print('Filtering...')
         # Filter out rows where 'label_truth' is 0
-        pred_copy = predictions
+        # pred_copy = predictions
         # df = pred_copy[pred_copy['label_truth'] != 0]
         # df = df[df['label_truth'] != '0']
         # df = pred_copy[pred_copy['label_truth'] == 'western tanager']
@@ -427,14 +430,17 @@ if __name__ == '__main__':
         # df = df.groupby('file').agg({'label_truth': lambda x: ', '.join(x.unique())}).reset_index()
         # # Rename the 'label_truth' column to 'labels'
         # df = df.rename(columns={'label_truth': 'labels'})
-        df = predictions
-        df = df[df['confidence'] > debug_threshold]
-        df['serialno'] = df['file'].str.extract(r'(SMA\d{5})')
-        df['month'] = df['file'].str.extract(r'(_2020\d{2})')
-        # df = df.sort_values(by=['serialno', 'month', 'file']).reset_index(drop=True)
-        df = df.sort_values(by=['confidence']).reset_index(drop=True)
-        df.to_csv('/Users/giojacuzzi/Downloads/test_labels_revised.csv')
-        print(f'Down to {len(df)} files')
+        if debug:
+            df = predictions
+            df = df[df['confidence'] > debug_threshold]
+            df['serialno'] = df['file'].str.extract(r'(SMA\d{5})')
+            df['month'] = df['file'].str.extract(r'(_2020\d{2})')
+            # df = df.sort_values(by=['serialno', 'month', 'file']).reset_index(drop=True)
+            df = df.sort_values(by=['confidence']).reset_index(drop=True)
+            df.to_csv('/Users/giojacuzzi/Downloads/test_labels_revised.csv')
+            input('Saved test labels to file!')
+
+        # print(f'Down to {len(df)} files')
         # input()
         # DEBUG
 
@@ -450,6 +456,9 @@ if __name__ == '__main__':
             model_performance_metrics = pd.concat([model_performance_metrics, species_performance_metrics], ignore_index=True)
 
         model_performance_metrics['model'] = model
+        performance_metrics = pd.concat([performance_metrics, model_performance_metrics], ignore_index=True)
+
+        model_performance_metrics[model_performance_metrics.select_dtypes(include='number').columns] = model_performance_metrics.select_dtypes(include='number').round(3)
         print(f'PERFORMANCE METRICS FOR {model}')
         print(model_performance_metrics.to_string())
 
@@ -461,20 +470,18 @@ if __name__ == '__main__':
         elif model == out_dir_custom:
             model_performance_metrics.to_csv(f"{out_dir}/metrics_custom.csv")
 
-        performance_metrics = pd.concat([performance_metrics, model_performance_metrics], ignore_index=True)
-
         if model == out_dir_pretrained:
             collated_detection_labels_pretrained = predictions
         elif model == out_dir_custom:
             collated_detection_labels_custom = predictions
         
-        input()
+        # input()
 
-    print('FINAL RESULTS (vocalization level) -----------------------------------------------------------------------------------------------')
+    print('FINAL RESULTS (vocalization level) ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------')
     # performance_metrics.sort_values(by=['label', 'model'], inplace=True)
-    performance_metrics.sort_values(by=['AUC-PR'], inplace=True)
+    performance_metrics.sort_values(by=['PR_AUC', 'label', 'model'], inplace=True)
     print(performance_metrics.to_string())
-    input()
+    # input()
 
     performance_metrics.to_csv('/Users/giojacuzzi/Downloads/performance_metrics.csv')
 
@@ -482,27 +489,35 @@ if __name__ == '__main__':
     if len(models) > 1:
         # TODO: Ensure these are comparing the same shared labels?
         print('Deltas between custom and pre-trained:')
-        metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom][['label', 'AUC-PR', 'AUC-ROC', 'f1_max', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_custom', 'AUC-ROC': 'AUC-ROC_custom', 'f1_max': 'f1_max_custom', 'p_max_r': 'p_max_r_custom'})
-        metrics_pre_trained = performance_metrics[performance_metrics['model'] == out_dir_pretrained][['label', 'AUC-PR', 'AUC-ROC', 'f1_max', 'p_max_r']].rename(columns={'AUC-PR': 'AUC-PR_pre_trained', 'AUC-ROC': 'AUC-ROC_pre_trained', 'f1_max': 'f1_max_pre_trained', 'p_max_r': 'p_max_r_pre_trained'})
+        metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom][[
+            'label', 'AP', 'PR_AUC', 'ROC_AUC', 'f1_max'
+        ]].rename(columns={
+            'AP': 'AP_custom', 'PR_AUC': 'PR_AUC_custom', 'ROC_AUC': 'ROC_AUC_custom', 'f1_max': 'f1_max_custom'
+        })
+        metrics_pre_trained = performance_metrics[performance_metrics['model'] == out_dir_pretrained][[
+            'label', 'AP', 'PR_AUC', 'ROC_AUC', 'f1_max'
+        ]].rename(columns={
+            'AP': 'AP_pre_trained', 'PR_AUC': 'PR_AUC_pre_trained', 'ROC_AUC': 'ROC_AUC_pre_trained', 'f1_max': 'f1_max_pre_trained'
+        })
         delta_metrics = pd.merge(metrics_custom, metrics_pre_trained, on='label')
-        delta_metrics['AUC-PR_diff'] = delta_metrics['AUC-PR_custom'] - delta_metrics['AUC-PR_pre_trained']
-        delta_metrics['AUC-ROC_diff'] = delta_metrics['AUC-ROC_custom'] - delta_metrics['AUC-ROC_pre_trained']
-        delta_metrics['f1_max_diff'] = delta_metrics['f1_max_custom'] - delta_metrics['f1_max_pre_trained']
-        delta_metrics['p_max_r_diff'] = delta_metrics['p_max_r_custom'] - delta_metrics['p_max_r_pre_trained']
+        delta_metrics['AP_Δ']      = delta_metrics['AP_custom'] - delta_metrics['AP_pre_trained']
+        delta_metrics['PR_AUC_Δ']  = delta_metrics['PR_AUC_custom'] - delta_metrics['PR_AUC_pre_trained']
+        delta_metrics['ROC_AUC_Δ'] = delta_metrics['ROC_AUC_custom'] - delta_metrics['ROC_AUC_pre_trained']
+        delta_metrics['f1_max_Δ']  = delta_metrics['f1_max_custom'] - delta_metrics['f1_max_pre_trained']
         delta_metrics = delta_metrics.sort_index(axis=1)
         col_order = ['label'] + [col for col in delta_metrics.columns if col != 'label']
         delta_metrics = delta_metrics[col_order]
+        delta_metrics = delta_metrics.drop_duplicates()
         # print(delta_metrics)
 
         # Calculate macro-averaged metrics for each model
         mean_values = delta_metrics.drop(columns='label').mean()
         mean_row = pd.Series(['MEAN'] + mean_values.tolist(), index=delta_metrics.columns)
         delta_metrics = pd.concat([delta_metrics, pd.DataFrame([mean_row])], ignore_index=True)
+        delta_metrics[delta_metrics.select_dtypes(include='number').columns] = delta_metrics.select_dtypes(include='number').round(2)
 
         print(delta_metrics)
         delta_metrics.to_csv(f"{out_dir}/metrics_summary.csv")
-        input()
-
 
     # TODO: For each label in 'predictions', perform Hartigan's dip test for multimodality with raw logit scores
     # If p_value < 0.05 we reject the null hypothesis of unimodality and conclude the data for that label is likely multimodal
@@ -617,11 +632,12 @@ if __name__ == '__main__':
 
             if model == out_dir_pretrained:
                 # Find matching unique site ID for each prediction
-                cpp = collated_predictions_pretrained
+                cpp = collated_predictions_pretrained # TODO: MAKE SURE THIS DOESN'T EXCLUDE ANY RAW PREDICTIONS!
                 model_labels_to_evaluate = [label.split('_')[1].lower() for label in preexisting_labels_to_evaluate]
             elif model == out_dir_custom:
-                cpp = collated_predictions_custom
-                model_labels_to_evaluate = [label.split('_')[1].lower() for label in target_labels_to_evaluate] # TODO: do not include novel target labels
+                cpp = collated_predictions_custom # TODO: MAKE SURE THIS DOESN'T EXCLUDE ANY RAW PREDICTIONS!
+                intersection = [item for item in target_labels_to_evaluate if item in preexisting_labels_to_evaluate]
+                model_labels_to_evaluate = [label.split('_')[1].lower() for label in intersection]
             cpp['site'] = ''
 
             print('Calculating site-level performance metrics...')
@@ -629,8 +645,8 @@ if __name__ == '__main__':
             # Calculate perf with thresholds optimized for precision and F1 score
             print('Calculate site-level performance per label...')
             metrics = performance_metrics[performance_metrics['model'] == model]
-            print('metrics')
-            print(metrics)
+            # print('metrics')
+            # print(metrics)
             # metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom]
             # print('metrics_custom')
             # print(metrics_custom)
@@ -673,22 +689,22 @@ if __name__ == '__main__':
                 # Pre-trained model
                 # print('METRICS PRETRAINED')
                 label_metrics = metrics[metrics['label'] == label]
-                threshold_pmax = label_metrics['p_max_th'].iloc[0]
-                threshold_f1max = label_metrics['f1_max_th'].iloc[0]
+                threshold_pmax = label_metrics['Tp'].iloc[0]
+                threshold_f1max = label_metrics['Tf1'].iloc[0]
 
                 thresholds = [threshold_pmax, threshold_f1max, 0.5, 0.9]
                 threshold_labels = ['pmax', 'f1max', 'naive_0.5', 'naive_0.9']
                 species_perf = pd.DataFrame()
                 for i, threshold in enumerate(thresholds):
                     threshold_label = threshold_labels[i]
-                    print(f'Calculating site-level confusion matrix with {threshold_label} threshold {threshold}...')
+                    # print(f'Calculating site-level confusion matrix with {threshold_label} threshold {threshold}...')
 
                     species_perf_at_threshold = get_site_level_confusion_matrix(label, predictions_for_label, threshold, site_presence_absence)
                     species_perf_at_threshold['model'] = model
                     species_perf_at_threshold['threshold'] = threshold_label
                     species_perf = pd.concat([species_perf, species_perf_at_threshold], ignore_index=True)
 
-                print(species_perf)
+                # print(species_perf)
                 site_level_perf = pd.concat([site_level_perf, species_perf], ignore_index=True)
 
             print(f'FINAL RESULTS {model} (site level) ------------------------------------------------------------------------------------------------------')
@@ -703,6 +719,9 @@ if __name__ == '__main__':
                 temp = site_level_perf[site_level_perf['threshold'] == threshold_label].copy()
                 print('temp')
                 print(temp)
+
+                # TODO: FOR CUSTOM MODEL, MERGE WITH PRETRAINED RESULTS REPLACING ANY SHARED CLASSES
+                input('TODO')
 
                 # Species richness comparison
                 print('Site species counts:')
