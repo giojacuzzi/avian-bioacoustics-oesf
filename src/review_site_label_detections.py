@@ -7,7 +7,7 @@ label = "northern goshawk"
 
 threshold = 0.1
 
-path_detections = f'/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/annotation/data/raw_detections/2020/Deployment{deployment}'
+path_detections = f'/Users/giojacuzzi/Library/CloudStorage/GoogleDrive-giojacuzzi@gmail.com/My Drive/Research/Projects/OESF/transfer learning/data/raw_detections/2020/Deployment{deployment}'
 path_audio = f'/Volumes/gioj_b1 1/OESF/2020/Deployment{deployment}'
 path_out = '/Users/giojacuzzi/Downloads/review_site_label_detections'
 

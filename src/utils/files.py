@@ -20,6 +20,8 @@ def find_file_full_path(top_directory, filename):
 # e.g. "Yellow-rumped Warbler-0.4231688380241394_SMA00399_20200628_204241.wav"
 def parse_metadata_from_annotation_file(filename):
 
+    # print(filename)
+
     # Regular expression pattern to match the filename
     pattern = r'^(.+)-([\d.]+)_(\w+)_(\d{8})_(\d{6})\.(\w+)$'
     match = re.match(pattern, filename)
@@ -110,23 +112,23 @@ def parse_metadata_from_filename(path):
 
 def getDirectoriesWithFiles(path, filetype):
     directoryList = []
-    print(f'YO: {os.listdir(path)}')
-    print(len(os.listdir(path)))
+    # print(f'YO: {os.listdir(path)}')
+    # print(len(os.listdir(path)))
     if os.path.isfile(path):
         print('returning from isfile!')
         return []
-    print(f'found {len([f for f in os.listdir(path)])} files')
+    # print(f'found {len([f for f in os.listdir(path)])} files')
     # Add dir to directorylist if it contains files of filetype
     files_in_dir = [f for f in os.listdir(path)]
     if len(files_in_dir) > 0:
         files_of_type = [f for f in files_in_dir if f.endswith('.wav')]
-        print(f'endswith {len(files_of_type)}')
-        print(f'adding path {path}')
+        # print(f'endswith {len(files_of_type)}')
+        # print(f'adding path {path}')
         directoryList.append(path)
     for d in os.listdir(path):
         new_path = os.path.join(path, d)
         if os.path.isdir(new_path):
-            print(f'adding a dir {d}')
+            # print(f'adding a dir {d}')
             directoryList += getDirectoriesWithFiles(new_path, filetype)
     return directoryList
 

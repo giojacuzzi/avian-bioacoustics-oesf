@@ -11,6 +11,7 @@ import time
 from utils.log import *
 from utils.files import *
 from utils.bnl import *
+from pathlib import Path
 import sys
 
 # # TODO: cache analyzer
@@ -89,6 +90,8 @@ def process_file(
         save_to_file   = True
 ):
     in_filepath = os.path.normpath(in_filepath)
+    print(f'Processing file {in_filepath}...')
+
     # Save directly to output directory
     if root_dir is None or len(root_dir) == 0:
         file_out = os.path.basename(os.path.splitext(in_filepath)[0]) + '.csv'
@@ -117,7 +120,7 @@ def process_file(
     already_analyzed = list_base_files_by_extension(out_dir, 'csv')
     already_analyzed = [f.rstrip('.csv') for f in already_analyzed]
     if out_dir != '' and ((os.path.splitext(os.path.basename(in_filepath))[0]) in already_analyzed):
-        print(f'  {os.path.basename(in_filepath)} already analyzed. SKIPPING...')
+        print_warning(f'{os.path.basename(in_filepath)} already analyzed. Skipping...')
         return
 
     # Run analyzer to obtain detections
@@ -126,14 +129,25 @@ def process_file(
     info = parse_metadata_from_filename(in_filepath)
 
     start_time_file = time.time()
-    result = analyze_detections(
-        filepath = in_filepath,
-        analyzer = analyzer,
-        min_confidence = min_confidence,
-        apply_sigmoid = apply_sigmoid,
-        num_separation = num_separation,
-        cleanup = cleanup
-    )
+    try:
+        result = analyze_detections(
+            filepath = in_filepath,
+            analyzer = analyzer,
+            min_confidence = min_confidence,
+            apply_sigmoid = apply_sigmoid,
+            num_separation = num_separation,
+            cleanup = cleanup
+        )
+    except Exception as e:
+        print_error(f'Unable to process file {in_filepath}: {e}')
+        if save_to_file:
+            if not os.path.exists(os.path.dirname(path_out)):
+                os.makedirs(os.path.dirname(path_out))
+            p = Path(path_out)
+            np = p.with_name("ERROR_" + p.name)
+            with open(np, "w") as file:
+                file.write("ERROR")
+        return None
 
     if info is None:
         dt = datetime.timedelta(0)

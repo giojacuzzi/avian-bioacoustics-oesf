@@ -67,7 +67,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         # Plot precision and recall as a function of threshold
         ax1.plot(thresholds, precision[:-1], label='Precision', marker='.') #, marker='.' 
         ax1.plot(thresholds, recall[:-1], label='Recall', marker='.') # , marker='.'
-        ax1.plot(thresholds, f1_scores[:-1], label='F1 Score') # , marker='.'
+        # ax1.plot(thresholds, f1_scores[:-1], label='F1 Score') # , marker='.' # TODO: plot this
         ax1.set_xlabel('Threshold') 
         ax1.set_ylabel('Performance')
         ax1.set_title(f'{title_label}\n{species}\nThreshold performance', fontsize=font_size)
@@ -122,7 +122,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
             roc_auc = sklearn.metrics.roc_auc_score(detection_labels['label_truth'], detection_labels['confidence'])
         else:
             print_warning(f"Could not compute ROC AUC ({n_P} positive, {n_N} negative examples).")
-            roc_auc = 0.0
+            roc_auc = np.NaN
 
         # if plot:
         #     # ns_probs = [species for _ in range(len(detection_labels))] # no skill classifier that only predicts 1 for all examples

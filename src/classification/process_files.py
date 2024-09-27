@@ -58,6 +58,8 @@ def process_dir_parallel(
         out_dir,
         root_dir       = None,
         in_filetype    = '.wav',
+        analyzer_filepath = None,
+        labels_filepath = 'src/classification/species_list/species_list_OESF.txt',
         n_processes    = 8, # cores per batch
         min_confidence = 0.0,
         apply_sigmoid  = True,
@@ -72,12 +74,12 @@ def process_dir_parallel(
         print_error('Root directory must contain input directory')
         return
 
-    print('getting dirs...')
+    # print('getting dirs...')
     dirs = getDirectoriesWithFiles(in_dir, in_filetype)
     dirs.sort()
 
-    print('printing dirs...')
-    print(dirs)
+    # print('printing dirs...')
+    # print(dirs)
 
     for dir in dirs:
         print('Processing directory ' + dir +'...')
@@ -89,17 +91,26 @@ def process_dir_parallel(
 
         start_time_dir = time.time()
         files = list_files_in_directory(dir)
-        files = [f for f in files]
+        # print(f'files in directory: {files}')
+        files = [f for f in files if f.endswith(in_filetype)]
+        files = [f for f in files if not os.path.basename(f).startswith('.')]
         files.sort()
-        print(files)
-        print(f'LAUNCH {n_processes}')
-        with Pool(min(len(files), n_processes)) as pool: # start process pool for all files in directory
+        n_files = len(files)
+        
+        if n_files == 0:
+            print_warning(f'No {in_filetype} files found in {dir}. Skipping...')
+            continue
+
+        n_processes = min(n_files, n_processes)
+        print(f'Launching {n_processes} processes for {n_files} files')
+
+        with Pool(n_processes) as pool: # start process pool for all files in directory
             pool.starmap(process_file, zip(
                 files,                  # in_filepath
                 repeat(out_dir),        # out_dir
                 repeat(root_dir),       # root_dir
-                repeat(None),           # analyzer_filepath
-                repeat('src/classification/species_list/species_list_OESF.txt'), # labels_filepath
+                repeat(analyzer_filepath),
+                repeat(labels_filepath),
                 repeat(min_confidence), # min_confidence
                 repeat(apply_sigmoid),  # apply_sigmoid
                 repeat(num_separation), # num_separation
@@ -109,4 +120,4 @@ def process_dir_parallel(
                 repeat(save_to_file)    # save_to_file
             ))
         end_time_dir = time.time()
-        print(f'Finished directory {dir}\n({end_time_dir - start_time_dir} sec). Proceeding to next...')
+        print_success(f'Finished directory {dir}\n({end_time_dir - start_time_dir} sec). Proceeding to next...')
