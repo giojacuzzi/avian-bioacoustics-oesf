@@ -321,14 +321,12 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
         recall = nsites_tp / (nsites_tp + nsites_fn)
     except ZeroDivisionError:
         recall = np.nan
-    # try:
-    #     tp_pcnt = round(nsites_tp / len(sites_present), 2)
-    # except ZeroDivisionError:
-    #     tp_pcnt = np.nan
-    # try:
-    #     tn_pcnt = round(nsites_tn / len(sites_absent), 2)
-    # except ZeroDivisionError:
-    #     tn_pcnt = np.nan
+
+    # False positive rate
+    try:
+        fpr = nsites_fp / (nsites_fp + nsites_tn)
+    except ZeroDivisionError:
+        fpr = 0.0 # or np.nan
     
     result = {
         'label':          [species],
@@ -348,10 +346,11 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
         'TN': [nsites_tn],
         # 'TP_pcnt': [tp_pcnt],
         # 'TN_pcnt': [tn_pcnt],
+        'fpr': [fpr],
         'precision': [round(precision,3)],
         'recall':    [round(recall,3)],
         'sites_detected': [sites_detected],
         'sites_notdetected': [sites_notdetected],
-        'sites_error': [np.concatenate((fp_sites, fp_sites))]
+        'sites_error': [np.concatenate((fp_sites, fn_sites))]
     }
     return(pd.DataFrame(result, index=None))

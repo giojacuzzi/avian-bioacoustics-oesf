@@ -20,6 +20,8 @@
 !/data/training/readme.md
 !/data/models/readme.md
 !/data/class_labels.csv
+!/data/site_key.csv
+!/data/test/site_presence_absence.csv
 
 # Apple files
 .DS_Store

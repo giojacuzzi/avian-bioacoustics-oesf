@@ -40,7 +40,7 @@ def parse_metadata_from_annotation_file(filename):
 # e.g. "SMA00556_20200526_050022_3400.8122" or "_SMA00309_20200424_031413"
 def parse_metadata_from_detection_audio_filename(filename):
     # print(f"parse_metadata_from_detection_audio_filename {filename}")
-    pattern = r'_SMA(\d+)_([0-9]{8})_([0-9]{6})$'
+    pattern = r'SMA(\d+)_([0-9]{8})_([0-9]{6})$'
     match = re.search(pattern, filename)
     if match:
         serial_no = 'SMA' + match.group(1)

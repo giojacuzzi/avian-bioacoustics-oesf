@@ -13,7 +13,7 @@ custom_model_stub  = 'custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0'
 out_dir = f'data/test/{custom_model_stub}'
 out_dir_pretrained = out_dir + '/pre-trained'
 out_dir_custom     = out_dir + '/custom'
-models = [out_dir_pretrained, out_dir_custom]
+models = [out_dir_custom] # [out_dir_pretrained, out_dir_custom]
 
 class_labels_csv_path = os.path.abspath(f'data/class_labels.csv')
 class_labels = pd.read_csv(class_labels_csv_path)
@@ -25,31 +25,65 @@ print(f'{len(preexisting_labels_to_evaluate)} preexisting labels to evaluate:')
 print(preexisting_labels_to_evaluate)
 # input()
 
-performance_metrics = pd.read_csv('/Users/giojacuzzi/Downloads/performance_metrics.csv')
+perf_metrics_and_thresholds = pd.read_csv('/Users/giojacuzzi/Downloads/performance_metrics.csv')
+
+# Data culling – get minimum confidence score to retain a prediction for analysis (helps speed up analysis process considerably)
+# intersection = [item for item in target_labels_to_evaluate if item in preexisting_labels_to_evaluate]
+labels_to_evaluate = [label.split('_')[1].lower() for label in preexisting_labels_to_evaluate]
+# species_class_thresholds = perf_metrics_and_thresholds[perf_metrics_and_thresholds['label'].isin(labels_to_evaluate)]
+class_thresholds = perf_metrics_and_thresholds
+threshold_min_Tp  = min(class_thresholds['Tp'])
+threshold_min_Tf1 = min(class_thresholds['Tf1'])
+class_thresholds['min'] = class_thresholds.apply(lambda row: min(row['Tp'], row['Tf1'], 0.5), axis=1)
+class_thresholds.loc[class_thresholds['min'] < 0.01, 'min'] = 0.5 # set missing classes to 0.5 minimum
+print(class_thresholds[['label', 'Tp', 'Tf1', 'min']].to_string())
+min_conf_dict = dict(zip(class_thresholds['label'], class_thresholds['min']))
+
+# sys.exit()
 
 def remove_extension(f):
     return os.path.splitext(f)[0]
 
-# TODO: Generate model prediction scores for ALL raw audio files
+# TODO: Generate model prediction scores (source and target) for ALL raw audio files
 
-# TODO: Load analyzer prediction scores for ALL raw audio files
+# Load analyzer prediction scores for ALL raw audio files
 if overwrite:
     for model in models:
         print(f'Loading {model} prediction scores for test examples...')
+
+        if model == out_dir_pretrained:
+            score_dir_root = f'data/test/raw_predictions/pretrained'
+        elif model == out_dir_custom:
+            score_dir_root = f'data/test/raw_predictions/{custom_model_stub}'
+
         score_files = []
-        score_files.extend(find_files(model, '.csv', exclude_dirs=['threshold_perf'])) 
+        score_files.extend(find_files(score_dir_root, '.csv')) 
         predictions = pd.DataFrame()
         i = 0
         for file in score_files:
-            if i % 100 == 0:
-                print(f"{round(i/len(score_files) * 100, 2)}%")
+            if i % 50 == 0:
+                print(f"{round(i/len(score_files) * 100, 2)}% ({i} of {len(score_files)} files)")
             score = pd.read_csv(file)
+            if not {'common_name', 'confidence'}.issubset(score.columns):
+                print_warning(f'Incompatible columns in file {file}. Skipping...')
+                continue
             score.drop(columns=['start_date'], inplace=True)
-            score['file_audio'] = os.path.basename(file)
+            score['common_name'] = score['common_name'].str.lower()
+
+            # TODO: Cull unnecessary predictions below relevant confidence thresholds
+            # print('before')
+            # print(score)
+            score = score[
+                score.apply(lambda row: row['confidence'] >= min_conf_dict.get(row['common_name'], float('-inf')), axis=1)
+            ]
+            # print('after')
+            # print(score)
+
+            score['file'] = os.path.basename(file)
             predictions = pd.concat([predictions, score], ignore_index=True)
             i += 1
-        predictions['file_audio'] = predictions['file_audio'].apply(remove_extension)
-        # predictions.rename(columns={'file_audio': 'file'}, inplace=True)
+        predictions['file'] = predictions['file'].apply(remove_extension)
+        # predictions.rename(columns={'file': 'file'}, inplace=True)
         predictions.rename(columns={'common_name': 'label_predicted'}, inplace=True)
         predictions['label_predicted'] = predictions['label_predicted'].str.lower()
 
@@ -62,6 +96,10 @@ if overwrite:
 predictions_pretrained = pd.read_csv('/Users/giojacuzzi/Downloads/predictions_pretrained.csv')
 predictions_custom = pd.read_csv('/Users/giojacuzzi/Downloads/predictions_custom.csv')
 
+# DEBUG
+print(predictions_custom)
+# input()
+
 print(f'PERFORMANCE EVALUATION - site level ================================================================================================')
 
 # Load site true presence and absence
@@ -69,15 +107,18 @@ print('Loading site true presence and absence...')
 site_presence_absence = pd.read_csv('data/test/site_presence_absence.csv', header=None)
 
 print('Site key:')
-site_key = site_presence_absence.iloc[:5].reset_index(drop=True)
-new_columns = site_key.iloc[:, 0].tolist()
-site_key = site_key.transpose()
-site_key = site_key[1:]
-site_key.columns = new_columns
-site_key['months'] = site_key['months'].apply(lambda x: list(map(int, x.split(','))))
+site_key = pd.read_csv('data/site_key.csv')
+site_key['date_start'] = pd.to_datetime(site_key['date_start'], format='%Y%m%d').dt.date
+site_key['date_end'] = pd.to_datetime(site_key['date_end'], format='%Y%m%d').dt.date
+# site_key = site_presence_absence.iloc[:5].reset_index(drop=True)
+# new_columns = site_key.iloc[:, 0].tolist()
+# site_key = site_key.transpose()
+# site_key = site_key[1:]
+# site_key.columns = new_columns
+# site_key['months'] = site_key['months'].apply(lambda x: list(map(int, x.split(','))))
 print(site_key)
 
-site_presence_absence = site_presence_absence.iloc[5:].reset_index(drop=True)
+site_presence_absence = site_presence_absence.iloc[3:].reset_index(drop=True)
 site_presence_absence.set_index(0, inplace=True)
 site_presence_absence.columns = site_key['site']
 nan_rows = site_presence_absence[site_presence_absence.isna().any(axis=1)]  # Select rows with any NaN values
@@ -94,12 +135,22 @@ def sum_list(x):
 true_species_richness = site_presence_absence.apply(sum_list)
 print(true_species_richness)
 
-def get_site(s, m):
-    # print(f'getting site for {s} and {m}...')
-    filtered_df = site_key[(site_key['serialno'] == s) & (site_key['months'].apply(lambda x: m in x))]
-    if not filtered_df.empty:
-        return filtered_df['site'].tolist()[0]
+def within_date_range(d, start, end):
+    return start.date() <= d.date() <= end.date()
+
+def get_matching_site(row):
+    # print(row)
+    # print(site_key)
+    # input()
+    match = site_key[
+        (site_key['serialno'] == row['serialno']) & 
+        (site_key['date_start'] <= row['date'].date()) & 
+        (site_key['date_end'] >= row['date'].date())
+    ]
+    if not match.empty:
+        return match.iloc[0]['site']
     else:
+        print_error(f'Could not find matching site for data {row}')
         return None
 
 site_level_perf = pd.DataFrame()
@@ -115,7 +166,7 @@ for model in models:
         cpp = predictions_custom.copy()
         intersection = [item for item in target_labels_to_evaluate if item in preexisting_labels_to_evaluate]
         model_labels_to_evaluate = [label.split('_')[1].lower() for label in intersection]
-    cpp = cpp[cpp['confidence'] > 0.1]
+    # cpp = cpp[cpp['confidence'] > 0.1]
 
     cpp['site'] = ''
 
@@ -123,25 +174,24 @@ for model in models:
 
     # Calculate perf with thresholds optimized for precision and F1 score
     print('Calculate site-level performance per label...')
-    metrics = performance_metrics[performance_metrics['model'] == model]
+    metrics = perf_metrics_and_thresholds[perf_metrics_and_thresholds['model'] == model]
     print('metrics')
     print(metrics)
-    input()
+    # input()
     # metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom]
     # print('metrics_custom')
     # print(metrics_custom)
     
     counter = 1
-    for label in model_labels_to_evaluate:
-        print(f'Evaluating site-level performance for {label} ({counter})...')
+    for label in ['pacific wren']: # model_labels_to_evaluate
+        print(f'Evaluating site-level performance for class "{label}" ({counter})...')
         counter += 1
         # print(cpp)
+        print('Copying relevant data...')
         predictions_for_label = cpp[cpp['label_predicted'] == label].copy()
-        # print('predictions_for_label')
-        # print(predictions_for_label)
         # input()
-        # print('parsing metadata...')
-        metadata = predictions_for_label['file_audio'].apply(parse_metadata_from_detection_audio_filename)
+        print('Parsing metadata...')
+        metadata = predictions_for_label['file'].apply(parse_metadata_from_detection_audio_filename)
         # print('METADATA')
         # print(metadata)
         # print(f"len(metadata) {len(metadata)}")
@@ -152,34 +202,48 @@ for model in models:
         predictions_for_label['serialno'] = serialnos
         predictions_for_label['date']     = dates
         predictions_for_label['time']     = times
+
+        # print('predictions_for_label unique date and serialno pairings:')
+        # print(predictions_for_label[['date', 'serialno']].drop_duplicates().to_string())
         # input()
         predictions_for_label['date'] = pd.to_datetime(predictions_for_label['date'], format='%Y%m%d')
         # print_success('predictions_for_label')
         # print(predictions_for_label)
         # input()
+        print('Retrieving site IDs...')
         for i, row in predictions_for_label.iterrows():
             # print(i)
             # print(row)
             serialno = row['serialno']
-            month = row['date'].month
-            site = get_site(serialno, month)
-            # print(f"got site {site} for serialno {serialno} and month {month}")
+            date = row['date']
+            site = get_matching_site(row)
+            # if serialno == 'SMA00556':
+            #     print(f"got site {site} for serialno {serialno} and date {date}")
             predictions_for_label.at[i, 'site'] = site
-        # print('PREDICTIONS')
-        # print(predictions_for_label)
+        print('PREDICTIONS')
+        print(predictions_for_label)
+        print('SITES')
+        print(predictions_for_label['site'].unique())
+
+        # DEBUG
+        monkey = 'Bp236i'
+        print(f'predictions_for_label {monkey}')
+        print(predictions_for_label[predictions_for_label['site'] == monkey])
+        input()
 
         # Pre-trained model
         # print('METRICS PRETRAINED')
         label_metrics = metrics[metrics['label'] == label]
-        threshold_pmax = label_metrics['Tp'].iloc[0]
-        threshold_f1max = label_metrics['Tf1'].iloc[0]
+        Tp = label_metrics['Tp'].iloc[0]
+        Tf1 = label_metrics['Tf1'].iloc[0]
 
-        thresholds = [threshold_pmax, threshold_f1max, 0.5, 0.9]
-        # print('thresholds')
-        # print(thresholds)
+        threshold_labels = ['Tp', 'Tf1', '0.5', '0.9', 'max_Tp_0.5', 'max_Tp_0.9']
+        thresholds       = [Tp, Tf1, 0.5, 0.9, max(Tp, 0.5), max(Tp, 0.9)]
+        print('thresholds')
+        print(threshold_labels)
+        print(thresholds)
         # input()
 
-        threshold_labels = ['pmax', 'f1max', 'naive_0.5', 'naive_0.9']
         species_perf = pd.DataFrame()
         for i, threshold in enumerate(thresholds):
             threshold_label = threshold_labels[i]
@@ -190,12 +254,13 @@ for model in models:
             species_perf_at_threshold['threshold'] = threshold_label
             species_perf = pd.concat([species_perf, species_perf_at_threshold], ignore_index=True)
 
-        # print(species_perf)
+        print(species_perf.to_string())
         site_level_perf = pd.concat([site_level_perf, species_perf], ignore_index=True)
 
     print(f'FINAL RESULTS {model} (site level) ------------------------------------------------------------------------------------------------------')
-    print(site_level_perf)
-    # input()
+    print(site_level_perf.to_string())
+    site_level_perf.to_csv('/Users/giojacuzzi/Downloads/site_level_perf.csv', index=False)
+    input()
 
     # site_level_perf = site_level_perf.dropna() # remove any species for which there is no valid data (e.g. species without a corresponding optimized threshold)
 
@@ -225,11 +290,14 @@ for threshold_label in threshold_labels:
         print('model_results')
         print_exclude_cols = ['sites_detected', 'sites_notdetected', 'sites_error']
         print(model_results.drop(columns=print_exclude_cols).to_string())
-        print(f"mean error: {model_results['error_pcnt'].mean()}")
-        print(f"min error: {model_results['error_pcnt'].min()}")
-        print(f"max error: {model_results['error_pcnt'].max()}")
+        print(f"mean error %: {model_results['error_pcnt'].mean()}")
+        print(f"min error %: {model_results['error_pcnt'].min()}")
+        print(f"max error %: {model_results['error_pcnt'].max()}")
+        print(f"mean precision: {model_results['precision'].mean()}")
+        print(f"mean recall: {model_results['recall'].mean()}")
+        print(f"mean fpr: {model_results['fpr'].mean()}")
         # input()
-        threshold_results = pd.concat([threshold_results,model_results[['label', 'error_pcnt', 'precision', 'recall', 'model']]], ignore_index=True)
+        threshold_results = pd.concat([threshold_results,model_results[['label', 'error_pcnt', 'precision', 'recall', 'fpr', 'model']]], ignore_index=True)
 
     # print_success(threshold_results.to_string())
 
@@ -237,12 +305,14 @@ for threshold_label in threshold_labels:
     merged['error_pcnt_Δ'] = merged['error_pcnt_custom'] - merged['error_pcnt_pretrained']
     merged['precision_Δ']  = merged['precision_custom'] - merged['precision_pretrained']
     merged['recall_Δ']     = merged['recall_custom'] - merged['recall_pretrained']
-    result = merged[['label', 'error_pcnt_Δ', 'precision_Δ', 'recall_Δ']]
+    merged['fpr_Δ']     = merged['fpr_custom'] - merged['fpr_pretrained']
+    result = merged[['label', 'error_pcnt_Δ', 'precision_Δ', 'recall_Δ', 'fpr_Δ']]
     # print_warning(merged)
     print_success(result)
     print_success(f'mean error_pcnt_Δ {result["error_pcnt_Δ"].mean()}')
     print_success(f'mean precision_Δ  {result["precision_Δ"].mean()}')
     print_success(f'mean recall_Δ     {result["recall_Δ"].mean()}')
+    print_success(f'mean fpr_Δ        {result["fpr_Δ"].mean()}')
     input()
 
 
