@@ -57,10 +57,10 @@ for example_audio_path in audio_paths:
     # print("========================================================")
     example_file = os.path.basename(example_audio_path)
 
+    debug = False
+
     example_annotations = raw_annotations[raw_annotations['file'] == example_file]
     example_annotations.fillna('', inplace=True)
-    # print(example_annotations)
-
 
     pattern = r"^(.*?)-(-?\d+\.\d+).*$" # all text before a hyphen followed by a decimal number
     match = re.match(pattern, example_file)
@@ -83,11 +83,13 @@ for example_audio_path in audio_paths:
     # Get unique true labels
     unique_labels = sorted(example_annotations['label_truth'].unique())
     # unique_labels = [f'-{target_label_birdnet}' if l == 'not_target' else l for l in unique_labels] # replace 'not_target' with negative label
-    # print(f"unique_labels: {unique_labels}")
+    if debug:
+        print(f"unique_labels: {unique_labels}")
 
     # Convert to string with ', ' delimiter
     example_labels = ', '.join([label_mapping.get(l, l) for l in unique_labels])
-    # print(f"example_labels: {example_labels}")
+    if debug:
+        print(f"example_labels: {example_labels}")
 
     row = {
         'target':  target_label_birdnet,

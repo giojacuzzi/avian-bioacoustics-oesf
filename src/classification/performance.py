@@ -183,6 +183,15 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     r_Tf1 = recall[idx_Tf1]                 # Recall at Tf1
     fpr_Tf1 = fpr[argnearest(roc_th, Tf1)]  # False positive rate at Tf1
 
+    idx_T095 = argnearest(thresholds, 0.95)
+    if idx_T095 != None:
+        p_T095 = precision[idx_T095] # Precision at naive aribtary threshold 0.9
+        r_T095 = recall[idx_T095]    # Recall at naive aribtary threshold 0.9
+        fpr_T095 = fpr[argnearest(roc_th, 0.95)]
+    else:
+        p_T095 = 0.0
+        r_T095 = 0.0
+
     idx_T09 = argnearest(thresholds, 0.9)
     if idx_T09 != None:
         p_T09 = precision[idx_T09] # Precision at naive aribtary threshold 0.9
@@ -218,19 +227,21 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
         'Tp':        [Tp],     # Score threshold to maximize precision, Tp
         'p_Tp':      [p_Tp],   # Precision at Tp
         'r_Tp':      [r_Tp],   # Recall at Tp
-        'fpr_Tp':    [fpr_Tp], # False positive rate at Tp
+        # 'fpr_Tp':    [fpr_Tp], # False positive rate at Tp
         # Optimize for F1 score
         'Tf1':       [Tf1],     # Score threshold to maximize F1 score, Tf1
         'p_Tf1':     [p_Tf1],   # Precision at Tf1
         'r_Tf1':     [r_Tf1],   # Recall at Tf1
-        'fpr_Tf1':   [fpr_Tf1], # False positive rate at Tf1
+        # 'fpr_Tf1':   [fpr_Tf1], # False positive rate at Tf1
         # Naive arbitrary thresholds
+        'p_T095': [p_T095], # 0.95
+        'r_T095': [r_T095],
         'p_T09': [p_T09], # 0.9
         'r_T09': [r_T09],
-        'fpr_T09': [fpr_T09],
+        # 'fpr_T09': [fpr_T09],
         'p_T05': [p_T05], # 0.5
         'r_T05': [r_T05],
-        'fpr_T05': [fpr_T05],
+        # 'fpr_T05': [fpr_T05],
         # Sample sizes
         'N':           [n_examples],                                            # Total number of examples (not including "unknown" examples)
         'N_pos':       [n_P],                                                   # Total number of positive examples

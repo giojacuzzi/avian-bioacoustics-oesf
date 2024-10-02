@@ -23,7 +23,7 @@ def parse_metadata_from_annotation_file(filename):
     # print(filename)
 
     # Regular expression pattern to match the filename
-    pattern = r'^(.+)-([\d.]+)_(\w+)_(\d{8})_(\d{6})\.(\w+)$'
+    pattern = r'^(.+)-([\d.]+)_(\w+)_(\d{8})_(\d{6})(?:_([\d.]+))?\.(\w+)$'
     match = re.match(pattern, filename)
 
     if match:

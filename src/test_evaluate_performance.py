@@ -44,7 +44,7 @@ target_labels_to_evaluate = list(class_labels[class_labels['train'] == 1]['label
 # all_labels = preexisting_labels_to_evaluate + novel_labels_to_evaluate
 print(f'{len(preexisting_labels_to_evaluate)} preexisting labels to evaluate:')
 print(preexisting_labels_to_evaluate)
-input()
+# input()
 
 plot_precision_recall = False
 plot_score_distributions = False
@@ -53,7 +53,7 @@ debug = False
 debug_threshold = 1.0
 if debug:
     debug_threshold = 0.0
-    debug_label = "Coccothraustes vespertinus_Evening Grosbeak"
+    debug_label = "Biotic_Biotic Anuran" # e.g. "Biotic_Biotic Anuran"
     preexisting_labels_to_evaluate = [debug_label]
     target_labels_to_evaluate = [debug_label]
     plot_precision_recall = True
@@ -198,8 +198,8 @@ if __name__ == '__main__':
     
     performance_metrics = pd.DataFrame()
 
-    collated_detection_labels_pretrained = pd.DataFrame()
-    collated_detection_labels_custom = pd.DataFrame()
+    # collated_detection_labels_pretrained = pd.DataFrame()
+    # collated_detection_labels_custom = pd.DataFrame()
     
     # Load results per classifier and calculate performance stats ---------------------------------------------------------------
     for model in models:
@@ -296,7 +296,7 @@ if __name__ == '__main__':
         annotations_files_set = set(annotations['file'])
         for i, row in predictions.iterrows():
             if count % 1000 == 0:
-                print_success(f"{round(count/len(predictions) * 100, 2)}%")
+                print(f"{round(count/len(predictions) * 100, 2)}%")
             count += 1
 
             conf = row['confidence']
@@ -401,12 +401,12 @@ if __name__ == '__main__':
             print(f"Intepreting {predictions['label_truth'].isna().sum()} predictions with missing labels as absences...")
             predictions['label_truth'] = predictions['label_truth'].fillna(0)
 
-        if model == out_dir_pretrained:
-            collated_predictions_pretrained = predictions
-            collated_predictions_pretrained.to_csv('/Users/giojacuzzi/Downloads/collated_predictions_pretrained.csv')
-        elif model == out_dir_custom:
-            collated_predictions_custom = predictions
-            collated_predictions_custom.to_csv('/Users/giojacuzzi/Downloads/collated_predictions_custom.csv')
+        # if model == out_dir_pretrained:
+        #     collated_predictions_pretrained = predictions
+        #     collated_predictions_pretrained.to_csv('/Users/giojacuzzi/Downloads/collated_predictions_pretrained.csv')
+        # elif model == out_dir_custom:
+        #     collated_predictions_custom = predictions
+        #     collated_predictions_custom.to_csv('/Users/giojacuzzi/Downloads/collated_predictions_custom.csv')
 
         # Drop unknown labels
         if len(predictions[predictions['label_truth'] == 'unknown']) > 0:
@@ -422,7 +422,7 @@ if __name__ == '__main__':
         # print(predictions)
         # print(len(predictions))
 
-        print('Filtering...')
+        # print('Filtering...')
         # Filter out rows where 'label_truth' is 0
         # pred_copy = predictions
         # df = pred_copy[pred_copy['label_truth'] != 0]
@@ -441,7 +441,7 @@ if __name__ == '__main__':
             # df = df.sort_values(by=['serialno', 'month', 'file']).reset_index(drop=True)
             df = df.sort_values(by=['confidence']).reset_index(drop=True)
             df.to_csv('/Users/giojacuzzi/Downloads/test_labels_revised.csv')
-            input('Saved test labels to file!')
+            input('Saved test labels to file! [Press return to continue]')
 
         # print(f'Down to {len(df)} files')
         # input()
@@ -461,32 +461,48 @@ if __name__ == '__main__':
         model_performance_metrics['model'] = model
         performance_metrics = pd.concat([performance_metrics, model_performance_metrics], ignore_index=True)
 
-        model_performance_metrics[model_performance_metrics.select_dtypes(include='number').columns] = model_performance_metrics.select_dtypes(include='number').round(3)
+        # Display results and save to file
+        model_performance_metrics[model_performance_metrics.select_dtypes(include='number').columns] = model_performance_metrics.select_dtypes(include='number').round(2)
+        if not debug:
+            model_performance_metrics['label'] = model_performance_metrics['label'].str.title()
+            model_performance_metrics.loc[model_performance_metrics['N_pos'] == 0, ['PR_AUC', 'AP', 'ROC_AUC', 'f1_max']] = np.nan
+            model_performance_metrics = model_performance_metrics.sort_values(by=['PR_AUC'], ascending=False).reset_index(drop=True)
         print(f'PERFORMANCE METRICS FOR {model}')
         print(model_performance_metrics.to_string())
+
+        if model == out_dir_pretrained:
+            fp = f"{out_dir}/metrics_pre-trained.csv"
+        elif model == out_dir_custom:
+            fp = f"{out_dir}/metrics_custom.csv"
+        model_performance_metrics.to_csv(fp, index=False)
+        print_success(f'Results saved to {fp}')
 
         if plot_precision_recall:
             plt.show()
 
-        if model == out_dir_pretrained:
-            model_performance_metrics.to_csv(f"{out_dir}/metrics_pre-trained.csv", index=False)
-        elif model == out_dir_custom:
-            model_performance_metrics.to_csv(f"{out_dir}/metrics_custom.csv", index=False)
-
-        if model == out_dir_pretrained:
-            collated_detection_labels_pretrained = predictions
-        elif model == out_dir_custom:
-            collated_detection_labels_custom = predictions
+        # if model == out_dir_pretrained:
+        #     collated_detection_labels_pretrained = predictions
+        # elif model == out_dir_custom:
+        #     collated_detection_labels_custom = predictions
         
         # input()
 
     print('FINAL RESULTS (vocalization level) ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------')
     # performance_metrics.sort_values(by=['label', 'model'], inplace=True)
+    performance_metrics = performance_metrics.drop_duplicates()
     performance_metrics.sort_values(by=['PR_AUC', 'label', 'model'], inplace=True)
-    print(performance_metrics.to_string())
-    # input()
 
-    performance_metrics.to_csv('/Users/giojacuzzi/Downloads/performance_metrics.csv', index=False)
+    performance_metrics_out = performance_metrics
+    performance_metrics_out[performance_metrics_out.select_dtypes(include='number').columns] = performance_metrics_out.select_dtypes(include='number').round(2)
+    if not debug:
+        performance_metrics_out['label'] = performance_metrics_out['label'].str.title()
+        performance_metrics_out.loc[performance_metrics_out['N_pos'] == 0, ['PR_AUC', 'AP', 'ROC_AUC', 'f1_max']] = np.nan
+        performance_metrics_out = performance_metrics_out.sort_values(by=['model', 'PR_AUC'], ascending=False).reset_index(drop=True)
+
+    print(performance_metrics_out.to_string())
+    fp = '/Users/giojacuzzi/Downloads/performance_metrics.csv'
+    performance_metrics_out.to_csv(fp, index=False)
+    print_success(f'Saved combined performance results to {fp}')
 
     # Calculate metric deltas between custom and pre-trained
     if len(models) > 1:
@@ -511,16 +527,22 @@ if __name__ == '__main__':
         col_order = ['label'] + [col for col in delta_metrics.columns if col != 'label']
         delta_metrics = delta_metrics[col_order]
         delta_metrics = delta_metrics.drop_duplicates()
+        delta_metrics = delta_metrics.sort_values(by=['PR_AUC_Δ'], ascending=False).reset_index(drop=True)
         # print(delta_metrics)
 
         # Calculate macro-averaged metrics for each model
         mean_values = delta_metrics.drop(columns='label').mean()
         mean_row = pd.Series(['MEAN'] + mean_values.tolist(), index=delta_metrics.columns)
         delta_metrics = pd.concat([delta_metrics, pd.DataFrame([mean_row])], ignore_index=True)
-        delta_metrics[delta_metrics.select_dtypes(include='number').columns] = delta_metrics.select_dtypes(include='number').round(3)
+
+        # Format results
+        delta_metrics[delta_metrics.select_dtypes(include='number').columns] = delta_metrics.select_dtypes(include='number').round(2)
+        delta_metrics['label'] = delta_metrics['label'].str.title()
 
         print(delta_metrics)
-        delta_metrics.to_csv(f"{out_dir}/metrics_summary.csv", index=False)
+        fp = f"{out_dir}/metrics_summary.csv"
+        delta_metrics.to_csv(fp, index=False)
+        print_success(f'Results saved to {fp}')
 
     # TODO: For each label in 'predictions', perform Hartigan's dip test for multimodality with raw logit scores
     # If p_value < 0.05 we reject the null hypothesis of unimodality and conclude the data for that label is likely multimodal

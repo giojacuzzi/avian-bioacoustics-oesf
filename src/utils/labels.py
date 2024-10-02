@@ -5,16 +5,16 @@ consolidated_labels = {
         # Abiotic
         "abiotic aircraft": ["abiotic_aircraft","aircraft", "airplane", "airplanes", "loud thing (plane?)", "plane", "helicopter"],
         "abiotic ambience": ["abiotic_ambience","ambient","branch", "branch rustling", "branches rustling", "branches snapping","ground  rustling", "ground rustling", "leaves rustling", "rustling", "tree creaking", "branches", "twig rustling", "leaves","branch cracking","cracking", "creaking","stick breaking","twig creaking","wood cracking","wood creaking","wooden rap","wooden soudn","wooden sound","crackling","vegetation","tree snap", "crackle", "rapping on wood", "tap sound", "wood sound", "loud snap sound","popping noise","tapping","tapping sound","snap"],
-        "abiotic rain": ["abiotic_rain","rain","loud rain","rain ", "raindrops", "water drops", "droplets", "raindrop", "drop", "droplet", "drip", "dripping","dri","drippin","drips","loud drip on wood"],
+        "abiotic rain": ["abiotic_rain","rain","loud rain","rain "],
         "abiotic wind": ["abiotic_wind","wind", " wind"],
-        "abiotic logging": ["abiotic_logging","chainsaw", "chainsaw revving", "chaindaw", "chainsa","chinsaw"],
-        "abiotic vehicle": ["abiotic_vehicle","abiotic_vehicle_reverse","machinery", "machine", "vehicle", "vehicle backing up noise", "truck reverse sound", "vehicle?","engine","machine banging","vehicle backing up", "car", "truck"],
-        "abiotic other": ["abiotic_other","noise", "other", "random noise", "electricity", "high pitch buzzing", "thunder", "rain/wind", "buzzing sound", "buzz", "buzzing", "static sound", "interesting sound", "mystery noise", "static", "banging", "clink noise", "crashing sound","rumbling","thumping sound","bang","hum","really loud noise","loud noise","thunk","river", "water"],
+        "abiotic logging": ["abiotic_logging","logging","chainsaw", "chainsaw revving", "chaindaw", "chainsa","chinsaw"],
+        "abiotic vehicle": ["abiotic_vehicle","abiotic_vehicle_reverse", "vehicle", "vehicle backing up noise", "truck reverse sound", "vehicle?","engine","vehicle backing up", "car", "truck"],
+        "abiotic other": ["abiotic_other","noise", "other", "random noise", "electricity", "thunder", "rain/wind", "static sound", "interesting sound", "mystery noise", "static", "banging", "clink noise", "crashing sound","rumbling","thumping sound","bang","hum","really loud noise","loud noise","thunk","river", "water","raindrops", "water drops", "droplets", "raindrop", "drop", "droplet", "drip", "dripping","dri","drippin","drips","loud drip on wood","machinery", "machine","machine banging"],
         # Biotic
         "biotic anuran": ["biotic_anuran","anuran","frog", "frogs", "frog chirping"],
         "biotic coyote": [ "biotic_coyote","coyote","coyotes howling"],
         "biotic dog": ["biotic_dog","dog","dogs"],
-        "biotic insect": ["biotic_insect","insect","bee"],
+        "biotic insect": ["biotic_insect","insect","bee","buzzing sound", "buzz", "buzzing", "high pitch buzzing"],
         "biotic other": ["biotic_other","animal","wingbeats","bird flapping","squirrel"],
         "not_target": [
             "0","not_target", "not-bird", "not bird", "not'species","unknown sparrow",
