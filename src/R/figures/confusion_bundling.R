@@ -24,7 +24,12 @@ perf_metrics = perf_metrics[perf_metrics$model == model_to_evaluate,]
 perf_metrics$label = tolower(perf_metrics$label)
 perf_metrics$PR_AUC[is.na(perf_metrics$PR_AUC)] <- 0.5 # override missing AUC values for absent classes for visibility
 
-labels_to_remove = c("long-eared owl", "american three-toed woodpecker", "cassin's vireo", "western kingbird", "eastern kingbird", "dusky flycatcher", "mountain bluebird", "vesper sparrow", "american redstart", "cassin's finch", "clark's nutcracker", "pine grosbeak", "lazuli bunting", "bushtit", "ring-necked pheasant", "california quail")
+labels_to_remove = c(
+# excluded due to bias
+"northern goshawk", "american goldfinch", "macgillivray's warbler", "american crow", "red-tailed hawk", "yellow warbler", "sharp-shinned hawk", "bald eagle",
+# non-relevant species  
+"long-eared owl", "american three-toed woodpecker", "cassin's vireo", "western kingbird", "eastern kingbird", "dusky flycatcher", "mountain bluebird", "vesper sparrow", "american redstart", "cassin's finch", "clark's nutcracker", "pine grosbeak", "lazuli bunting", "bushtit", "ring-necked pheasant", "california quail"
+)
 confusion_mtx <- confusion_mtx[, !names(confusion_mtx) %in% labels_to_remove]
 confusion_mtx <- confusion_mtx[!rownames(confusion_mtx) %in% labels_to_remove, ]
 
@@ -58,7 +63,7 @@ get_order = function(x) {
 
 get_family = function(x) {
   if (grepl("other ", x)) {
-    y = "Other"
+    y = "AaOther"
   } else{
     y = labels[labels['label'] == x, 'family'][1] 
   }
@@ -179,7 +184,7 @@ g = ggraph(my_mygraph, layout = 'dendrogram', circular = TRUE) +
   scale_color_manual(values=c("#777777", "#F8766D", "#DE8C00", "#222222", "#00BA38", "#00C08B", "#00BFC4", "#00B4F0", "#619CFF", "#C77CFF", "#F564E3", "#FF64B0")) +
   # scale_colour_manual(values=c('dodgerblue','tomato','darkorange','darkgray', 'purple', 'goldenrod', 'palegreen3', 'palegreen4', 'seagreen4', 'blue', 'royalblue1', 'black', 'pink'))+
   # scale_colour_manual(values= rep( brewer.pal(9,"Paired") , 30)) +
-  scale_size_continuous( range = c(4.75,0.25) ) +
+  scale_size_continuous(range = c(4.75,0.25)) +
   
   theme_void() +
   expand_limits(x = c(-1.75, 1.75), y = c(-1.75, 1.75))

@@ -4,7 +4,7 @@ import Levenshtein
 consolidated_labels = {
         # Abiotic
         "abiotic aircraft": ["abiotic_aircraft","aircraft", "airplane", "airplanes", "loud thing (plane?)", "plane", "helicopter"],
-        "abiotic ambience": ["abiotic_ambience","ambient","branch", "branch rustling", "branches rustling", "branches snapping","ground  rustling", "ground rustling", "leaves rustling", "rustling", "tree creaking", "branches", "twig rustling", "leaves","branch cracking","cracking", "creaking","stick breaking","twig creaking","wood cracking","wood creaking","wooden rap","wooden soudn","wooden sound","crackling","vegetation","tree snap", "crackle", "rapping on wood", "tap sound", "wood sound", "loud snap sound","popping noise","tapping","tapping sound","snap"],
+        "abiotic ambience": ["abiotic_ambience","ambient","ambience","branch", "branch rustling", "branches rustling", "branches snapping","ground  rustling", "ground rustling", "leaves rustling", "rustling", "tree creaking", "branches", "twig rustling", "leaves","branch cracking","cracking", "creaking","stick breaking","twig creaking","wood cracking","wood creaking","wooden rap","wooden soudn","wooden sound","crackling","vegetation","tree snap", "crackle", "rapping on wood", "tap sound", "wood sound", "loud snap sound","popping noise","tapping","tapping sound","snap"],
         "abiotic rain": ["abiotic_rain","rain","loud rain","rain "],
         "abiotic wind": ["abiotic_wind","wind", " wind"],
         "abiotic logging": ["abiotic_logging","logging","chainsaw", "chainsaw revving", "chaindaw", "chainsa","chinsaw"],

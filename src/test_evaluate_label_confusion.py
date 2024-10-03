@@ -73,7 +73,7 @@ print(incorrect_detection_counts)
 # TODO: Instead, relabel not_target as "ambience" or "SNR" / "poor snr"?
 incorrect_detections.loc[incorrect_detections['label_truth'] == 'artifact truncation', 'label_truth'] = 'other truncation'
 incorrect_detections.loc[incorrect_detections['label_truth'] == 'not_target', 'label_truth'] = 'other poor snr'
-incorrect_detections.loc[incorrect_detections['label_truth'] == 'ambience', 'label_truth']   = 'other poor snr'
+incorrect_detections.loc[incorrect_detections['label_truth'] == 'abiotic ambience', 'label_truth']   = 'other poor snr'
 incorrect_detections = incorrect_detections[incorrect_detections['label_truth'] != '']
 
 ################################################################################
