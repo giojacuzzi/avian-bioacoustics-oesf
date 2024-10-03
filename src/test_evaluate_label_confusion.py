@@ -63,28 +63,38 @@ detections = detections.sort_values(by='file').reset_index(drop=True)
 
 # Print label incorrect counts
 incorrect_detections = detections[detections['correct'] == False]
+print(incorrect_detections.to_string())
 print_warning(incorrect_detections[incorrect_detections['confidence'] < 0.9].reset_index(drop=True).to_string())
 incorrect_detection_counts = incorrect_detections['label_truth'].value_counts()
 print(incorrect_detection_counts)
 
 # Remove any "not_target" labels
-detections = detections[detections['label_truth'] != 'not_target']
+# detections = detections[detections['label_truth'] != 'not_target']
+# TODO: Instead, relabel not_target as "ambience" or "SNR" / "poor snr"?
+incorrect_detections.loc[incorrect_detections['label_truth'] == 'artifact truncation', 'label_truth'] = 'other truncation'
+incorrect_detections.loc[incorrect_detections['label_truth'] == 'not_target', 'label_truth'] = 'other poor snr'
+incorrect_detections.loc[incorrect_detections['label_truth'] == 'ambience', 'label_truth']   = 'other poor snr'
+incorrect_detections = incorrect_detections[incorrect_detections['label_truth'] != '']
 
 ################################################################################
 # Construct a confusion matrix
 
-class_labels = sorted(pd.unique(detections[['label_predicted', 'label_truth']].values.ravel()))
+class_labels = sorted(pd.unique(incorrect_detections[['label_predicted', 'label_truth']].values.ravel()))
 print(class_labels)
-confusion_mtx = confusion_matrix(detections["label_truth"], detections["label_predicted"], labels=class_labels)
+confusion_mtx = confusion_matrix(incorrect_detections["label_truth"], incorrect_detections["label_predicted"], labels=class_labels)
+
+# np.set_printoptions(threshold=np.inf)
+# print(class_labels)
+# print(confusion_mtx)
+# input()
 
 df_confusion_mtx = pd.DataFrame(confusion_mtx, class_labels, class_labels)
 
-print(confusion_mtx)
-print(confusion_mtx.shape)
-print(len(class_labels))
-print(df_confusion_mtx)
+# print(confusion_mtx)
+# print(confusion_mtx.shape)
+# print(len(class_labels))
 
-disp = ConfusionMatrixDisplay(confusion_matrix=confusion_mtx, display_labels=class_labels)
+# disp = ConfusionMatrixDisplay(confusion_matrix=confusion_mtx, display_labels=class_labels)
 # disp.plot()
 # plt.show()
 
@@ -94,6 +104,7 @@ cm = sn.heatmap(confusion_mtx, annot=True, vmin=0, vmax=5, cmap="Reds", xticklab
 cm.set_xlabel("Predicted label")
 cm.set_ylabel("True label")
 plt.show()
+
 
 ################################################################################
 # Export data for hierarchical edge bundling plot in R
