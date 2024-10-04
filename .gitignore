@@ -9,6 +9,7 @@
 *.png
 *.svg
 *.ai
+*.parquet
 
 # Model and training files
 /data/training/*

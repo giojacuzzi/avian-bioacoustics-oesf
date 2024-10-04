@@ -176,7 +176,7 @@ g = ggraph(my_mygraph, layout = 'dendrogram', circular = TRUE) +
   geom_conn_bundle(data = get_con(from = my_from, to = my_to), alpha=0.35, width=0.5, aes(colour=..index..), tension = 0.98) +
   scale_edge_colour_distiller(palette = "RdPu") +
   # scale_edge_color_continuous(low="red", high="snow2") + # aliceblue, azure, snow2
-  geom_node_text(aes(x = x*1.12, y=y*1.12, filter = leaf, label=tools::toTitleCase(name), angle = angle, hjust=hjust, colour=Group), size=2, alpha=1) +
+  geom_node_text(aes(x = x*1.12, y=y*1.12, filter = leaf, label=tools::toTitleCase(gsub("biotic |abiotic |other ", "", name)), angle = angle, hjust=hjust, colour=Group), size=2, alpha=1) +
   
   geom_node_point(aes(filter = leaf, x = x*1.07, y=y*1.07, colour=Group, size=AUC, alpha=Presence)) +
   scale_alpha(range=c(0.2,0.9)) + # for nodes
