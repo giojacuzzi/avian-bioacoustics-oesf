@@ -6,9 +6,11 @@ from utils.files import *
 from classification.performance import *
 import sys
 
-overwrite = False
-overwrite_2 = False
-threshold = 0.1
+if not os.path.exists('data/results/site_perf'):
+    os.makedirs('data/results/site_perf')
+
+overwrite_prediction_cache = False
+overwrite_metadata_cache = False # MANGO
 
 custom_model_stub  = 'custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0'
 out_dir = f'data/test/{custom_model_stub}'
@@ -26,7 +28,9 @@ print(f'{len(preexisting_labels_to_evaluate)} preexisting labels to evaluate:')
 print(preexisting_labels_to_evaluate)
 # input()
 
-perf_metrics_and_thresholds = pd.read_csv('/Users/giojacuzzi/Downloads/performance_metrics.csv')
+perf_metrics_and_thresholds = pd.read_csv('data/cache/test_evaluate_performance_performance_metrics.csv')
+print(perf_metrics_and_thresholds.to_string())
+# input()
 
 # Data culling – get minimum confidence score to retain a prediction for analysis (helps speed up analysis process considerably)
 # intersection = [item for item in target_labels_to_evaluate if item in preexisting_labels_to_evaluate]
@@ -49,7 +53,7 @@ def remove_extension(f):
 # prediction_cache = 'data/cache/predictions_cache.parquet'
 
 # Load analyzer prediction scores for ALL raw audio files
-if overwrite:
+if overwrite_prediction_cache:
     for model in models:
         print(f'Loading {model} prediction scores for test examples...')
 
@@ -66,7 +70,7 @@ if overwrite:
             if i % 50 == 0:
                 print(f"{round(i/len(score_files) * 100, 2)}% ({i} of {len(score_files)} files)")
             try:
-                score = pd.read_csv(file, low_memory=False, usecols=['common_name', 'confidence'])
+                score = pd.read_csv(file, low_memory=False, usecols=['common_name', 'confidence', 'start_date'])
             except Exception as e:
                 print_warning(f'{e}')
                 print_warning(f'Incompatible columns in file {file}. Skipping...')
@@ -91,22 +95,114 @@ if overwrite:
         predictions['label_predicted'] = predictions['label_predicted'].str.lower()
 
         if model == out_dir_pretrained:
-            predictions.to_parquet('/Users/giojacuzzi/Downloads/predictions_pretrained.parquet')
+            predictions.to_parquet('data/cache/pretrained/predictions_pretrained.parquet')
         elif model == out_dir_custom:
-            predictions.to_parquet('/Users/giojacuzzi/Downloads/predictions_custom.parquet')
+            predictions.to_parquet('data/cache/custom/predictions_custom.parquet')
 
 print('Loading custom predictions from cache...')
-predictions_custom = pd.read_parquet('/Users/giojacuzzi/Downloads/predictions_custom.parquet')
+predictions_custom = pd.read_parquet('data/cache/custom/predictions_custom.parquet')
 print(predictions_custom.head())
 print(f'Loaded {len(predictions_custom)} predictions')
 print('Loading pretrained predictions from cache...')
-predictions_pretrained = pd.read_parquet('/Users/giojacuzzi/Downloads/predictions_pretrained.parquet')
+predictions_pretrained = pd.read_parquet('data/cache/pretrained/predictions_pretrained.parquet')
+predictions_pretrained = predictions_pretrained[predictions_pretrained['label_predicted'].isin(class_labels['label'].to_list())] # remove predictions for irrelevant labels
 print(predictions_pretrained.head())
 print(f'Loaded {len(predictions_pretrained)} predictions')
 
 # DEBUG
+print(class_labels['label'].to_list())
 print(predictions_custom)
+print(predictions_pretrained)
 # input()
+
+# TODO: Create a third set of predictions, predictions_ensemble ----------------
+
+# For each prediction (each row in predictions_ensemble)
+if overwrite_prediction_cache:
+
+    # Merge predictions from predictions_custom and predictions_pretrained on 'label_predicted' and 'start_date' with confidence columns 'confidence_pretrained' and 'confidence_custom'
+    print('Merging predictions...')
+    predictions_ensemble = pd.merge(
+        predictions_custom,
+        predictions_pretrained,
+        on=['label_predicted', 'start_date', 'file'],
+        how='outer',
+        suffixes=('_custom', '_pretrained')
+    )
+    # print('predictions_ensemble')
+    # print(predictions_ensemble)
+    # input()
+
+    # If there is a missing confidence score for either confidence_pretrained or confidence_custom, assign it to 0.0
+    predictions_ensemble['confidence_pretrained'] = predictions_ensemble['confidence_pretrained'].fillna(0.0)
+    predictions_ensemble['confidence_custom'] = predictions_ensemble['confidence_custom'].fillna(0.0)
+    print('predictions_ensemble fillna')
+    print(predictions_ensemble)
+    # input()
+
+    # Create a new column confidence initialized to nan
+    predictions_ensemble['confidence'] = np.nan
+
+    print('Calculating ensemble confidence score for each prediction...')
+    for idx, row in predictions_ensemble.iterrows():
+        # print(idx)
+        if idx % 10000 == 0:
+            print(f"{round(idx/len(predictions_ensemble) * 100, 2)}%")
+
+        l = row['label_predicted']
+
+        if True: #l == 'spotted owl':
+            # print(idx)
+            # print(row.to_list())
+            # print(l)
+
+            # Get the confidence scores for the predicted species from both models
+            # conf_pretrained, conf_custom
+            conf_pretrained = row['confidence_pretrained']
+            # print(f'conf_pretrained {conf_pretrained}')
+            conf_custom = row['confidence_custom']
+            # print(f'conf_custom {conf_custom}')
+
+            # Get the PR AUC for the predicted species from both models
+            # p_pretrained, p_custom
+            pretrained_l_metrics = perf_metrics_and_thresholds[(perf_metrics_and_thresholds['label'] == l) & (perf_metrics_and_thresholds['model'] == out_dir_pretrained)]
+            auc_pretrained = pretrained_l_metrics['PR_AUC'].iloc[0] if not pretrained_l_metrics.empty else 0.0
+            # print(f'auc_pretrained {auc_pretrained}')
+            custom_l_metrics = perf_metrics_and_thresholds[(perf_metrics_and_thresholds['label'] == l) & (perf_metrics_and_thresholds['model'] == out_dir_custom)]
+            auc_custom = custom_l_metrics['PR_AUC'].iloc[0] if not custom_l_metrics.empty else 0.0
+            # print(f'auc_custom {auc_custom}')
+
+            # Calculate weights of relative importance for the models by normalizing the PR AUC so they sum to 1.0
+            auc_norm_pretrained = auc_pretrained / (auc_pretrained + auc_custom)
+            # print(f'auc_norm_pretrained {auc_norm_pretrained}')
+            auc_norm_custom     = auc_custom / (auc_pretrained + auc_custom)
+            # print(f'auc_norm_custom {auc_norm_custom}')
+
+            # Calculate weighted confidence scores
+            w_conf_pretrained = conf_pretrained * auc_norm_pretrained
+            # print(f'w_conf_pretrained {w_conf_pretrained}')
+            w_conf_custom     = conf_custom * auc_norm_custom
+            # print(f'w_conf_custom {w_conf_custom}')
+
+            # Sum the weighted confidence scores and store
+            confidence_ensemble = w_conf_pretrained + w_conf_custom
+            # print(f'confidence_ensemble {confidence_ensemble}')
+            predictions_ensemble.loc[idx, 'confidence'] = confidence_ensemble
+            # input()
+    predictions_ensemble.to_parquet('data/cache/ensemble/predictions_ensemble.parquet')
+
+# print(predictions_ensemble)
+# print('AGAINST')
+# print(predictions_custom)
+
+print('Loading ensemble predictions from cache...')
+predictions_ensemble = pd.read_parquet('data/cache/ensemble/predictions_ensemble.parquet')
+print(predictions_ensemble.head())
+print(f'Loaded {len(predictions_ensemble)} predictions')
+# sys.exit()
+# DEBUG
+# print('SETTING CUSTOM PREDICTIONS TO ENSEMBLE!')
+# predictions_custom = predictions_ensemble
 
 print(f'PERFORMANCE EVALUATION - site level ================================================================================================')
 
@@ -163,7 +259,7 @@ def get_matching_site(row):
 
 site_level_perf = pd.DataFrame()
 site_level_perf_mean = pd.DataFrame()
-for model in models:
+for model in models: # MANGO
     print(f'BEGIN MODEL EVALUATION {model} (site level) --------------------------------------------------------------------')
 
     if model == out_dir_pretrained:
@@ -175,27 +271,22 @@ for model in models:
         cpp = predictions_custom.copy()
         intersection = [item for item in target_labels_to_evaluate if item in preexisting_labels_to_evaluate]
         model_labels_to_evaluate = [label.split('_')[1].lower() for label in intersection]
-        model_tag = 'custom'
+        model_tag = 'custom' #MANGO
+    else:
+        cpp = predictions_ensemble.copy()
+        intersection = [item for item in target_labels_to_evaluate if item in preexisting_labels_to_evaluate]
+        model_labels_to_evaluate = [label.split('_')[1].lower() for label in intersection]
+        model_tag = 'ensemble'
+        model = out_dir_custom # MANGO: TAKE THIS OUT!
     model_labels_to_evaluate = set(model_labels_to_evaluate)
     # cpp = cpp[cpp['confidence'] > 0.1]
 
     cpp['site'] = ''
 
-    print('Calculating site-level performance metrics...')
-
-    # Calculate perf with thresholds optimized for precision and F1 score
     print('Calculate site-level performance per label...')
-    metrics = perf_metrics_and_thresholds[perf_metrics_and_thresholds['model'] == model]
-    metrics['label'] = metrics['label'].str.lower()
-    print('metrics')
-    print(metrics)
-    # input()
-    # metrics_custom = performance_metrics[performance_metrics['model'] == out_dir_custom]
-    # print('metrics_custom')
-    # print(metrics_custom)
     
     # Caching
-    if overwrite_2:
+    if overwrite_metadata_cache:
         counter = 1
         for label in model_labels_to_evaluate: # model_labels_to_evaluate
             print(f'Caching metadata for class "{label}" predictions ({counter})...')
@@ -225,13 +316,13 @@ for model in models:
             # print(predictions_for_label)
             # input()
             print(f'Retrieving site IDs for {len(predictions_for_label)} predictions...')
-            fdfdf = 1
+            counter_siteid = 1
             for i, row in predictions_for_label.iterrows():
                 # print(i)
                 # print(row)
-                fdfdf += 1
-                if fdfdf % 200 == 0:
-                    print(f"{round(fdfdf/len(predictions_for_label) * 100, 2)}% ({fdfdf} of {len(predictions_for_label)} files)")
+                counter_siteid += 1
+                if counter_siteid % 200 == 0:
+                    print(f"{round(counter_siteid/len(predictions_for_label) * 100, 2)}% ({counter_siteid} of {len(predictions_for_label)} files)")
 
 
                 serialno = row['serialno']
@@ -241,7 +332,7 @@ for model in models:
                 #     print(f"got site {site} for serialno {serialno} and date {date}")
                 predictions_for_label.at[i, 'site'] = site
 
-            predictions_for_label.to_parquet(f'data/cache/predictions_for_label_{label}_{model_tag}.parquet')
+            predictions_for_label.to_parquet(f'data/cache/{model_tag}/predictions_for_label_{label}_{model_tag}.parquet')
             # print('PREDICTIONS')
             # print(predictions_for_label)
             # print('SITES')
@@ -252,6 +343,11 @@ for model in models:
             # print(f'predictions_for_label {monkey}')
             # print(predictions_for_label[predictions_for_label['site'] == monkey])
             # input()
+    
+    metrics = perf_metrics_and_thresholds[perf_metrics_and_thresholds['model'] == model]
+    metrics['label'] = metrics['label'].str.lower()
+    # print('metrics')
+    # print(metrics)
 
     counter = 1
     for label in model_labels_to_evaluate:
@@ -259,8 +355,8 @@ for model in models:
         counter += 1
 
         # load predictions_for_label for this label from cache
-        print(f'Retrieving predictions with metadata...')
-        predictions_for_label = pd.read_parquet(f'data/cache/predictions_for_label_{label}_{model_tag}.parquet')
+        print(f'Retrieving {model_tag} predictions with metadata...')
+        predictions_for_label = pd.read_parquet(f'data/cache/{model_tag}/predictions_for_label_{label}_{model_tag}.parquet')
 
         # Pre-trained model
         # print('METRICS PRETRAINED')
@@ -268,8 +364,8 @@ for model in models:
         Tp = label_metrics['Tp'].iloc[0]
         Tf1 = label_metrics['Tf1'].iloc[0]
 
-        threshold_labels = ['0.95']# TODO: ['Tp', 'Tf1', '0.5', '0.9', '0.95', 'max_Tp_0.5', 'max_Tp_0.9', 'max_Tp_0.95']
-        thresholds       = [0.95]# TODO: [Tp, Tf1, 0.5, 0.9, 0.95, max(Tp, 0.5), max(Tp, 0.9), max(Tp, 0.95)]
+        threshold_labels = ['0.9'] #[str(x) for x in [round(n, 2) for n in np.arange(0.5, 1.05, 0.05).tolist()]] #['Tp', 'Tf1', '0.5', '0.9', '0.95', 'max_Tp_0.5', 'max_Tp_0.9', 'max_Tp_0.95']
+        thresholds       = [0.9] #[round(n, 2) for n in np.arange(0.5, 1.05, 0.05).tolist()] #[Tp, Tf1, 0.5, 0.9, 0.95, max(Tp, 0.5), max(Tp, 0.9), max(Tp, 0.95)]
         print('thresholds')
         print(threshold_labels)
         print(thresholds)
@@ -278,29 +374,33 @@ for model in models:
         species_perf = pd.DataFrame()
         for i, threshold in enumerate(thresholds):
             threshold_label = threshold_labels[i]
+            threshold_value = thresholds[i]
             # print(f'Calculating site-level confusion matrix with {threshold_label} threshold {threshold}...')
 
             species_perf_at_threshold = get_site_level_confusion_matrix(label, predictions_for_label, threshold, site_presence_absence)
             species_perf_at_threshold['precision'] = species_perf_at_threshold['precision'].fillna(0.0) # if precision is NaN (i.e. no TP or FP), then no positive predictions were made despite at least one presence, so precision = 0.0
             species_perf_at_threshold['model'] = model
             species_perf_at_threshold['threshold'] = threshold_label
+            species_perf_at_threshold['threshold_value'] = threshold_value
             species_perf = pd.concat([species_perf, species_perf_at_threshold], ignore_index=True)
 
         print(species_perf.to_string())
         site_level_perf = pd.concat([site_level_perf, species_perf], ignore_index=True)
 
-    print(f'FINAL RESULTS {model} (site level) ------------------------------------------------------------------------------------------------------')
+    print(f'FINAL RESULTS {model_tag} (site level) ------------------------------------------------------------------------------------------------------')
     print('site_level_perf')
+    site_level_perf = site_level_perf.reindex(sorted(site_level_perf.columns), axis=1)
     print(site_level_perf.to_string())
     if model == out_dir_pretrained:
-        fp = f'/Users/giojacuzzi/Downloads/site_perf_pretrained.csv'
+        fp = f'data/results/site_perf/site_perf_pretrained.csv'
         site_level_perf[site_level_perf["model"] == out_dir_pretrained].to_csv(fp, index=False)
     elif model == out_dir_custom:
-        fp = f'/Users/giojacuzzi/Downloads/site_perf_{custom_model_stub}.csv'
+        fp = f'data/results/site_perf/site_perf_{custom_model_stub}.csv'
         site_level_perf[site_level_perf["model"] == out_dir_custom].to_csv(fp, index=False)
-    print_success(f'Saved site level perf for model {model} to {fp}')
+    print_success(f'Saved site level perf for model {model_tag} to {fp}')
+    # input()
 
-    site_level_perf.to_csv(f'/Users/giojacuzzi/Downloads/site_perf_both.csv', index=False)
+    # site_level_perf.to_csv(f'data/results/site_perf/site_perf_both.csv', index=False)
     # site_level_perf = site_level_perf.dropna() # remove any species for which there is no valid data (e.g. species without a corresponding optimized threshold)
 
 print('DEBUG')
@@ -314,7 +414,7 @@ labels_to_compare = [l for l in target_labels_to_evaluate if l in preexisting_la
 labels_to_compare = [l.split('_')[1].lower() for l in labels_to_compare]
 print('labels_to_compare')
 print(labels_to_compare)
-input()
+# input()
 
 for threshold_label in threshold_labels:
     print_warning(f'>> Evaluating site-level performance for {threshold_label}...')
@@ -335,31 +435,49 @@ for threshold_label in threshold_labels:
         print(f"mean precision: {model_results['precision'].mean()}")
         print(f"mean recall: {model_results['recall'].mean()}")
         print(f"mean fpr: {model_results['fpr'].mean()}")
-        input()
+        # input()
         threshold_results = pd.concat([threshold_results,model_results[['label', 'error_pcnt', 'precision', 'recall', 'fpr', 'model']]], ignore_index=True)
 
     # print_success(threshold_results.to_string())
-    threshold_results.to_csv(f'/Users/giojacuzzi/Downloads/threshold_results_{threshold_label}.csv', index=False)
+    threshold_results.to_csv(f'data/results/site_perf/threshold_results_{threshold_label}.csv', index=False)
 
     merged = pd.merge(threshold_results[threshold_results['model'] == out_dir_pretrained], threshold_results[threshold_results['model'] == out_dir_custom], on='label', suffixes=('_pretrained', '_custom'))
     merged['error_pcnt_Δ'] = merged['error_pcnt_custom'] - merged['error_pcnt_pretrained']
     merged['precision_Δ']  = merged['precision_custom'] - merged['precision_pretrained']
     merged['recall_Δ']     = merged['recall_custom'] - merged['recall_pretrained']
     merged['fpr_Δ']     = merged['fpr_custom'] - merged['fpr_pretrained']
-    result = merged[['label', 'error_pcnt_Δ', 'precision_Δ', 'recall_Δ', 'fpr_Δ']]
+    merged = merged.reindex(sorted(merged.columns), axis=1)
+
+    # mean_values = merged.drop(columns=['label','model_custom','model_pretrained']).mean()
+    # mean_row = pd.Series(['MEAN'] + mean_values.tolist(), index=merged.columns)
+    # merged = pd.concat([merged, pd.DataFrame([mean_row])], ignore_index=True)
+    mean_values = merged.select_dtypes(include='number').mean()
+    # Convert the mean values to a DataFrame with the same column names
+    mean_row = pd.DataFrame(mean_values).T
+    mean_row['label'] = 'Mean'
+    # Append the mean row to the original DataFrame
+    merged = pd.concat([merged, mean_row], ignore_index=True)
+
+    result = merged
+    result[result.select_dtypes(include='number').columns] = result.select_dtypes(include='number')#.round(2)
+    result['label'] = result['label'].str.title()
+    result.insert(0, 'label', result.pop('label'))
+    result = result.loc[:, ~result.columns.str.contains('model')]
+    # result = merged[['label', 'error_pcnt_Δ', 'precision_Δ', 'recall_Δ', 'fpr_Δ']]
     # print_warning(merged)
     print('result:')
-    print_success(result)
+    print_success(result.to_string())
     print_success(f'mean error_pcnt_Δ {result["error_pcnt_Δ"].mean()}')
     print_success(f'mean precision_Δ  {result["precision_Δ"].mean()}')
     print_success(f'mean recall_Δ     {result["recall_Δ"].mean()}')
     print_success(f'mean fpr_Δ        {result["fpr_Δ"].mean()}')
     
-    result.to_csv(f'/Users/giojacuzzi/Downloads/results_{threshold_label}.csv')
+    fp = f'data/results/site_perf/results_{threshold_label}.csv'
+    result.to_csv(fp)
+    print_success(f'Saved results to {fp}')
 
 
 # SPECIES RICHNESS COMPARISON
-sys.exit()
 # print('SPECIES RICHNESS COMPARISON ==================================================================================================')
 
 # # For each threshold

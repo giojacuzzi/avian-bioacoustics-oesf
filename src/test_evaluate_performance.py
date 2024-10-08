@@ -491,6 +491,11 @@ if __name__ == '__main__':
     # performance_metrics.sort_values(by=['label', 'model'], inplace=True)
     performance_metrics = performance_metrics.drop_duplicates()
     performance_metrics.sort_values(by=['PR_AUC', 'label', 'model'], inplace=True)
+    if not debug:
+        performance_metrics.loc[performance_metrics['N_pos'] == 0, ['PR_AUC', 'AP', 'ROC_AUC', 'f1_max']] = np.nan
+    fp = 'data/cache/test_evaluate_performance_performance_metrics.csv'
+    performance_metrics.to_csv(fp, index=False)
+    print_success(f'Saved performance metrics to {fp}')
 
     performance_metrics_out = performance_metrics
     performance_metrics_out[performance_metrics_out.select_dtypes(include='number').columns] = performance_metrics_out.select_dtypes(include='number').round(2)
@@ -500,7 +505,7 @@ if __name__ == '__main__':
         performance_metrics_out = performance_metrics_out.sort_values(by=['model', 'PR_AUC'], ascending=False).reset_index(drop=True)
 
     print(performance_metrics_out.to_string())
-    fp = '/Users/giojacuzzi/Downloads/performance_metrics.csv'
+    fp = 'data/results/performance_metrics_out.csv'
     performance_metrics_out.to_csv(fp, index=False)
     print_success(f'Saved combined performance results to {fp}')
 

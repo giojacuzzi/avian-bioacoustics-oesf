@@ -9,9 +9,9 @@ abiotic vehicle,,,1,1,,,,,,,,,,,,1
 biotic insect,1,,,,,,1,,,1,,1,1,1,1,1
 biotic anuran,,,,,,,,,,,1,,,,,
 northern goshawk,0,?,?,?,?,?,1,0,0,?,?,0,?,0,?,?
-western wood-pewee,?,0,?,?,1,?,0,1,0,0,0,0,0,?,0,0
-marbled murrelet,1,1,1,0,0,1,1,0,0,0,0,0,?,0,0,0
-western screech-owl,1,0,0,0,1,?,?,1,?,0,0,0,0,1,?,0
+western wood-pewee,?,0,0,0,1,?,0,1,0,0,0,0,0,0,0,0
+marbled murrelet,1,1,1,0,?,1,1,0,0,0,0,0,0,0,0,0
+western screech-owl,1,0,0,0,1,?,0,1,0,0,0,0,0,1,?,0
 macgillivray's warbler,1,0,0,?,?,0,?,?,0,0,?,0,0,?,?,?
 white-crowned sparrow,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0
 american goldfinch,?,0,0,?,?,0,1,?,?,0,0,0,0,?,?,?
@@ -19,13 +19,13 @@ northern saw-whet owl,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0
 ruby-crowned kinglet,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 hermit thrush,1,1,1,?,?,?,0,0,0,?,0,1,0,0,0,0
 red-breasted nuthatch,1,?,0,?,1,1,0,0,1,1,0,1,1,1,0,1
-sooty grouse,0,1,1,1,0,1,0,1,1,1,0,0,1,?,1,0
+sooty grouse,1,1,1,1,0,1,0,1,1,1,0,1,1,?,1,0
 olive-sided flycatcher,1,?,0,1,1,0,0,1,0,0,0,0,0,0,1,0
 violet-green swallow,?,1,0,0,0,0,1,0,1,0,?,0,0,?,?,?
-belted kingfisher,0,0,1,1,0,?,0,0,?,?,1,1,0,?,1,1
+belted kingfisher,0,0,1,1,0,0,0,0,0,0,1,1,0,0,1,1
 spotted towhee,1,0,0,0,?,?,1,1,0,0,0,0,0,0,1,0
-northern pygmy-owl,0,1,0,1,?,?,?,?,0,0,0,0,?,?,?,0
-hammond's flycatcher,1,1,?,0,?,?,1,0,1,?,1,?,?,0,?,?
+northern pygmy-owl,0,1,?,1,0,0,0,0,0,0,0,0,0,0,0,0
+hammond's flycatcher,1,1,?,0,0,0,1,0,1,0,1,?,0,0,0,0
 townsend's warbler,1,1,?,1,0,0,?,1,1,1,?,0,1,1,0,0
 wilson's warbler,1,?,?,?,1,?,1,1,0,1,?,1,?,1,1,?
 black-headed grosbeak,0,0,0,1,1,1,1,1,1,0,1,1,1,?,1,0
@@ -37,7 +37,7 @@ western tanager,?,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1
 warbling vireo,1,0,0,0,1,1,1,1,1,0,1,0,0,0,1,0
 pileated woodpecker,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 swainson's thrush,?,0,0,0,1,1,1,1,1,?,1,1,1,1,1,1
-rufous hummingbird,1,0,0,?,0,0,0,1,1,0,0,0,0,0,1,0
+rufous hummingbird,1,0,0,0,0,0,0,1,1,0,0,0,0,0,1,0
 pine siskin,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1
 golden-crowned kinglet,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 black-throated gray warbler,1,1,1,1,1,1,1,1,1,1,1,1,?,1,1,?
@@ -53,7 +53,7 @@ northern flicker,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1
 steller's jay,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 hairy woodpecker,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 barred owl,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0
-hutton's vireo,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1
+hutton's vireo,1,1,1,0,1,?,1,1,1,1,1,1,1,1,1,1
 pacific-slope flycatcher,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 evening grosbeak,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 varied thrush,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1

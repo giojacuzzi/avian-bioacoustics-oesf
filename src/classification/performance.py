@@ -251,7 +251,7 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     })
 
 # Returns a dataframe containing a confusion matrix (TP, FP, FN, TN) and number of truly present/absent sites for a given species from a detection history
-def get_site_level_confusion_matrix(species, detections, threshold, site_presence_absence):
+def get_site_level_confusion_matrix(species, detections, threshold, site_presence_absence, precision=3):
 
     # print(detections)
     # print(f"threshold {threshold}")
@@ -284,8 +284,11 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
     if len(sites_present) + len(sites_unknown) + len(sites_absent) != len(all_sites):
         print_error(f'Number of sites present ({len(sites_present)}), unknown ({len(sites_unknown)}), and absent ({len(sites_absent)}) does not equal total number of sites ({len(all_sites)})')
 
+    def truncate_float(n, places):
+        return int(n * (10 ** places)) / 10 ** places
+
     # Sites detected using the threshold
-    detections_thresholded = detections[(detections['confidence'] >= threshold)]
+    detections_thresholded = detections[(detections['confidence'] >= truncate_float(threshold, precision))]
     # print('detections_thresholded')
     # print(detections_thresholded)
     sites_detected = detections_thresholded['site'].unique()
