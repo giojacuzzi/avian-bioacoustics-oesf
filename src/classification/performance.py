@@ -251,8 +251,9 @@ def evaluate_species_performance(detection_labels, species, plot, digits=3, titl
     })
 
 # Returns a dataframe containing a confusion matrix (TP, FP, FN, TN) and number of truly present/absent sites for a given species from a detection history
-def get_site_level_confusion_matrix(species, detections, threshold, site_presence_absence, precision=3):
+def get_site_level_confusion_matrix(species, detections, threshold, site_presence_absence, min_detections=0, precision=3):
 
+    debug = False
     # print(detections)
     # print(f"threshold {threshold}")
     # input()
@@ -272,7 +273,7 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
     # print(f"Sites with 'unknown' for {species}:", sites_unknown)
     # print(f"Sites with 'absent'  for {species}:", sites_absent)
 
-    valid_sites = np.setdiff1d(all_sites, sites_unknown)
+    known_sites = np.setdiff1d(all_sites, sites_unknown)
     # print(f"Valid sites: {valid_sites}")
     # input()
     
@@ -289,15 +290,37 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
 
     # Sites detected using the threshold
     detections_thresholded = detections[(detections['confidence'] >= truncate_float(threshold, precision))]
-    # print('detections_thresholded')
+    # # print('detections_thresholded')
+    # # print(detections_thresholded)
+
+    # # Post-process: only retain sites for which a minimum number of detections were made
+    # if not detections_thresholded.empty:
+
+    #     site_counts = detections_thresholded['site'].value_counts()
+    #     # print(site_counts)
+    #     detections_above_min_count = site_counts[site_counts > min_detections].index
+    #     detections_thresholded = detections_thresholded[detections_thresholded['site'].isin(detections_above_min_count)]
+    # print('after min_detections post process:')
     # print(detections_thresholded)
+    # input()
+
     sites_detected = detections_thresholded['site'].unique()
+
+    sites_detected = np.intersect1d(known_sites, sites_detected)
+
+    if debug:
+        print('valid_sites')
+        print(known_sites)
+        print('sites_detected')
+        print(sites_detected)    
+
     # print(sites_detected)
     # print(f'Sites detected with threshold {threshold}  ({len(sites_detected)}): {sites_detected}')
 
     # Sites not detected using the threshold
-    sites_notdetected = np.setdiff1d(valid_sites, sites_detected)
-    # print(f'Sites not detected with threshold {threshold}  ({len(sites_notdetected)}): {sites_notdetected}')
+    sites_notdetected = np.setdiff1d(known_sites, sites_detected)
+    if debug:
+        print(f'Sites not detected with threshold {threshold}  ({len(sites_notdetected)}): {sites_notdetected}')
 
     # if len(sites_detected) + len(sites_notdetected) != len(all_sites):
     #     print_error(f'Number of sites detected ({len(sites_detected)}) and not detected ({len(sites_notdetected)}) does not equal total number of sites ({len(all_sites)})')
@@ -317,6 +340,11 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
     # FN - Number of sites incorrectly not detected
     fn_sites = np.intersect1d(sites_notdetected, sites_present)
     nsites_fn = len(fn_sites)
+    if debug:
+        print(f'nsites_tp {nsites_tp}: {tp_sites}')
+        print(f'nsites_fp {nsites_fp}: {fp_sites}')
+        print(f'nsites_tn {nsites_tn}: {tn_sites}')
+        print(f'nsites_fn {nsites_fn}: {fn_sites}')
 
     # nsites_accounted_for = nsites_tp + nsites_fp + nsites_tn + nsites_fn
     # if nsites_accounted_for != len(all_sites):
@@ -330,7 +358,7 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
     try:
         precision = nsites_tp / (nsites_tp + nsites_fp)
     except ZeroDivisionError:
-        precision = np.nan
+        precision = 1.0
     try:
         recall = nsites_tp / (nsites_tp + nsites_fn)
     except ZeroDivisionError:
@@ -341,6 +369,11 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
         fpr = nsites_fp / (nsites_fp + nsites_tn)
     except ZeroDivisionError:
         fpr = 0.0 # or np.nan
+
+    if debug:
+        print(f'precision {precision}')
+        print(f'recall {recall}')
+        # input()
     
     result = {
         'label':          [species],

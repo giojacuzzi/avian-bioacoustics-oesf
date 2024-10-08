@@ -12,6 +12,8 @@ if not os.path.exists('data/results/site_perf'):
 overwrite_prediction_cache = False
 overwrite_metadata_cache = False # MANGO
 
+min_site_detections = 0
+
 custom_model_stub  = 'custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0'
 out_dir = f'data/test/{custom_model_stub}'
 out_dir_pretrained = out_dir + '/pre-trained'
@@ -364,8 +366,10 @@ for model in models: # MANGO
         Tp = label_metrics['Tp'].iloc[0]
         Tf1 = label_metrics['Tf1'].iloc[0]
 
-        threshold_labels = ['0.9'] #[str(x) for x in [round(n, 2) for n in np.arange(0.5, 1.05, 0.05).tolist()]] #['Tp', 'Tf1', '0.5', '0.9', '0.95', 'max_Tp_0.5', 'max_Tp_0.9', 'max_Tp_0.95']
-        thresholds       = [0.9] #[round(n, 2) for n in np.arange(0.5, 1.05, 0.05).tolist()] #[Tp, Tf1, 0.5, 0.9, 0.95, max(Tp, 0.5), max(Tp, 0.9), max(Tp, 0.95)]
+        threshold_labels = [str(x) for x in [round(n, 2) for n in np.arange(0.5, 1.05, 0.05).tolist()]] #['Tp', 'Tf1', '0.5', '0.9', '0.95', 'max_Tp_0.5', 'max_Tp_0.9', 'max_Tp_0.95']
+        thresholds       = [round(n, 2) for n in np.arange(0.5, 1.05, 0.05).tolist()] #[Tp, Tf1, 0.5, 0.9, 0.95, max(Tp, 0.5), max(Tp, 0.9), max(Tp, 0.95)]
+        threshold_labels.extend(['Tp','Tf1'])
+        thresholds.extend([Tp,Tf1])
         print('thresholds')
         print(threshold_labels)
         print(thresholds)
@@ -377,7 +381,7 @@ for model in models: # MANGO
             threshold_value = thresholds[i]
             # print(f'Calculating site-level confusion matrix with {threshold_label} threshold {threshold}...')
 
-            species_perf_at_threshold = get_site_level_confusion_matrix(label, predictions_for_label, threshold, site_presence_absence)
+            species_perf_at_threshold = get_site_level_confusion_matrix(label, predictions_for_label, threshold, site_presence_absence, min_detections=min_site_detections)
             species_perf_at_threshold['precision'] = species_perf_at_threshold['precision'].fillna(0.0) # if precision is NaN (i.e. no TP or FP), then no positive predictions were made despite at least one presence, so precision = 0.0
             species_perf_at_threshold['model'] = model
             species_perf_at_threshold['threshold'] = threshold_label
@@ -392,10 +396,10 @@ for model in models: # MANGO
     site_level_perf = site_level_perf.reindex(sorted(site_level_perf.columns), axis=1)
     print(site_level_perf.to_string())
     if model == out_dir_pretrained:
-        fp = f'data/results/site_perf/site_perf_pretrained.csv'
+        fp = f'data/results/site_perf/pretrained/site_perf_pretrained.csv'
         site_level_perf[site_level_perf["model"] == out_dir_pretrained].to_csv(fp, index=False)
     elif model == out_dir_custom:
-        fp = f'data/results/site_perf/site_perf_{custom_model_stub}.csv'
+        fp = f'data/results/site_perf/custom/site_perf_{custom_model_stub}.csv'
         site_level_perf[site_level_perf["model"] == out_dir_custom].to_csv(fp, index=False)
     print_success(f'Saved site level perf for model {model_tag} to {fp}')
     # input()
@@ -459,7 +463,7 @@ for threshold_label in threshold_labels:
     merged = pd.concat([merged, mean_row], ignore_index=True)
 
     result = merged
-    result[result.select_dtypes(include='number').columns] = result.select_dtypes(include='number')#.round(2)
+    result[result.select_dtypes(include='number').columns] = result.select_dtypes(include='number').round(2)
     result['label'] = result['label'].str.title()
     result.insert(0, 'label', result.pop('label'))
     result = result.loc[:, ~result.columns.str.contains('model')]
