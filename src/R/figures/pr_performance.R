@@ -5,14 +5,18 @@ library(tools)
 library(ggplot2)
 library(cowplot)
 library(patchwork)
+library(stringr)
+source('src/R/figures/global.R')
 
-custom_model_stub = 'custom_S1_N100_LR0.001_BS100_HU0_LSFalse_US0_I0'
-
-path_pretrained = paste('/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/validation/custom/', custom_model_stub, '/pre-trained/threshold_perf', sep='')
-path_custom = paste('/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/validation/custom/', custom_model_stub, '/custom/threshold_perf', sep='')
+custom_model_stub = 'custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0'
+# /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/test/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom/threshold_perf
+path_pretrained = paste('/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/test/', custom_model_stub, '/pre-trained/threshold_perf', sep='')
+path_custom = paste('/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/test/', custom_model_stub, '/custom/threshold_perf', sep='')
 
 labels_to_plot = 'all'
 labels_to_plot = c('marbled murrelet', 'pacific-slope flycatcher')
+
+class_labels = read.csv('/Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/class_labels.csv')
 
 load_perf = function(path, model_tag) {
   files = list.files(path = path, pattern = "\\.csv$", full.names = TRUE)
@@ -37,38 +41,54 @@ perf_custom     = load_perf(path_custom, 'custom')
 perf_custom$f1 = 2*perf_custom$recall * perf_custom$precision/(perf_custom$recall+perf_custom$precision)
 
 perf = bind_rows(perf_pretrained, perf_custom)
-perf$label = factor(perf$label)
+# perf = perf %>% filter(!str_detect(label, paste(c(labels_to_remove, class_labels[class_labels$train == 0, 'label']), collapse = "|")))
+# TODO: Filter out species classes that were not present in the study area
+perf = perf %>% filter(!str_detect(label, paste(c(labels_to_remove), collapse = "|")))
+perf$label = factor(str_to_title(perf$label))
 perf$model = factor(perf$model, levels = c('pretrained', 'custom'))
+perf$model = recode(perf$model, "pretrained" = "Source", "custom" = "Target")
 
+# Figure: Threshold performance for all classes
 plot_threshold_pr = ggplot(perf, aes(x = threshold)) +
   geom_path(aes(y = recall, linetype = "Recall", color = model)) +
   geom_path(aes(y = precision, linetype = "Precision", color = model)) +
   geom_path(aes(y = f1, linetype = "F1", color = model)) +
-  facet_wrap(~ label, ncol = 6, scales = "free_y") +
-  scale_color_manual(values = c("custom" = "royalblue", "pretrained" = "salmon")) +
+  facet_wrap(~ label, ncol = 4, scales = "free_y") +
+  scale_color_manual(values = c("Target" = "royalblue", "Source" = "salmon")) +
   scale_linetype_manual(values = c("Recall" = "dashed", "Precision" = "solid", "F1" = "dotted")) +
-  labs(x = "Threshold", y = "Value") +
+  labs(title = "Sample level test performance", x = "Threshold", y = "Performance", color = 'Model', linetype = 'Metric') +
   theme_minimal()
 plot_threshold_pr
 
+# Figure: Precision-Recall AUC for all classes
 plot_pr = ggplot(perf, aes(x = recall, y = precision, color = model)) +
   geom_path() +
   geom_path(aes(color = model)) +
-  facet_wrap(~ label, scales = "free_y") +
-  scale_color_manual(values = c("custom" = "royalblue", "pretrained" = "salmon")) +
+  facet_wrap(~ label, ncol = 4, scales = "free_y") +
+  scale_color_manual(values = c("Target" = "royalblue", "Source" = "salmon")) +
   labs(x = "Recall", y = "Precision") +
   theme_minimal()
 plot_pr
 
 plot_histogram = ggplot(perf, aes(x = threshold)) +
-  geom_histogram(data = subset(perf, model == "pretrained"), fill = "red", alpha = 0.55, bins = 12) +
-  geom_histogram(data = subset(perf, model == "custom"), fill = "blue", alpha = 0.55, bins = 12) +
+  geom_histogram(data = subset(perf, model == "Source"), fill = "red", alpha = 0.55, bins = 12) +
+  geom_histogram(data = subset(perf, model == "Target"), fill = "blue", alpha = 0.55, bins = 12) +
   facet_wrap(~ label, scales = "free_y") +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
-  coord_cartesian(ylim = c(0, 20)) +
+  coord_cartesian(ylim = c(0, 40)) +
   labs(x = "Score Threshold", y = "Number of Detections") +
   theme_minimal()
 plot_histogram
+
+# plot_histogram = ggplot(perf, aes(x = threshold)) +
+#   geom_density(data = subset(perf, model == "Source"), fill = "red", alpha = 0.55) +
+#   geom_density(data = subset(perf, model == "Target"), fill = "blue", alpha = 0.55) +
+#   facet_wrap(~ label, scales = "free_y") +
+#   scale_y_continuous(breaks = scales::pretty_breaks(n = 5)) +
+#   coord_cartesian(ylim = c(0, 40)) +
+#   labs(x = "Score Threshold", y = "Number of Detections") +
+#   theme_minimal()
+# plot_histogram
 
 
 # library(diptest)
@@ -93,7 +113,7 @@ if (labels_to_plot == 'all') {
 
 
 # Plot specified labels independently
-for (l in labels_to_plot) {
+for (l in str_to_title(labels_to_plot)) {
   
   plots_list <- list()
   
@@ -101,7 +121,7 @@ for (l in labels_to_plot) {
   plot_threshold_pr <- ggplot(subset(perf, label == l), aes(x = threshold)) +
     geom_path(aes(y = recall, linetype = "Recall", color = model, alpha = 0.55)) +
     geom_path(aes(y = precision, linetype = "Precision", color = model, alpha = 0.55)) +
-    scale_color_manual(values = c("pretrained" = "red", "custom" = "blue")) +
+    scale_color_manual(values = c("Source" = "red", "Target" = "blue")) +
     scale_linetype_manual(values = c("Recall" = "dotted", "Precision" = "solid")) +
     scale_x_continuous(minor_breaks = NULL) +
     scale_y_continuous(minor_breaks = NULL) +
@@ -110,27 +130,41 @@ for (l in labels_to_plot) {
     ggtitle(l) +
     theme_minimal() +
     theme(legend.position = "none")
+  plot_threshold_pr
   
   # Precision-recall plot
   plot_pr = ggplot(subset(perf, label == l), aes(x = recall, y = precision, color = model)) +
     geom_path() +
     geom_path(aes(color = model)) +
     # facet_wrap(~ label, scales = "free_y") +
-    scale_color_manual(values = c("custom" = "royalblue", "pretrained" = "salmon")) +
+    scale_color_manual(values = c("Target" = "royalblue", "Source" = "salmon")) +
     labs(x = "Recall", y = "Precision") +
     coord_fixed(ratio = 1) +
     theme_minimal()
+  plot_pr
 
   # Histogram plot
   plot_histogram <- ggplot(subset(perf, label == l), aes(x = threshold)) +
-    geom_histogram(data = subset(perf, label == l & model == "pretrained"), fill = "red", alpha = 0.55, bins = 12) +
-    geom_histogram(data = subset(perf, label == l & model == "custom"), fill = "blue", alpha = 0.55, bins = 12) +
+    geom_histogram(data = subset(perf, label == l & model == "Source"), fill = "red", alpha = 0.55, bins = 12) +
+    geom_histogram(data = subset(perf, label == l & model == "Target"), fill = "blue", alpha = 0.55, bins = 12) +
     scale_x_continuous(minor_breaks = NULL) +
     scale_y_continuous(minor_breaks = NULL) +
     coord_cartesian(ylim = c(0, 10)) +
     labs(x = NULL, y = NULL) +
     theme_minimal() +
     theme(legend.position = "none", axis.text.x = element_blank())
+  plot_histogram
+  
+  # plot_density <- ggplot(subset(perf, label == l), aes(x = threshold)) +
+  #   geom_density(data = subset(perf, label == l & model == "Source"), fill = "red", alpha = 0.55, adjust = 10) +
+  #   geom_density(data = subset(perf, label == l & model == "Target"), fill = "blue", alpha = 0.55, adjust = 10) +
+  #   scale_x_continuous(minor_breaks = NULL) +
+  #   scale_y_continuous(minor_breaks = NULL) +
+  #   coord_cartesian(ylim = c(0, 10)) +
+  #   labs(x = NULL, y = NULL) +
+  #   theme_minimal() +
+  #   theme(legend.position = "none", axis.text.x = element_blank())
+  # plot_density
   
   # Combine line plot and histogram plot vertically
   combined_plot <- plot_threshold_pr + plot_pr + plot_histogram

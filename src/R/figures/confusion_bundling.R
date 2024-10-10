@@ -24,12 +24,7 @@ perf_metrics = perf_metrics[perf_metrics$model == model_to_evaluate,]
 perf_metrics$label = tolower(perf_metrics$label)
 perf_metrics$PR_AUC[is.na(perf_metrics$PR_AUC)] <- 0.5 # override missing AUC values for absent classes for visibility
 
-labels_to_remove = c(
-# excluded due to bias
-"northern goshawk", "american goldfinch", "macgillivray's warbler", "american crow", "red-tailed hawk", "yellow warbler", "sharp-shinned hawk", "bald eagle",
-# non-relevant species  
-"long-eared owl", "american three-toed woodpecker", "cassin's vireo", "western kingbird", "eastern kingbird", "dusky flycatcher", "mountain bluebird", "vesper sparrow", "american redstart", "cassin's finch", "clark's nutcracker", "pine grosbeak", "lazuli bunting", "bushtit", "ring-necked pheasant", "california quail"
-)
+source('src/R/figures/global.R')
 confusion_mtx <- confusion_mtx[, !names(confusion_mtx) %in% labels_to_remove]
 confusion_mtx <- confusion_mtx[!rownames(confusion_mtx) %in% labels_to_remove, ]
 
