@@ -396,6 +396,7 @@ def get_site_level_confusion_matrix(species, detections, threshold, site_presenc
         'fpr': [fpr],
         'precision': [round(precision,3)],
         'recall':    [round(recall,3)],
+        'sites_valid': [known_sites],
         'sites_detected': [sites_detected],
         'sites_notdetected': [sites_notdetected],
         'sites_error': [np.concatenate((fp_sites, fn_sites))]

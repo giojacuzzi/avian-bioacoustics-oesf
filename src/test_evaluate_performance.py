@@ -26,6 +26,9 @@ import shutil
 import sys
 import time
 
+if not os.path.exists('data/results/sample_perf'):
+    os.makedirs('data/results/sample_perf')
+
 if evaluation_dataset != 'validation' and evaluation_dataset != 'test':
     print_error('Invalid evaluation dataset')
     sys.exit()
@@ -471,9 +474,9 @@ if __name__ == '__main__':
         print(model_performance_metrics.to_string())
 
         if model == out_dir_pretrained:
-            fp = f"{out_dir}/metrics_pre-trained.csv"
+            fp = f"data/results/sample_perf/metrics_pre-trained.csv"
         elif model == out_dir_custom:
-            fp = f"{out_dir}/metrics_custom.csv"
+            fp = f"data/results/sample_perf/metrics_custom.csv"
         model_performance_metrics.to_csv(fp, index=False)
         print_success(f'Results saved to {fp}')
 
@@ -545,7 +548,7 @@ if __name__ == '__main__':
         delta_metrics['label'] = delta_metrics['label'].str.title()
 
         print(delta_metrics)
-        fp = f"{out_dir}/metrics_summary.csv"
+        fp = f"data/results/sample_perf/metrics_summary.csv"
         delta_metrics.to_csv(fp, index=False)
         print_success(f'Results saved to {fp}')
 

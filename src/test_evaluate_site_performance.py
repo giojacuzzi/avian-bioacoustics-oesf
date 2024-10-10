@@ -240,6 +240,7 @@ def sum_list(x):
     return int(numeric_column.sum())
 true_species_richness = site_presence_absence.apply(sum_list)
 print(true_species_richness)
+# input()
 
 def within_date_range(d, start, end):
     return start.date() <= d.date() <= end.date()
@@ -360,19 +361,29 @@ for model in models: # MANGO
         print(f'Retrieving {model_tag} predictions with metadata...')
         predictions_for_label = pd.read_parquet(f'data/cache/{model_tag}/predictions_for_label_{label}_{model_tag}.parquet')
 
+        #DEBUG
+        # print('predictions_for_label')
+        # print(predictions_for_label)
+        # input()
+
         # Pre-trained model
         # print('METRICS PRETRAINED')
         label_metrics = metrics[metrics['label'] == label]
         Tp = label_metrics['Tp'].iloc[0]
         Tf1 = label_metrics['Tf1'].iloc[0]
 
-        threshold_labels = [str(x) for x in [round(n, 2) for n in np.arange(0.5, 1.05, 0.05).tolist()]] #['Tp', 'Tf1', '0.5', '0.9', '0.95', 'max_Tp_0.5', 'max_Tp_0.9', 'max_Tp_0.95']
-        thresholds       = [round(n, 2) for n in np.arange(0.5, 1.05, 0.05).tolist()] #[Tp, Tf1, 0.5, 0.9, 0.95, max(Tp, 0.5), max(Tp, 0.9), max(Tp, 0.95)]
+        threshold_labels = [str(x) for x in [round(n, 2) for n in np.arange(0.5, 1.00, 0.05).tolist()]] #['Tp', 'Tf1', '0.5', '0.9', '0.95', 'max_Tp_0.5', 'max_Tp_0.9', 'max_Tp_0.95']
+        thresholds       = [round(n, 2) for n in np.arange(0.5, 1.00, 0.05).tolist()] #[Tp, Tf1, 0.5, 0.9, 0.95, max(Tp, 0.5), max(Tp, 0.9), max(Tp, 0.95)]
         threshold_labels.extend(['Tp','Tf1'])
         thresholds.extend([Tp,Tf1])
-        print('thresholds')
-        print(threshold_labels)
-        print(thresholds)
+
+        # DEBUG
+        # threshold_labels = ['0.9']
+        # thresholds = [0.9]
+
+        # print('thresholds')
+        # print(threshold_labels)
+        # print(thresholds)
         # input()
 
         species_perf = pd.DataFrame()
@@ -386,10 +397,21 @@ for model in models: # MANGO
             species_perf_at_threshold['model'] = model
             species_perf_at_threshold['threshold'] = threshold_label
             species_perf_at_threshold['threshold_value'] = threshold_value
+
+            #DEBUG
+            # print('species_perf_at_threshold')
+            # print(species_perf_at_threshold)
+            # input()
+
             species_perf = pd.concat([species_perf, species_perf_at_threshold], ignore_index=True)
 
         print(species_perf.to_string())
         site_level_perf = pd.concat([site_level_perf, species_perf], ignore_index=True)
+
+        # TODO: species_perf_by_stratum
+        # for each threshold
+            # for each stratum
+                # calculate the site-level confusion matrix for that stratum
 
     print(f'FINAL RESULTS {model_tag} (site level) ------------------------------------------------------------------------------------------------------')
     print('site_level_perf')
@@ -482,107 +504,107 @@ for threshold_label in threshold_labels:
 
 
 # SPECIES RICHNESS COMPARISON
-# print('SPECIES RICHNESS COMPARISON ==================================================================================================')
+print('SPECIES RICHNESS COMPARISON ==================================================================================================')
 
-# # For each threshold
-# for threshold_label in threshold_labels:
-#     print_warning(f'>> Evaluating site-level performance for {threshold_label}...')
+# For each threshold
+for threshold_label in threshold_labels:
+    print_warning(f'>> Evaluating species richness performance for {threshold_label}...')
 
-#     # For each model
-#     for model in models:
-#         print(f'Evaluating model {model}...')
+    # For each model
+    for model in models:
+        print(f'Evaluating model {model}...')
 
-#         if model == out_dir_pretrained:
-#             m = 'pretrained'
-#         elif model == out_dir_custom:
-#             m = 'custom'
-#         print(m)
+        if model == out_dir_pretrained:
+            model_tag = 'pretrained'
+        elif model == out_dir_custom:
+            model_tag = 'custom'
+        print(model_tag)
 
-#         # Get the results matching the model and the threshold, model_results
-#         model_results = site_level_perf[(site_level_perf['threshold'] == threshold_label) & (site_level_perf['model'] == model)].copy()
-#         print('model_results')
-#         print_exclude_cols = ['sites_detected', 'sites_notdetected', 'sites_error']
-#         print(model_results.drop(columns=print_exclude_cols).to_string())
-#         input()
+        # Get the results matching the model and the threshold, model_results
+        model_results = site_level_perf[(site_level_perf['threshold'] == threshold_label) & (site_level_perf['model'] == model)].copy()
+        print('model_results')
+        print_exclude_cols = ['sites_detected', 'sites_notdetected', 'sites_error']
+        print(model_results.drop(columns=print_exclude_cols).to_string())
+        # input()
 
-#         # If the model under evaluation is custom...
-#         if model == out_dir_custom:
-#             print('CUSTOM MODEL!')
-#             input()
+        # If the model under evaluation is custom...
+        if model == out_dir_custom:
             
-#             # Get the results pretrained_results matching the pre-trained model and threshold
-#             pretrained_results = site_level_perf[(site_level_perf['threshold'] == threshold_label) & (site_level_perf['model'] == out_dir_pretrained)].copy()
-#             print('pretrained_results')
-#             print(pretrained_results)
-#             input()
+            # Get the results pretrained_results matching the pre-trained model and threshold
+            pretrained_results = site_level_perf[(site_level_perf['threshold'] == threshold_label) & (site_level_perf['model'] == out_dir_pretrained)].copy()
+            print('pretrained_results')
+            print(pretrained_results)
+            # input()
 
-#             # Replace all rows in model_results with label values NOT in the trained list with the rows for those labels in pretrained_results
-#             labels_to_replace = [l for l in preexisting_labels_to_evaluate if l not in target_labels_to_evaluate]
-#             labels_to_replace = [l.split('_')[1].lower() for l in labels_to_replace]
-#             print('labels_to_replace')
-#             print(labels_to_replace)
-#             pretrained_results = pretrained_results[pretrained_results['label'].isin(labels_to_replace)]
-#             print('pretrained_results')
-#             print(pretrained_results)
-#             model_results = model_results[~model_results['label'].isin(labels_to_replace)]
-#             print('model_results')
-#             print(model_results)
-#             model_results = pd.concat([model_results, pretrained_results], ignore_index=True)
-#             print('combined')
-#             print(model_results)
-#             input()
+            # Replace all rows in model_results with label values NOT in the trained list with the rows for those labels in pretrained_results
+            preexisting_untrained_labels = [l for l in preexisting_labels_to_evaluate if l not in target_labels_to_evaluate]
+            preexisting_untrained_labels = [l.split('_')[1].lower() for l in preexisting_untrained_labels]
+            print('preexisting_untrained_labels')
+            print(preexisting_untrained_labels)
+            pretrained_results = pretrained_results[pretrained_results['label'].isin(preexisting_untrained_labels)]
+            print('pretrained_results')
+            print(pretrained_results)
+            model_results = model_results[~model_results['label'].isin(preexisting_untrained_labels)]
+            print('model_results')
+            print(model_results)
+            model_results = pd.concat([model_results, pretrained_results], ignore_index=True)
+            print('combined')
+            print(model_results)
+            # input()
         
-#         # Calculate stats and store for later, compute stat deltas between models for each threshold
-#         print('Site species counts:') # Species richness comparison
-#         df_exploded = model_results.explode('sites_detected') # make one row per site-species detection
-#         site_species_counts = df_exploded.groupby('sites_detected')['label'].count() # get count of species (i.e. labels) for each site
-#         site_species_counts = site_species_counts.reset_index(name='species_count')
+        # Calculate stats and store for later, compute stat deltas between models for each threshold
+        print('Site species counts:') # Species richness comparison
+        df_exploded = model_results.explode('sites_detected') # make one row per site-species detection
+        site_species_counts = df_exploded.groupby('sites_detected')['label'].count() # get count of species (i.e. labels) for each site
+        site_species_counts = site_species_counts.reset_index(name='species_count')
 
-#         site_species_counts['true_species_richness'] = site_species_counts['sites_detected'].map(true_species_richness)
-#         site_species_counts['delta'] = site_species_counts['species_count'] - site_species_counts['true_species_richness']
-#         site_species_counts['delta_pcnt'] = (site_species_counts['species_count'] / site_species_counts['true_species_richness']) * 100.0
+        site_species_counts['true_species_richness'] = site_species_counts['sites_detected'].map(true_species_richness)
+        site_species_counts['sr_delta'] = site_species_counts['species_count'] - site_species_counts['true_species_richness']
+        site_species_counts['sr_delta_pcnt'] = (site_species_counts['species_count'] / site_species_counts['true_species_richness']) * 100.0
 
-#         # TODO: add error_pcnt
+        # TODO: add error_pcnt
 
-#         # Display the updated DataFrame
-#         print(site_species_counts)
-#         input()
+        # Display the updated DataFrame
+        print(site_species_counts)
+        fp = f'data/results/site_perf/{model_tag}/speciesrichness_{model_tag}_{threshold_label}.csv'
+        site_species_counts.to_csv(fp)
+        print_success(f'Saved site species richness counts to {fp}')
 
-#         print(f"Total average site precision: {model_results['precision'].mean()}")
-#         print(f"Total average site recall: {model_results['recall'].mean()}")
-#         print(f"Total average site error percentage: {model_results['error_pcnt'].mean()}")
-#         print(f"Total average species richness percentage: {site_species_counts['delta_pcnt'].mean()}")
-#         mean_site_perf_at_threshold = pd.DataFrame({
-#             "precision":  [model_results['precision'].mean()], # total average site precision
-#             "recall":     [model_results['recall'].mean()], # total average site recall
-#             "error_pcnt": [model_results['error_pcnt'].mean()], # total average site error %
-#             "delta_pcnt": [site_species_counts['delta_pcnt'].mean()], # total average species richness % of truth
-#             "threshold":  [threshold_label],
-#             "model":      [model]
-#         })
-#         print(mean_site_perf_at_threshold)
-#         site_level_perf_mean = pd.concat([site_level_perf_mean, mean_site_perf_at_threshold], ignore_index=True)
-#         input()
+        print(f"Total average species richness percentage: {site_species_counts['sr_delta_pcnt'].mean()}")
+        mean_site_perf_at_threshold = pd.DataFrame({
+            "sr_delta": [site_species_counts['sr_delta'].mean()],
+            "sr_delta_pcnt": [site_species_counts['sr_delta_pcnt'].mean()], # total average species richness % of truth
+            "threshold":  [threshold_label],
+            "model":      [model]
+        })
+        print(mean_site_perf_at_threshold)
+        site_level_perf_mean = pd.concat([site_level_perf_mean, mean_site_perf_at_threshold], ignore_index=True)
+        # input()
 
-#         # Determine effect of habitat type on performance
-#         print('Average species richness percentage Δerence by strata:')
-#         merged_df = pd.merge(site_key, site_species_counts, left_on='site', right_on='sites_detected', how='inner')
-#         print('merged_df')
-#         print(merged_df)
-#         average_percentage_Δ_by_stratum = merged_df.groupby('stratum')['delta_pcnt'].mean()
-#         print('Species richness Δerence:')
-#         print(average_percentage_Δ_by_stratum)
-#         # TODO:
-#         # print('Site error Δerence:')
-#         # average_error_Δ_by_stratum = merged_df.groupby('stratum')['error_pcnt'].mean()
-#         # print(average_error_Δ_by_stratum)
-#         input()
+        # Determine effect of habitat type on performance
+        print('Average species richness percentage difference by strata:')
+        merged_df = pd.merge(site_key, site_species_counts, left_on='site', right_on='sites_detected', how='inner')
+        # print('merged_df')
+        # print(merged_df)
+        average_percentage_Δ_by_stratum = merged_df.groupby('stratum')['sr_delta_pcnt'].mean()
+        # print('Species richness percentage difference:')
+        print('average SR percent difference by stratum:')
+        print(average_percentage_Δ_by_stratum)
+        # TODO:
+        # print('Site error Δerence:')
+        # average_error_Δ_by_stratum = merged_df.groupby('stratum')['error_pcnt'].mean()
+        # print('average error by stratum:')
+        # print(average_error_Δ_by_stratum)
+        # input()
 
-#         # TODO: Determine effect of vocal activity on site-level performance vs. detection-level performance (do very frequent vocalizers perform better at the site level?)
-#         # - Correlation between detection-level performance and site-level performance
-#         # - Correlation between vocal activity (number of true examples in the test dataset) and site-level performance
+        # TODO: Determine effect of vocal activity on site-level performance vs. detection-level performance (do very frequent vocalizers perform better at the site level?)
+        # - Correlation between detection-level performance and site-level performance
+        # - Correlation between vocal activity (number of true examples in the test dataset) and site-level performance
 
-#         # TODO: Compare number of detections per label between models using an optimized threshold
+        # TODO: Compare number of detections per label between models using an optimized threshold
 
-# print('FINAL MEAN SITE LEVEL PERF:')
-# print_success(site_level_perf_mean.to_string())
+print('FINAL MEAN SITE LEVEL SPECIES RICHNESS ESTIMATE:')
+print(site_level_perf_mean.to_string())
+fp = f'data/results/site_perf/speciesrichness_summary.csv'
+site_level_perf_mean.to_csv(fp)
+print_success(f'Saved summary species richness metrics to {fp}')
