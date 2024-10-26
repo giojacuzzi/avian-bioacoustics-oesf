@@ -30,20 +30,17 @@ gsutil -m cp -r gs://gresearch/sound_separation/bird_mixit_model_checkpoints dat
 ```
 
 ## Contents
-- `analyses` – ecological analyses and models (e.g. species accumulation curves)
-- `annotation` – extracting samples for annotation and clustering
-- `classification` – run classifier on audio/directory, evaluate performance
 - `data` – data associated with the study area and project
+- `src` – all source code for data annotation, processing, and analysis
+    - `annotation` – sample annotation interface
+    - `classification` – internal wrapper code for `BirdNET-Analyzer` and `birdnetlib`
+    - `R` – figures and ecological analysis in R
+    - `submodules` – repository dependencies
+    - `utils` – logging and helper modules
+
+
+## Audio classification with BirdNET and/or custom model
+Run `src/analyze_directory.py` or `src/analyze_file.py` to process model predictions for a given directory or file, respectively.
 
 ## Training and performance evaluation pipeline
-1. Manually annotate training examples with Raven Pro
-2. Run `training_extract_audio_examples.py` to extract audio examples for training
-    - Manually add any additonal class examples (e.g. "Background") to the `audio` subdirectory 
-3. Run `training_assemble_datasets.py` to assemble datasets for training
-4. Train custom classifiers with TODO
-```
-cd src/submodules/BirdNET-Analyzer/
-python3 train_custom.py --i /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/models/custom/custom_S1_N2_A0/training_files.csv --o /Users/giojacuzzi/repos/avian-bioacoustics-oesf/data/models/custom/custom_S1_N2_A0/custom_S1_N2_A0.tflite --no-autotune
-```
-4. Return to top directory with `cd ../../../`, then run `test_compare_validation_performance.py`
-
+Under development.
