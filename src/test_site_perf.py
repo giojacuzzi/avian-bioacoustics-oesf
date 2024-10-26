@@ -6,19 +6,19 @@ from utils.files import *
 from classification.performance import *
 import sys
 
-if not os.path.exists('data/results/site_perf'):
-    os.makedirs('data/results/site_perf')
-
 overwrite_prediction_cache = False
 overwrite_metadata_cache = False # MANGO
 
 min_site_detections = 0
 
-custom_model_stub  = 'custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0'
+custom_model_stub  = 'custom_S1_N2_LR0.001_BS2_HU0_LSFalse_US0_I0'
 out_dir = f'data/test/{custom_model_stub}'
 out_dir_pretrained = out_dir + '/pre-trained'
 out_dir_custom     = out_dir + '/custom'
 models = [out_dir_pretrained, out_dir_custom]
+
+if not os.path.exists(f'data/results/{custom_model_stub}/site_perf'):
+    os.makedirs(f'data/results/{custom_model_stub}/site_perf')
 
 class_labels_csv_path = os.path.abspath(f'data/class_labels.csv')
 class_labels = pd.read_csv(class_labels_csv_path)
@@ -30,7 +30,7 @@ print(f'{len(preexisting_labels_to_evaluate)} preexisting labels to evaluate:')
 print(preexisting_labels_to_evaluate)
 # input()
 
-perf_metrics_and_thresholds = pd.read_csv('data/cache/test_evaluate_performance_performance_metrics.csv')
+perf_metrics_and_thresholds = pd.read_csv(f'data/cache/{custom_model_stub}/test_evaluate_performance_performance_metrics.csv')
 print(perf_metrics_and_thresholds.to_string())
 # input()
 
@@ -60,9 +60,9 @@ if overwrite_prediction_cache:
         print(f'Loading {model} prediction scores for test examples...')
 
         if model == out_dir_pretrained:
-            score_dir_root = f'data/test/raw_predictions/pretrained'
+            score_dir_root = f'data/test/{custom_model_stub}/raw_predictions/pretrained'
         elif model == out_dir_custom:
-            score_dir_root = f'data/test/raw_predictions/{custom_model_stub}'
+            score_dir_root = f'data/test/{custom_model_stub}/raw_predictions/{custom_model_stub}'
 
         score_files = []
         score_files.extend(find_files(score_dir_root, '.csv')) 
@@ -97,16 +97,16 @@ if overwrite_prediction_cache:
         predictions['label_predicted'] = predictions['label_predicted'].str.lower()
 
         if model == out_dir_pretrained:
-            predictions.to_parquet('data/cache/pretrained/predictions_pretrained.parquet')
+            predictions.to_parquet(f'data/cache/{custom_model_stub}/pretrained/predictions_pretrained.parquet')
         elif model == out_dir_custom:
-            predictions.to_parquet('data/cache/custom/predictions_custom.parquet')
+            predictions.to_parquet(f'data/cache/{custom_model_stub}/custom/predictions_custom.parquet')
 
 print('Loading custom predictions from cache...')
-predictions_custom = pd.read_parquet('data/cache/custom/predictions_custom.parquet')
+predictions_custom = pd.read_parquet(f'data/cache/{custom_model_stub}/custom/predictions_custom.parquet')
 print(predictions_custom.head())
 print(f'Loaded {len(predictions_custom)} predictions')
 print('Loading pretrained predictions from cache...')
-predictions_pretrained = pd.read_parquet('data/cache/pretrained/predictions_pretrained.parquet')
+predictions_pretrained = pd.read_parquet(f'data/cache/{custom_model_stub}/pretrained/predictions_pretrained.parquet')
 predictions_pretrained = predictions_pretrained[predictions_pretrained['label_predicted'].isin(class_labels['label'].to_list())] # remove predictions for irrelevant labels
 print(predictions_pretrained.head())
 print(f'Loaded {len(predictions_pretrained)} predictions')
@@ -191,14 +191,14 @@ if overwrite_prediction_cache:
             # print(f'confidence_ensemble {confidence_ensemble}')
             predictions_ensemble.loc[idx, 'confidence'] = confidence_ensemble
             # input()
-    predictions_ensemble.to_parquet('data/cache/ensemble/predictions_ensemble.parquet')
+    predictions_ensemble.to_parquet(f'data/cache/{custom_model_stub}/ensemble/predictions_ensemble.parquet')
 
 # print(predictions_ensemble)
 # print('AGAINST')
 # print(predictions_custom)
 
 print('Loading ensemble predictions from cache...')
-predictions_ensemble = pd.read_parquet('data/cache/ensemble/predictions_ensemble.parquet')
+predictions_ensemble = pd.read_parquet(f'data/cache/{custom_model_stub}/ensemble/predictions_ensemble.parquet')
 print(predictions_ensemble.head())
 print(f'Loaded {len(predictions_ensemble)} predictions')
 # sys.exit()
@@ -335,7 +335,7 @@ for model in models: # MANGO
                 #     print(f"got site {site} for serialno {serialno} and date {date}")
                 predictions_for_label.at[i, 'site'] = site
 
-            predictions_for_label.to_parquet(f'data/cache/{model_tag}/predictions_for_label_{label}_{model_tag}.parquet')
+            predictions_for_label.to_parquet(f'data/cache/{custom_model_stub}/{model_tag}/predictions_for_label_{label}_{model_tag}.parquet')
             # print('PREDICTIONS')
             # print(predictions_for_label)
             # print('SITES')
@@ -359,7 +359,7 @@ for model in models: # MANGO
 
         # load predictions_for_label for this label from cache
         print(f'Retrieving {model_tag} predictions with metadata...')
-        predictions_for_label = pd.read_parquet(f'data/cache/{model_tag}/predictions_for_label_{label}_{model_tag}.parquet')
+        predictions_for_label = pd.read_parquet(f'data/cache/{custom_model_stub}/{model_tag}/predictions_for_label_{label}_{model_tag}.parquet')
 
         #DEBUG
         # print('predictions_for_label')

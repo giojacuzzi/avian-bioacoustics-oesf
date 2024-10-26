@@ -8,7 +8,7 @@
 # CHANGE ME ##############################################################################
 overwrite = False
 evaluation_dataset = 'test' # 'validation' or 'test'
-custom_model_stub  = 'custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0' # e.g. 'custom_S1_N100_LR0.001_BS10_HU0_LSFalse_US0_I0' or None to only evaluate pre-trained model
+custom_model_stub  = 'custom_S1_N5_LR0.001_BS5_HU0_LSFalse_US0_I1' # e.g. 'custom_S1_N100_LR0.001_BS10_HU0_LSFalse_US0_I0' or None to only evaluate pre-trained model
 ##########################################################################################
 
 from classification import process_files
@@ -26,8 +26,8 @@ import shutil
 import sys
 import time
 
-if not os.path.exists('data/results/sample_perf'):
-    os.makedirs('data/results/sample_perf')
+if not os.path.exists(f'data/results/{custom_model_stub}/sample_perf'):
+    os.makedirs(f'data/results/{custom_model_stub}/sample_perf')
 
 if evaluation_dataset != 'validation' and evaluation_dataset != 'test':
     print_error('Invalid evaluation dataset')
@@ -474,9 +474,9 @@ if __name__ == '__main__':
         print(model_performance_metrics.to_string())
 
         if model == out_dir_pretrained:
-            fp = f"data/results/sample_perf/metrics_pre-trained.csv"
+            fp = f"data/results/{custom_model_stub}/sample_perf/metrics_pre-trained.csv"
         elif model == out_dir_custom:
-            fp = f"data/results/sample_perf/metrics_custom.csv"
+            fp = f"data/results/{custom_model_stub}/sample_perf/metrics_custom.csv"
         model_performance_metrics.to_csv(fp, index=False)
         print_success(f'Results saved to {fp}')
 
@@ -496,7 +496,9 @@ if __name__ == '__main__':
     performance_metrics.sort_values(by=['PR_AUC', 'label', 'model'], inplace=True)
     if not debug:
         performance_metrics.loc[performance_metrics['N_pos'] == 0, ['PR_AUC', 'AP', 'ROC_AUC', 'f1_max']] = np.nan
-    fp = 'data/cache/test_evaluate_performance_performance_metrics.csv'
+    fp = f'data/cache/{custom_model_stub}/test_evaluate_performance_performance_metrics.csv'
+    if not os.path.exists(f'data/cache/{custom_model_stub}'):
+        os.makedirs(f'data/cache/{custom_model_stub}')
     performance_metrics.to_csv(fp, index=False)
     print_success(f'Saved performance metrics to {fp}')
 
@@ -508,7 +510,9 @@ if __name__ == '__main__':
         performance_metrics_out = performance_metrics_out.sort_values(by=['model', 'PR_AUC'], ascending=False).reset_index(drop=True)
 
     print(performance_metrics_out.to_string())
-    fp = 'data/results/performance_metrics_out.csv'
+    fp =f'data/results/{custom_model_stub}/performance_metrics_out.csv'
+    if not os.path.exists(f'data/results/{custom_model_stub}'):
+        os.makedirs(f'data/results/{custom_model_stub}')
     performance_metrics_out.to_csv(fp, index=False)
     print_success(f'Saved combined performance results to {fp}')
 
@@ -548,7 +552,7 @@ if __name__ == '__main__':
         delta_metrics['label'] = delta_metrics['label'].str.title()
 
         print(delta_metrics)
-        fp = f"data/results/sample_perf/metrics_summary.csv"
+        fp = f"data/results/{custom_model_stub}/sample_perf/metrics_summary.csv"
         delta_metrics.to_csv(fp, index=False)
         print_success(f'Results saved to {fp}')
 

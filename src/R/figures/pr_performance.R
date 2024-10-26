@@ -117,6 +117,9 @@ for (l in str_to_title(labels_to_plot)) {
   
   plots_list <- list()
   
+  l = "Golden-Crowned Kinglet"
+  l = "Marbled Murrelet"
+  
   # Threshold precision-recall plot
   plot_threshold_pr <- ggplot(subset(perf, label == l), aes(x = threshold)) +
     geom_path(aes(y = recall, linetype = "Recall", color = model, alpha = 0.55)) +
@@ -132,6 +135,8 @@ for (l in str_to_title(labels_to_plot)) {
     theme(legend.position = "none")
   plot_threshold_pr
   
+  ggsave(file=paste0("data/figures/", l, "_", format(Sys.time(), "%H%M%S"), ".svg"), plot=plot_threshold_pr + theme(legend.position="none"), width=4, height=4)
+  
   # Precision-recall plot
   plot_pr = ggplot(subset(perf, label == l), aes(x = recall, y = precision, color = model)) +
     geom_path() +
@@ -142,6 +147,8 @@ for (l in str_to_title(labels_to_plot)) {
     coord_fixed(ratio = 1) +
     theme_minimal()
   plot_pr
+  
+  ggsave(file=paste0("data/figures/", l, "_", format(Sys.time(), "%H%M%S"), "_auc.svg"), plot=plot_pr + theme(legend.position="none"), width=4, height=4)
 
   # Histogram plot
   plot_histogram <- ggplot(subset(perf, label == l), aes(x = threshold)) +
