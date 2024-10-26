@@ -6,21 +6,22 @@ import shutil
 from utils.log import *
 
 # Input and output config
-in_dir      = '/Volumes/gioj_t7_1/OESF/2020/'
-root_dir    = '/Volumes/gioj_t7_1/OESF' # Directory structure below root_dir will be retrained in out_dir
-out_dir     = '/Users/giojacuzzi/Downloads/MANGO_TARGET'
+in_dir      = '/Users/giojacuzzi/Desktop/audio_test_files/chorus'
+root_dir    = '/Users/giojacuzzi/Desktop' # Directory structure below root_dir will be retrained in out_dir
+out_dir     = '/Users/giojacuzzi/Downloads/analyze_directory_output'
 in_filetype = '.wav'
 sort_by     = 'start_date' # (e.g. start_date, confidence)
 ascending   = True
 overwrite   = False
 
 # Analyzer config
-use_custom_model = True # If False, will use pre-trained model
+use_custom_model = False # If False, will use pre-trained BirdNET model
 n_processes      = 7     # Number of cores used by the processing pool (<= number of physical cores available on your computer)
 min_confidence   = 0.0
 apply_sigmoid    = False
 num_separation   = 1
 cleanup          = True
+species_list     = 'src/classification/species_list/species_list_OESF.txt' # If '/Users/giojacuzzi/repos/avian-bioacoustics-oesf/.venv/lib/python3.10/site-packages/birdnetlib/models/analyzer/BirdNET_GLOBAL_6K_V2.4_Labels.txt', will use the default BirdNET species list
 
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
@@ -30,9 +31,9 @@ if __name__ == '__main__':
     if use_custom_model: # Target (custom) model
         analyzer_filepath = 'data/models/custom/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0.tflite'
         labels_filepath   = 'data/models/custom/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0_Labels.txt'
-    else: # Source (pre-trained) model
+    else: # Source (pre-trained BirdNET) model
         analyzer_filepath = None
-        labels_filepath   = 'src/classification/species_list/species_list_OESF.txt'
+        labels_filepath   = species_list
 
     # Normalize file paths to support both mac and windows
     in_dir   = os.path.normpath(in_dir)

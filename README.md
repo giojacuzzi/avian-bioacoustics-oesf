@@ -1,5 +1,5 @@
 # avian-bioacoustics-oesf
- Avian biodiversity and vocalization behavior in Washington's Olympic Experimental State Forest
+Few-shot transfer learning with BirdNET to enable monitoring of avian biodiversity and vocalization behavior in Washington's Olympic Experimental State Forest
 
 ## Recommendations
 - Visual Studio Code with Microsoft extensions [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python), [Python Debugger](https://marketplace.visualstudio.com/items?itemName=ms-python.debugpy), and [Jupyter](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter)
