@@ -502,18 +502,46 @@ if __name__ == '__main__':
     performance_metrics.to_csv(fp, index=False)
     print_success(f'Saved performance metrics to {fp}')
 
-    performance_metrics_out = performance_metrics
-    performance_metrics_out[performance_metrics_out.select_dtypes(include='number').columns] = performance_metrics_out.select_dtypes(include='number').round(2)
-    if not debug:
-        performance_metrics_out['label'] = performance_metrics_out['label'].str.title()
-        performance_metrics_out.loc[performance_metrics_out['N_pos'] == 0, ['PR_AUC', 'AP', 'ROC_AUC', 'f1_max']] = np.nan
-        performance_metrics_out = performance_metrics_out.sort_values(by=['model', 'PR_AUC'], ascending=False).reset_index(drop=True)
+    # performance_metrics_out = performance_metrics
+    # performance_metrics_out[performance_metrics_out.select_dtypes(include='number').columns] = performance_metrics_out.select_dtypes(include='number').round(2)
+    # if not debug:
+    #     performance_metrics_out['label'] = performance_metrics_out['label'].str.title()
+    #     performance_metrics_out.loc[performance_metrics_out['N_pos'] == 0, ['PR_AUC', 'AP', 'ROC_AUC', 'f1_max']] = np.nan
+    #     performance_metrics_out = performance_metrics_out.sort_values(by=['model', 'PR_AUC'], ascending=False).reset_index(drop=True)
 
-    print(performance_metrics_out.to_string())
-    fp =f'data/results/{custom_model_stub}/performance_metrics_out.csv'
-    if not os.path.exists(f'data/results/{custom_model_stub}'):
-        os.makedirs(f'data/results/{custom_model_stub}')
-    performance_metrics_out.to_csv(fp, index=False)
+    # print(performance_metrics_out.to_string())
+    # fp =f'data/results/{custom_model_stub}/performance_metrics_out.csv'
+    # if not os.path.exists(f'data/results/{custom_model_stub}'):
+    #     os.makedirs(f'data/results/{custom_model_stub}')
+    # performance_metrics_out.to_csv(fp, index=False)
+    # print_success(f'Saved {fp}')
+
+    file_source_perf = f'data/results/{custom_model_stub}/sample_perf/metrics_pre-trained.csv'
+    file_target_perf = f'data/results/{custom_model_stub}/sample_perf/metrics_custom.csv'
+
+    perf_source = pd.read_csv(file_source_perf)
+    perf_source['label'] = perf_source['label'].str.lower()
+    print(file_source_perf)
+    # print(perf_source.to_string())
+
+    perf_target = pd.read_csv(file_target_perf)
+    perf_target['label'] = perf_target['label'].str.lower()
+    print(file_target_perf)
+    # print(perf_target.to_string())
+
+    perf_combined = pd.merge(
+        perf_source[['label', 'PR_AUC']].rename(columns={'PR_AUC': 'PR_AUC_source'}),
+        perf_target[['label', 'PR_AUC']].rename(columns={'PR_AUC': 'PR_AUC_target'}),
+        on='label', how='outer'
+    )
+    perf_combined['PR_AUC_max'] = perf_combined[['PR_AUC_source', 'PR_AUC_target']].max(axis=1)
+    perf_combined['PR_AUC_max_model'] = np.where(
+        perf_combined['PR_AUC_source'] == perf_combined['PR_AUC_max'], 'source',
+        np.where(perf_combined['PR_AUC_target'] == perf_combined['PR_AUC_max'], 'target', 'source')
+    )
+
+    fp = f'data/results/{custom_model_stub}/sample_perf/metrics_combined.csv'
+    perf_combined.to_csv(fp, index=False)
     print_success(f'Saved combined performance results to {fp}')
 
     # Calculate metric deltas between custom and pre-trained
@@ -554,7 +582,7 @@ if __name__ == '__main__':
         print(delta_metrics)
         fp = f"data/results/{custom_model_stub}/sample_perf/metrics_summary.csv"
         delta_metrics.to_csv(fp, index=False)
-        print_success(f'Results saved to {fp}')
+        print_success(f'Summary results saved to {fp}')
 
     # TODO: For each label in 'predictions', perform Hartigan's dip test for multimodality with raw logit scores
     # If p_value < 0.05 we reject the null hypothesis of unimodality and conclude the data for that label is likely multimodal

@@ -434,6 +434,36 @@ print(f'pretrained N={len(site_level_perf[site_level_perf["model"] == out_dir_pr
 print(f'custom N={len(site_level_perf[site_level_perf["model"] == out_dir_custom])/len(threshold_labels)}')
 # input()
 
+# TODO: Combine
+threshold = str(0.9)
+
+file_source_perf = f'data/results/{custom_model_stub}/site_perf/pretrained/site_perf_pretrained.csv' 
+file_target_perf = f'data/results/{custom_model_stub}/site_perf/custom/site_perf_{custom_model_stub}.csv'
+
+perf_source = pd.read_csv(file_source_perf)
+perf_source['label'] = perf_source['label'].str.lower()
+perf_source = perf_source[perf_source['threshold'] == threshold]
+
+perf_target = pd.read_csv(file_target_perf)
+perf_target['label'] = perf_target['label'].str.lower()
+perf_target = perf_target[perf_target['threshold'] == threshold]
+perf_target = perf_target[perf_target['present'] > 0]
+
+perf_combined = pd.merge(
+    perf_source[['label', 'correct_pcnt']].rename(columns={'correct_pcnt': f'accuracy_source_{threshold}'}),
+    perf_target[['label', 'correct_pcnt']].rename(columns={'correct_pcnt': f'accuracy_target_{threshold}'}),
+    on='label', how='outer'
+)
+perf_combined[f'accuracy_max_{threshold}'] = perf_combined[[f'accuracy_source_{threshold}', f'accuracy_target_{threshold}']].max(axis=1)
+perf_combined[f'accuracy_max_{threshold}_model'] = np.where(
+    perf_combined[f'accuracy_source_{threshold}'] == perf_combined[f'accuracy_max_{threshold}'], 'source',
+    np.where(perf_combined[f'accuracy_target_{threshold}'] == perf_combined[f'accuracy_max_{threshold}'], 'target', 'source')
+)
+print(perf_combined.to_string())
+
+perf_combined.to_csv(f'data/results/{custom_model_stub}/site_perf/site_metrics_combined.csv', index=False)
+###
+
 print('SITE LEVEL PERF COMPARISON ==================================================================================================')
 
 labels_to_compare = [l for l in target_labels_to_evaluate if l in preexisting_labels_to_evaluate]
