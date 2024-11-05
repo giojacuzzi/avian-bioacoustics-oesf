@@ -8,7 +8,7 @@
 # CHANGE ME ##############################################################################
 overwrite = False
 evaluation_dataset = 'test' # 'validation' or 'test'
-custom_model_stub  = 'custom_S1_N5_LR0.001_BS5_HU0_LSFalse_US0_I1' # e.g. 'custom_S1_N100_LR0.001_BS10_HU0_LSFalse_US0_I0' or None to only evaluate pre-trained model
+custom_model_stub  = 'custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0' # e.g. 'custom_S1_N100_LR0.001_BS10_HU0_LSFalse_US0_I0' or None to only evaluate pre-trained model
 ##########################################################################################
 
 from classification import process_files
@@ -56,7 +56,7 @@ debug = False
 debug_threshold = 1.0
 if debug:
     debug_threshold = 0.0
-    debug_label = "Biotic_Biotic Anuran" # e.g. "Biotic_Biotic Anuran"
+    debug_label = "Dendragapus fuliginosus_Sooty Grouse" # e.g. "Biotic_Biotic Anuran"
     preexisting_labels_to_evaluate = [debug_label]
     target_labels_to_evaluate = [debug_label]
     plot_precision_recall = True
@@ -558,57 +558,90 @@ if __name__ == '__main__':
 
     # TODO: For each label in 'predictions', perform Hartigan's dip test for multimodality with raw logit scores
     # If p_value < 0.05 we reject the null hypothesis of unimodality and conclude the data for that label is likely multimodal
-    if False:
+    if True:
         from diptest import diptest
-        for label in [label.split('_')[1].lower() for label in preexisting_labels_to_evaluate]:
-            print(f'Performing dip test for {label}...')
-            print('PRETRAINED')
-            pretrained_scores = raw_predictions_pretrained[raw_predictions_pretrained['label_predicted'] == label]
-            pretrained_dipstat, pretrained_p_value = diptest(pretrained_scores['logit'])
-            print("Dip statistic:", pretrained_dipstat)
-            print("P-value:", pretrained_p_value)
+        # for label in [label.split('_')[1].lower() for label in preexisting_labels_to_evaluate]:
+        #     print(f'Performing dip test for {label}...')
+        #     print('PRETRAINED')
+        #     pretrained_scores = raw_predictions_pretrained[raw_predictions_pretrained['label_predicted'] == label]
+        #     pretrained_dipstat, pretrained_p_value = diptest(pretrained_scores['logit'])
+        #     print("Dip statistic:", pretrained_dipstat)
+        #     print("P-value:", pretrained_p_value)
 
-            print('CUSTOM')
-            custom_scores = raw_predictions_custom[raw_predictions_custom['label_predicted'] == label]
-            custom_dipstat, custom_p_value = diptest(custom_scores['logit'])
-            print("Dip statistic:", custom_dipstat)
-            print("P-value:", custom_p_value)
+        #     print('CUSTOM')
+        #     custom_scores = raw_predictions_custom[raw_predictions_custom['label_predicted'] == label]
+        #     custom_dipstat, custom_p_value = diptest(custom_scores['logit'])
+        #     print("Dip statistic:", custom_dipstat)
+        #     print("P-value:", custom_p_value)
+
+        #     if plot_score_distributions:
+        #         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
+        #         fig.suptitle(label)
+        #         ax1.hist(pretrained_scores['confidence'], bins=20, color='red', alpha=0.5)
+        #         ax1.hist(custom_scores['confidence'], bins=20, color='blue', alpha=0.5)
+        #         ax1.set_ylim(0, 25)
+        #         ax1.set_title('Detection Scores')
+        #         ax2.hist(pretrained_scores['logit'], bins=50, color='red', alpha=0.5)
+        #         ax2.hist(custom_scores['logit'], bins=50, color='blue', alpha=0.5)
+        #         ax2.set_xlim(-16, 16)
+        #         ax2.set_title('Logit Scores')
+        #         plt.tight_layout()
+        #         plt.show()
+        #         input()
+        import seaborn as sns
+
+        # TODO: Sample present and absent examples equally to compare distributions
+        for label in [label.split('_')[1].lower() for label in preexisting_labels_to_evaluate]:
+            num_rows_present = raw_predictions_custom[raw_predictions_custom['label_truth'] == label].shape[0]
+            df_present = raw_predictions_custom[raw_predictions_custom['label_truth'] == label]#.sample(n=num_rows_present, random_state=1)
+            df_absent = raw_predictions_custom[raw_predictions_custom['label_truth'] != label]#.sample(n=num_rows_present, random_state=1)
+            custom_sampled_dipstat, custom_sampled_p_value = diptest(df_absent['logit'] + df_present['logit'])
+            print("Dip statistic:", custom_sampled_dipstat)
+            print("P-value:", custom_sampled_p_value)
 
             if plot_score_distributions:
+                df_present = raw_predictions_custom[raw_predictions_custom['label_truth'] == label]#.sample(n=num_rows_present, random_state=1)
+                df_absent = raw_predictions_custom[raw_predictions_custom['label_truth'] != label]#.sample(n=num_rows_present, random_state=1)
                 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
                 fig.suptitle(label)
-                ax1.hist(pretrained_scores['confidence'], bins=20, color='red', alpha=0.5)
-                ax1.hist(custom_scores['confidence'], bins=20, color='blue', alpha=0.5)
+                ax1.hist(df_absent['confidence'], bins=20, color='orange', alpha=0.5)
+                ax1.hist(df_present['confidence'], bins=20, color='green', alpha=0.5)
                 ax1.set_ylim(0, 25)
-                ax1.set_title('Detection Scores')
-                ax2.hist(pretrained_scores['logit'], bins=50, color='red', alpha=0.5)
-                ax2.hist(custom_scores['logit'], bins=50, color='blue', alpha=0.5)
+                ax1.set_title('Custom detection scores histogram')
+                ax2.hist(df_absent['logit'], bins=20, color='orange', alpha=0.5)
+                ax2.hist(df_present['logit'], bins=20, color='green', alpha=0.5)
                 ax2.set_xlim(-16, 16)
                 ax2.set_title('Logit Scores')
                 plt.tight_layout()
                 plt.show()
 
-        # # TODO: Sample present and absent examples equally to compare distributions
-        # num_rows_present = raw_predictions_custom[raw_predictions_custom['label_truth'] == label].shape[0]
-        # df_present = raw_predictions_custom[raw_predictions_custom['label_truth'] == label].sample(n=num_rows_present, random_state=1)
-        # df_absent = raw_predictions_custom[raw_predictions_custom['label_truth'] != label].sample(n=num_rows_present, random_state=1)
-        # custom_sampled_dipstat, custom_sampled_p_value = diptest(df_absent['logit'] + df_present['logit'])
-        # print("Dip statistic:", custom_sampled_dipstat)
-        # print("P-value:", custom_sampled_p_value)
+                df_present = raw_predictions_pretrained[raw_predictions_pretrained['label_truth'] == label]#.sample(n=num_rows_present, random_state=1)
+                df_absent = raw_predictions_pretrained[raw_predictions_pretrained['label_truth'] != label]#.sample(n=num_rows_present, random_state=1)
+                fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
+                fig.suptitle(label)
+                ax1.hist(df_absent['confidence'], bins=20, color='orange', alpha=0.5)
+                ax1.hist(df_present['confidence'], bins=20, color='green', alpha=0.5)
+                ax1.set_ylim(0, 25)
+                ax1.set_title('Pretrained detection scores histogram')
+                ax2.hist(df_absent['logit'], bins=20, color='orange', alpha=0.5)
+                ax2.hist(df_present['logit'], bins=20, color='green', alpha=0.5)
+                ax2.set_xlim(-16, 16)
+                ax2.set_title('Logit Scores')
+                plt.tight_layout()
+                plt.show()
 
-        # if plot_score_distributions:
-        #     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
-        #     fig.suptitle(label)
-        #     ax1.hist(df_absent['confidence'], bins=20, color='orange', alpha=0.5)
-        #     ax1.hist(df_present['confidence'], bins=20, color='green', alpha=0.5)
-        #     ax1.set_ylim(0, 25)
-        #     ax1.set_title('Detection Scores')
-        #     ax2.hist(df_absent['logit'], bins=20, color='orange', alpha=0.5)
-        #     ax2.hist(df_present['logit'], bins=20, color='green', alpha=0.5)
-        #     ax2.set_xlim(-16, 16)
-        #     ax2.set_title('Logit Scores')
-        #     plt.tight_layout()
-        #     plt.show()
+                # fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
+                # fig.suptitle(label)
+                # ax1.hist(df_absent['confidence'], bins=20, color='orange', alpha=0.5, density=True)
+                # ax1.hist(df_present['confidence'], bins=20, color='green', alpha=0.5, density=True)
+                # ax1.set_ylim(0, 25)
+                # ax1.set_title('Detection Scores density')
+                # ax2.hist(df_absent['logit'], bins=20, color='orange', alpha=0.5, density=True)
+                # ax2.hist(df_present['logit'], bins=20, color='green', alpha=0.5, density=True)
+                # ax2.set_xlim(-16, 16)
+                # ax2.set_title('Logit Scores')
+                # plt.tight_layout()
+                # plt.show()
     
     # TODO: Test Silverman's test for modality
     # from statsmodels.nonparametric.bandwidths import bw_silverman, bw_scott, select_bandwidth

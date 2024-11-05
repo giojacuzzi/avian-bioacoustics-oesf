@@ -51,6 +51,16 @@ for (l in unique(merged$label)) {
   readline()
 }
 
+library(viridis)
+plot_sample_size = ggplot(data = merged) +
+  geom_line(aes(x = count, y = PR_AUC, color = count)) +
+  scale_colour_viridis(option = "D") +
+  facet_wrap(~ str_to_title(label), ncol = 7, scales = "free_x") +
+  theme_bw() + theme(aspect.ratio = 1) +
+  labs(color = "Samples", x = "PR AUC", y = "Training sample size")
+plot_sample_size
+ggsave(file=paste0("data/figures/plot_sample_size", ".png"), plot=plot_sample_size, width=12, height=16)
+
 df_sorted <- merged %>% arrange(count)
 model <- lm(PR_AUC ~ log(count), data = df_sorted)
 plot(df_sorted$count, df_sorted$PR_AUC, main = "Logarithmic Regression Plot", xlab = "x_column", ylab = "y_column", pch = 19)
@@ -59,13 +69,12 @@ plot(model$residuals, main = "Residuals of Logarithmic Regression", ylab = "Resi
 abline(h = 0, col = "red")
 
 # Find asymptotes
-result <- df %>%
-  group_by(species_label) %>%
-  filter(performance == max(performance)) %>%
-  slice_min(sample_size) %>%
+asymptotes <- merged %>%
+  group_by(label) %>%
+  filter(PR_AUC == max(PR_AUC)) %>%
+  slice_min(count) %>%
   ungroup()
-
-print(result)
+print(asymptotes)
 
 mean(class_counts[class_counts$dir == 'custom_S1_N5_LR0.001_BS5_HU0_LSFalse_US0_I0', 'count'])
 mean(merged[merged$dir == 'custom_S1_N5_LR0.001_BS5_HU0_LSFalse_US0_I0', 'PR_AUC'])

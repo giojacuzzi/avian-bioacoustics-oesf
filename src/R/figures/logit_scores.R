@@ -1,6 +1,6 @@
 library(ggplot2)
 
-label = 'Golden-crowned Kinglet'#'Sooty Grouse'
+label = 'Black-throated Gray Warbler'#'Sooty Grouse'
 
 model_stub = 'custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0'
 
