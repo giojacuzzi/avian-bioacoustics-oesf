@@ -136,7 +136,7 @@ def list_base_files_by_extension(directory, extension):
     file_list = []
     for root, dirs, files in os.walk(directory):
         for filename in files:
-            if filename.endswith(f'.{extension}'):
+            if filename.endswith(extension):
                 file_list.append(filename)
     return file_list
 
