@@ -1,5 +1,7 @@
 if __name__ == '__main__':
 
+    print('START')
+
     from audio import process_audio
 
     # in_filepath = input('\033[34mDrag and drop file to analyze (requires full path): \033[0m')
@@ -9,8 +11,8 @@ if __name__ == '__main__':
     # in_filepath = os.path.normpath(in_filepath)
 
     ## Input
-    in_path = '/Users/giojacuzzi/Desktop/audio_test_files/chorus' # Full path to a single audio file or a directory containing audio files. Will search the directory tree recursively.
-    in_filetype = '.wav' # Supported file types: '.wav', '.aif', '.mp3'
+    in_path = '/Users/giojacuzzi/Desktop/audio_test_files/chorus/chorus1.wav' # Full path to a single audio file or a directory containing audio files. Will search the directory tree recursively.
+    in_filetype = '.wav' # Supported file types: '.wav', '.aif', '.flac', '.mp3'
 
     ## Output
     out_dir_path = '/Users/giojacuzzi/Downloads/output' # Full path to the output directory
@@ -22,7 +24,7 @@ if __name__ == '__main__':
 
     ## Model configuration
     # Source model
-    source_labels_filepath = 'src/classification/species_list/species_list_OESF.txt'
+    source_labels_filepath = 'data/species_list_OESF.txt'
     # Target model
     use_custom_model = True
     if use_custom_model:
@@ -44,12 +46,13 @@ if __name__ == '__main__':
     min_confidence = 0.25 # Minimum confidence score to retain a detection # TODO
     retain_logit_score = False
 
+    print('process_file_or_dir')
     process_audio.process_file_or_dir(
         in_path                         = in_path,
         in_filetype                     = in_filetype,
         out_dir_path                    = out_dir_path,
         retain_dir_tree                 = retain_dir_tree,
-        custom_model_filepath           = custom_model_filepath,
+        target_model_filepath           = custom_model_filepath,
         source_labels_filepath          = source_labels_filepath,
         target_labels_filepath          = target_labels_filepath,
         use_ensemble                    = use_ensemble,
@@ -64,3 +67,5 @@ if __name__ == '__main__':
         out_filetype                    = out_filetype,
         digits                          = digits
     )
+
+    print('END')

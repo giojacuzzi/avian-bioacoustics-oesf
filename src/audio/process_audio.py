@@ -36,7 +36,7 @@ def process_file_or_dir(
         in_filetype = None,
         out_dir_path        = '', # path to an output directory
         retain_dir_tree       = True, # directory structure below root_dir will be retrained in out_dir_path
-        custom_model_filepath = None,
+        target_model_filepath = None,
         source_labels_filepath = 'src/classification/species_list/species_list_OESF.txt',
         target_labels_filepath = None,
         use_ensemble = False,
@@ -63,7 +63,7 @@ def process_file_or_dir(
         result = process_file(
             in_filepath    = in_path,
             out_dir_path   = out_dir_path,
-            custom_model_filepath = custom_model_filepath,
+            custom_model_filepath = target_model_filepath,
             source_labels_filepath = source_labels_filepath,
             target_labels_filepath = target_labels_filepath,
             use_ensemble   = use_ensemble,
@@ -112,7 +112,7 @@ def process_file_or_dir(
                 pool.starmap(process_file, zip(
                     in_filepaths, # in_filepath
                     out_dir_paths, # out_dir_path
-                    repeat(custom_model_filepath), # custom_model_filepath
+                    repeat(target_model_filepath), # custom_model_filepath
                     repeat(source_labels_filepath), # source_labels_filepath
                     repeat(target_labels_filepath), # target_labels_filepath
                     repeat(use_ensemble), # use_ensemble
