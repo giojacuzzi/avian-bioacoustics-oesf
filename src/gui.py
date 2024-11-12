@@ -13,7 +13,7 @@ import json
 import sys
 import numpy as np
 from typing import Callable, Union
-from audio import process_audio
+import process_audio
 
 from multiprocessing import Process, Queue
 import time
@@ -611,7 +611,7 @@ class App(TkinterDnD.Tk):
         # DEBUG
         # exec(open('mango.py').read())
 
-        process_audio.process_file_or_dir(
+        process_audio.process(
             in_path                         = in_path,
             in_filetype                     = in_filetype,
             out_dir_path                    = out_dir_path,
@@ -624,7 +624,7 @@ class App(TkinterDnD.Tk):
             min_confidence                  = min_confidence,
             retain_logit_score              = retain_logit_score,
             n_processes                     = n_processes,
-            num_separation                  = n_separation,
+            n_separation                    = n_separation,
             cleanup                         = True,
             sort_by                         = ['start_time', 'confidence'],
             ascending                       = [True, False],

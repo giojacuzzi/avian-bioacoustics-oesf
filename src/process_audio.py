@@ -1,9 +1,51 @@
 import argparse
 from audio import process_audio
+from utils import log
+import sys
+
+# Wrapper for audio.process_audio process_file_or_dir
+def process(
+        in_path, # path to a file or directory
+        in_filetype = None,
+        out_dir_path        = '',
+        retain_dir_tree       = True,
+        target_model_filepath = None,
+        source_labels_filepath = None,
+        target_labels_filepath = None,
+        use_ensemble = False,
+        ensemble_class_model_selections = None,
+        min_confidence = 0.0,
+        retain_logit_score  = False,
+        n_processes    = 8,
+        n_separation = 1,
+        cleanup        = True,
+        sort_by        = ['start_time', 'confidence'],
+        ascending      = [True, False],
+        out_filetype   = '',
+        digits = 3,
+):
+    process_audio.process_file_or_dir(
+        in_path                         = in_path,
+        in_filetype                     = in_filetype,
+        out_dir_path                    = out_dir_path,
+        retain_dir_tree                 = retain_dir_tree,
+        target_model_filepath           = target_model_filepath,
+        source_labels_filepath          = source_labels_filepath,
+        target_labels_filepath          = target_labels_filepath,
+        use_ensemble                    = use_ensemble,
+        ensemble_class_model_selections = ensemble_class_model_selections,
+        min_confidence                  = min_confidence,
+        retain_logit_score              = retain_logit_score,
+        n_processes                     = n_processes,
+        num_separation                  = n_separation,
+        cleanup                         = cleanup,
+        sort_by                         = sort_by,
+        ascending                       = ascending,
+        out_filetype                    = out_filetype,
+        digits                          = digits
+    )
 
 def main(args):
-    print('run_process_audio_script START')
-
     # Required arguments
     print(f"in_path: {args.in_path}")
     print(f"in_filetype: {args.in_filetype}")
@@ -40,8 +82,7 @@ def main(args):
     if args.digits:
         print(f"digits: {args.digits}")
     
-    # print('process_file_or_dir')
-    process_audio.process_file_or_dir(
+    process(
         in_path                         = args.in_path,
         in_filetype                     = args.in_filetype,
         out_dir_path                    = args.out_dir_path,
@@ -54,15 +95,13 @@ def main(args):
         min_confidence                  = args.min_confidence,
         retain_logit_score              = args.retain_logit_score,
         n_processes                     = args.n_processes,
-        num_separation                  = args.n_separation,
+        n_separation                    = args.n_separation,
         cleanup                         = True,
         sort_by                         = ['start_time', 'confidence'],
         ascending                       = [True, False],
         out_filetype                    = args.out_filetype,
         digits                          = args.digits
     )
-    
-    print('run_process_audio_script END')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A script with required and optional arguments")
@@ -86,18 +125,27 @@ if __name__ == "__main__":
     parser.add_argument("--n_separation", type=int, help="Number of channels to separate for analysis. Leave as 1 to process original file alone (int)")
     parser.add_argument("--digits", type=int, help="Digits to round confidence scores (int)")
 
-    args = parser.parse_args()
-    # if len(sys.argv) > 1:
-    #     args = parser.parse_args()
-    # else:
-    #     # Define default values
-    #     args = parser.parse_args([
-    #         "my_in_path",      # in_path
-    #         "my_in_filetype",  # in_filetype
-    #         "my_out_dir_path", # out_dir_path
-    #         "my_out_filetype", # out_filetype
-    #         "--target_model_filepath", "my_custom_model_filepath",  # optional argument
-    #         "--retain_dir_tree"                       # optional flag (boolean)
-    #     ])
-
+    # TODO: these hard-coded defaults are here for debugging; remove for distribution
+    if len(sys.argv) > 1:
+        args = parser.parse_args()
+    else:
+        log.print_warning('No arguments provided. Using default values...')
+        # Define default values
+        args = parser.parse_args([
+            "/Users/giojacuzzi/Desktop/audio_test_files/chorus/chorus1.wav",
+            ".wav",
+            "/Users/giojacuzzi/Downloads/output",
+            ".csv",
+            "--retain_dir_tree",
+            "--source_labels_filepath", "data/species_list_OESF.txt",
+            "--target_model_filepath", "data/models/custom/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0.tflite",
+            "--target_labels_filepath", "data/models/custom/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0_Labels.txt",
+            "--use_ensemble",
+            "--ensemble_class_model_selections", "data/ensemble/class_model_selections.csv",
+            "--min_confidence", "0.1",
+            # "--retain_logit_score",
+            "--n_processes", "8",
+            "--n_separation", "1",
+            "--digits", "3"
+        ])
     main(args)
