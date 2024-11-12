@@ -51,6 +51,8 @@ def process_file_or_dir(
         out_filetype   = '',
         digits = 3,
 ):
+    # print('process_file_or_dir')
+
     if (out_dir_path != '' and out_filetype == '') or (out_dir_path == '' and out_filetype != ''):
         print_error(f'Must specify an output path and file type together')
         return
@@ -59,7 +61,7 @@ def process_file_or_dir(
 
     in_path = Path(in_path)
     if in_path.is_file(): # -------------------------------------------
-        print(' in_path.is_file() ')
+        print(f'Processing file {in_path}')
         result = process_file(
             in_filepath    = in_path,
             out_dir_path   = out_dir_path,
@@ -83,7 +85,7 @@ def process_file_or_dir(
         
         dirs = find_dirs_containing_filetype(in_path, in_filetype)
         for dir in dirs:
-            print(f'Processing directory {dir}...')
+            print(f'Processing directory {dir}')
 
             start_time_dir = time.time()
             in_filepaths = find_files_in_dir(dir, in_filetype)
@@ -94,7 +96,7 @@ def process_file_or_dir(
                 continue
 
             processes_available = min(n_files, n_processes)
-            print(f'Launching {processes_available} processes for {n_files} files')
+            print(f'Executing {processes_available} processes for {n_files} files...')
 
             out_dir_paths = []
             if retain_dir_tree:
@@ -129,14 +131,14 @@ def process_file_or_dir(
 
 
             end_time_dir = time.time()
-            print_success(f'Finished directory {dir} ({round((end_time_dir - start_time_dir)/60.0, 2)} min)')
+            print_success(f'Finished directory {dir}\n({round((end_time_dir - start_time_dir)/60.0, 2)} min)')
 
     else: # -------------------------------------------
         print_error(f'Failed to find input path {in_path}')
         return
     
     end_time_process = time.time()
-    print_success(f'Finished processing ({round((end_time_process - start_time_process)/3600.0, 2)} hr)')
+    print_success(f'Finished processing\n({round((end_time_process - start_time_process)/3600.0, 2)} hr)')
 
 # Run a BirdNET analyzer model with or without source separation.
 # path - path to a .wav file
@@ -283,6 +285,7 @@ def process_file(
         pred_source = predictions[predictions['model'] == 'source'].drop(columns='model')
         pred_target = predictions[predictions['model'] == 'target'].drop(columns='model')
         predictions = pd.merge(pred_source, pred_target, on=['common_name', 'start_time'], how='outer', suffixes=('_source', '_target'))
+        ensemble_class_model_selections = os.path.abspath(ensemble_class_model_selections)
         class_model_selections = pd.read_csv(ensemble_class_model_selections)
         predictions['common_name_lower'] = predictions['common_name'].str.lower()
         merged_df = predictions.merge(class_model_selections, left_on='common_name_lower', right_on='label', how='left')

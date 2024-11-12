@@ -40,7 +40,7 @@ def main(args):
     if args.digits:
         print(f"digits: {args.digits}")
     
-    print('process_file_or_dir')
+    # print('process_file_or_dir')
     process_audio.process_file_or_dir(
         in_path                         = args.in_path,
         in_filetype                     = args.in_filetype,
