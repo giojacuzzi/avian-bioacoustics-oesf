@@ -3,6 +3,10 @@
 /.venv/
 *.pyc
 
+# Pyinstaller
+/build/
+/dist/
+
 # Output files
 *.wav
 *.csv

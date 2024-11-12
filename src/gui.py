@@ -7,6 +7,7 @@ import asyncio
 import threading
 import os
 import subprocess
+import multiprocessing
 import tempfile
 import time
 import json
@@ -589,7 +590,7 @@ class App(TkinterDnD.Tk):
     async def await_funct(self):
         # self.testfield["text"] = "start waiting"
         # self.console_textbox.insert(customtkinter.END,"Launching console process, please wait...\n")
-        print('Launching console process, please wait...')
+        # print('Launching console process, please wait...')
         self.update_idletasks()
 
         in_path = self.entry_in_path.get()
@@ -634,7 +635,7 @@ class App(TkinterDnD.Tk):
 
         # await asyncio.sleep(5)
 
-        self.console_textbox.insert(customtkinter.END,"end waiting\n")
+        # self.console_textbox.insert(customtkinter.END,"end waiting\n")
         self.update_idletasks()
 
         # await asyncio.sleep(1)
@@ -646,8 +647,10 @@ class App(TkinterDnD.Tk):
         self.progressbar.configure(mode="determinate")
         self.progressbar.set(1.0)
         # self.button_launch_process["state"] = "normal"
-        print('Finished console process')
+        # print('Finished console process')
 
 if __name__ == "__main__":
+    print('Launching gui...')
+    multiprocessing.freeze_support()
     app = App()
     app.mainloop()
