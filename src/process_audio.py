@@ -140,7 +140,7 @@ if __name__ == "__main__":
             "/Users/giojacuzzi/Downloads/output",
             ".csv",
             "--retain_dir_tree",
-            "--source_labels_filepath", "data/species_list_OESF.txt",
+            "--source_labels_filepath", "data/models/source/regional_species_list.txt",
             "--target_model_filepath",  "data/models/target/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0.tflite",
             "--target_labels_filepath", "data/models/target/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0_Labels.txt",
             "--use_ensemble",

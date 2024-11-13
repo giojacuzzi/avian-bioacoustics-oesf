@@ -12,7 +12,9 @@ Although this software was developed for a particular study region and set of mo
 ### Quickstart: GUI application
 
 To run the bundled app executable:
-> TODO: Final distribution not yet available
+> - TODO: Final distribution not yet available
+> - File > Open session... > data/gui/example_session.json
+> - Launch process
 
 ## Recommendations
 - Visual Studio Code with Microsoft extensions [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python), [Python Debugger](https://marketplace.visualstudio.com/items?itemName=ms-python.debugpy), and [Jupyter](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter)
