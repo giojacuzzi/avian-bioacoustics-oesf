@@ -51,13 +51,22 @@ def process_file_or_dir(
         out_filetype   = '',
         digits = 3,
 ):
+    start_time_process = time.time()
     # print('process_file_or_dir')
 
     if (out_dir_path != '' and out_filetype == '') or (out_dir_path == '' and out_filetype != ''):
         print_error(f'Must specify an output path and file type together')
         return
+    out_dir_path = Path(out_dir_path)
 
-    start_time_process = time.time()
+    if (source_labels_filepath != '' and source_labels_filepath != None):
+        source_labels_filepath = Path(source_labels_filepath)
+    if (target_model_filepath != '' and target_model_filepath != None):
+        target_model_filepath = Path(target_model_filepath)
+    if (target_labels_filepath != '' and target_labels_filepath != None):
+        target_labels_filepath = Path(target_labels_filepath)
+    if (ensemble_class_model_selections != '' and ensemble_class_model_selections != None):
+        ensemble_class_model_selections = Path(ensemble_class_model_selections)
 
     in_path = Path(in_path)
     if in_path.is_file(): # -------------------------------------------

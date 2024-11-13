@@ -2,6 +2,7 @@ import argparse
 from audio import process_audio
 from utils import log
 import sys
+from pathlib import Path
 
 # Wrapper for audio.process_audio process_file_or_dir
 def process(
@@ -132,16 +133,16 @@ if __name__ == "__main__":
         log.print_warning('No arguments provided. Using default values...')
         # Define default values
         args = parser.parse_args([
-            "/Users/giojacuzzi/Desktop/audio_test_files/chorus/chorus1.wav",
+            "/Users/Gio/Desktop/audio_test_files",
             ".wav",
-            "/Users/giojacuzzi/Downloads/output",
+            "/Users/Gio/Downloads/output",
             ".csv",
             "--retain_dir_tree",
             "--source_labels_filepath", "data/species_list_OESF.txt",
-            "--target_model_filepath", "data/models/custom/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0.tflite",
-            "--target_labels_filepath", "data/models/custom/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0_Labels.txt",
+            "--target_model_filepath",  "data/models/target/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0.tflite",
+            "--target_labels_filepath", "data/models/target/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0/custom_S1_N125_LR0.001_BS10_HU0_LSFalse_US0_I0_Labels.txt",
             "--use_ensemble",
-            "--ensemble_class_model_selections", "data/ensemble/class_model_selections.csv",
+            "--ensemble_class_model_selections", "data/models/ensemble/ensemble_class_model_selections.csv",
             "--min_confidence", "0.1",
             # "--retain_logit_score",
             "--n_processes", "8",

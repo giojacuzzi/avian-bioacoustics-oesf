@@ -1,5 +1,5 @@
-# avian-bioacoustics-oesf
-Few-shot transfer learning with BirdNET to enable monitoring of avian biodiversity and vocalization behavior in Washington's Olympic Experimental State Forest
+# few-shot-transfer-learning-bioacoustics
+Few-shot transfer learning with BirdNET to enable acoustic monitoring of wildlife communities.
 
 ### About
 
@@ -7,7 +7,7 @@ This repository contains the open source software, workflow routines, and reprod
 
 > Jacuzzi G., Olden J.D. Few-shot transfer learning enables robust acoustic community monitoring at the landscape scale. ** (in press).
 
-While this software was developed for the objectives of this specific study, it can be freely repurposed. Please cite the original publication in your references and direct any correspondance to gioj@uw.edu.
+Although this software was developed for a particular study region and set of monitoring objectives (avian biodiversity surveys in Washington's Olympic Experimental State Forest), it is designed to be freely repurposed and we encourage its use in other applications. Please cite the original publication in your references and direct any correspondance to gioj@uw.edu.
 
 ### Quickstart: GUI application
 
@@ -30,7 +30,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-> This should install all dependencies you need to run, for example, `analyze_file.py`. For further reference, see setup instructions for [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer) and [birdnetlib](https://github.com/joeweiss/birdnetlib).
+This installs all dependencies you need to run, for example,`src/gui.py` or `src/process_audio.py`. For further reference, see setup instructions for [BirdNET-Analyzer](https://github.com/kahst/BirdNET-Analyzer) and [birdnetlib](https://github.com/joeweiss/birdnetlib) if needed.
 
 ### Optional: Sound separation dependencies
 
