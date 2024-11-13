@@ -1,8 +1,10 @@
+# Command line interface to process audio data.
+# Run `python src/process_audio.py -h` to display help.
+
 import argparse
 from audio import process_audio
 from utils import log
 import sys
-from pathlib import Path
 
 # Wrapper for audio.process_audio process_file_or_dir
 def process(
@@ -133,9 +135,9 @@ if __name__ == "__main__":
         log.print_warning('No arguments provided. Using default values...')
         # Define default values
         args = parser.parse_args([
-            "/Users/Gio/Desktop/audio_test_files",
+            "/Users/giojacuzzi/Desktop/input",
             ".wav",
-            "/Users/Gio/Downloads/output",
+            "/Users/giojacuzzi/Downloads/output",
             ".csv",
             "--retain_dir_tree",
             "--source_labels_filepath", "data/species_list_OESF.txt",

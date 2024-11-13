@@ -1,5 +1,5 @@
 {
-    "in_path": "/Users/giojacuzzi/Desktop/audio_test_files/chorus/chorus1.wav",
+    "in_path": "/Users/giojacuzzi/Desktop/input",
     "in_filetype": ".wav",
     "out_dir_path": "/Users/giojacuzzi/Downloads/output",
     "out_filetype": ".csv",
